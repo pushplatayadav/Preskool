@@ -1,0 +1,610 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<link rel="stylesheet" href="{% static 'assets/plugins/datatables/buttons.dataTables.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+
+        <!-- Page Header -->
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Class Room</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'home' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="javascript:void(0);">Academic</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Class Room</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="pe-1 mb-2">
+                    <a href="{% url 'academics:classroom-list' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+                        data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+                        <i class="ti ti-refresh"></i>
+                    </a>
+                </div>
+                <div class="pe-1 mb-2">
+                    <button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+                        data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+                        data-bs-original-title="Print" onclick="printOrExportPDF();">
+                        <i class="ti ti-printer"></i>
+                    </button>
+                </div>
+                <div class="dropdown me-2 mb-2">
+                    <a href="javascript:void(0);"
+                        class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+                        data-bs-toggle="dropdown">
+                        <i class="ti ti-file-export me-2"></i>Export
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end p-3">
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="printOrExportPDF();"><i
+                                    class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportToExcel();"><i
+                                    class="ti ti-file-type-xls me-1"></i>Export as Excel</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mb-2">
+                    <a href="#" class="btn btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#add_class_room"><i
+                            class="ti ti-square-rounded-plus-filled me-2"></i>Add
+                        Class Room</a>
+                </div>
+            </div>
+        </div>
+        <!-- /Page Header -->
+
+        <!-- Class Room List -->
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                <h4 class="mb-3">Class Room</h4>
+                <div class="d-flex align-items-center flex-wrap">
+                    <div class="dropdown mb-3 me-2">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+                                class="ti ti-filter me-2"></i>Filter</a>
+                        <div class="dropdown-menu drop-width">
+                            <form method="get" action="{% url 'academics:classroom-list' %}">
+                                <div class="d-flex align-items-center border-bottom p-3">
+                                    <h4>Filter</h4>
+                                </div>
+                                <div class="p-3 border-bottom pb-0">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Room No</label>
+                                                <select class="select" name="filter_room">
+                                                    <option value="">Select</option>
+                                                    {% for rnum in room_numbers %}
+                                                    <option value="{{ rnum }}" {% if filter_room == rnum %}selected{% endif %}>{{ rnum }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Capacity</label>
+                                                <select class="select" name="filter_capacity">
+                                                    <option value="">Select</option>
+                                                    {% for cap in capacity_options %}
+                                                    <option value="{{ cap }}" {% if filter_capacity == cap|slugify %}selected{% endif %}>{{ cap }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Status</label>
+                                                <select class="select" name="filter_status">
+                                                    <option value="">Select</option>
+                                                    <option value="active" {% if filter_status == "active" %}selected{% endif %}>Active</option>
+                                                    <option value="inactive" {% if filter_status == "inactive" %}selected{% endif %}>Inactive</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-3 d-flex align-items-center justify-content-end">
+                                    <a href="{% url 'academics:classroom-list' %}" class="btn btn-light me-3">Reset</a>
+                                    <button type="submit" class="btn btn-primary">Apply</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="dropdown mb-3">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+                        </a>
+                        <ul class="dropdown-menu p-3">
+                            <li>
+                                <a href="{% url 'academics:classroom-list' %}?sort=asc{% if filter_room %}&filter_room={{ filter_room }}{% endif %}{% if filter_capacity %}&filter_capacity={{ filter_capacity }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+                                    Ascending
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'academics:classroom-list' %}?sort=desc{% if filter_room %}&filter_room={{ filter_room }}{% endif %}{% if filter_capacity %}&filter_capacity={{ filter_capacity }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+                                    Descending
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0 py-3">
+
+                <!-- Class Room Table -->
+                <div class="custom-datatable-filter table-responsive">
+                    <table class="table datatable" id="classroom-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th class="no-sort">
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" id="select-all">
+                                    </div>
+                                </th>
+                                <th>ID</th>
+                                <th>Room No</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for room in classrooms %}
+                            <tr>
+                                <td>
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" name="selected_items" value="{{ room.pk }}">
+                                    </div>
+                                </td>
+                                <td><a href="#" class="link-primary">{{ room.display_id }}</a></td>
+                                <td>{{ room.room_number }}</td>
+                                <td>{{ room.capacity }}</td>
+                                <td>
+                                    {% if room.status == "active" %}
+                                    <span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                            class="ti ti-circle-filled fs-5 me-1"></i>Active</span>
+                                    {% else %}
+                                    <span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                            class="ti ti-circle-filled fs-5 me-1"></i>Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="dropdown">
+                                            <a href="#"
+                                                class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="ti ti-dots-vertical fs-14"></i>
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-right p-3">
+                                                <li>
+                                                    <a class="dropdown-item rounded-1 edit-classroom-btn" href="#"
+                                                        data-bs-toggle="modal" data-bs-target="#edit_class_room"
+                                                        data-pk="{{ room.pk }}"
+                                                        data-name="{{ room.name }}"
+                                                        data-room-number="{{ room.room_number }}"
+                                                        data-capacity="{{ room.capacity }}"
+                                                        data-floor="{{ room.floor }}"
+                                                        data-status="{{ room.status }}"><i
+                                                            class="ti ti-edit-circle me-2"></i>Edit</a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item rounded-1 delete-classroom-btn" href="#"
+                                                        data-bs-toggle="modal" data-bs-target="#delete-modal"
+                                                        data-pk="{{ room.pk }}"
+                                                        data-name="{{ room.room_number }}"><i
+                                                            class="ti ti-trash-x me-2"></i>Delete</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <p class="mb-0 text-muted">No class rooms found. Click "Add Class Room" to create one.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- /Class Room Table -->
+            </div>
+        </div>
+        <!-- /Class Room List -->
+
+    </div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Class Room -->
+<div class="modal fade" id="add_class_room">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Class Room</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'academics:classroom-list' %}">
+                {% csrf_token %}
+                <input type="hidden" name="add_classroom" value="1">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Room Name</label>
+                                <input type="text" class="form-control" name="name" placeholder="Enter Room Name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Room Number</label>
+                                <input type="text" class="form-control" name="room_number" placeholder="Enter Room Number" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Capacity</label>
+                                <input type="number" class="form-control" name="capacity" placeholder="Enter Capacity" min="1" value="30" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Floor</label>
+                                <input type="text" class="form-control" name="floor" placeholder="Enter Floor">
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="status-title">
+                                    <h5>Status</h5>
+                                    <p>Change the Status by toggle</p>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="status" value="active" checked
+                                        onchange="this.value = this.checked ? 'active' : 'inactive';">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Add Class Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Add Class Room -->
+
+<!-- Edit Class Room -->
+<div class="modal fade" id="edit_class_room">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Class Room</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <form method="post" id="edit-classroom-form">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Room Name</label>
+                                <input type="text" class="form-control" name="name" id="edit_name" placeholder="Enter Room Name">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Room Number</label>
+                                <input type="text" class="form-control" name="room_number" id="edit_room_number" placeholder="Enter Room Number">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Capacity</label>
+                                <input type="number" class="form-control" name="capacity" id="edit_capacity" placeholder="Enter Capacity" min="1">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Floor</label>
+                                <input type="text" class="form-control" name="floor" id="edit_floor" placeholder="Enter Floor">
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="status-title">
+                                    <h5>Status</h5>
+                                    <p>Change the Status by toggle</p>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="status" id="edit_status" value="active"
+                                        onchange="this.value = this.checked ? 'active' : 'inactive';">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Edit Class Room -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="delete-classroom-form">
+                {% csrf_token %}
+                <div class="modal-body text-center">
+                    <span class="delete-icon">
+                        <i class="ti ti-trash-x"></i>
+                    </span>
+                    <h4>Confirm Deletion</h4>
+                    <p>You want to delete class room <strong id="delete-classroom-name"></strong>, this can't be undone once you delete.</p>
+                    <div class="d-flex justify-content-center">
+                        <a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+function getClassroomData() {
+    var headers = ["ID", "Room No", "Capacity", "Status"];
+    var data = [];
+    if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+        var table = $('.datatable').DataTable();
+        table.rows({ search: 'applied' }).every(function() {
+            var rowData = this.data();
+            var row = [];
+            for (var i = 1; i < rowData.length - 1; i++) {
+                var cellHtml = rowData[i];
+                var tempDiv = document.createElement("div");
+                tempDiv.innerHTML = cellHtml;
+                var text = tempDiv.textContent || tempDiv.innerText || "";
+                row.push(text.trim());
+            }
+            data.push(row);
+        });
+    } else {
+        var rows = document.querySelectorAll("table.datatable tbody tr");
+        rows.forEach(function(tr) {
+            var cols = tr.querySelectorAll("td");
+            if (cols.length > 1) {
+                var row = [];
+                for (var j = 1; j < cols.length - 1; j++) {
+                    row.push(cols[j].innerText.trim());
+                }
+                data.push(row);
+            }
+        });
+    }
+    return { 
+        headers: headers, 
+        rows: data,
+        reportTitle: "Class Room Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportToExcel() {
+    var data = getClassroomData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "class_room_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+    var data = getClassroomData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    
+    var html = `
+    <html>
+    <head>
+        <title>` + data.reportTitle + `</title>
+        <style>
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 13px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 12px 16px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 210mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">` + data.reportTitle + `</div>
+            <div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    ` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+                </tr>
+            </thead>
+            <tbody>
+                ` + data.rows.map(function(row) {
+                    return '<tr>' + row.map(function(val) { return '<td>' + val + '</td>'; }).join("") + '</tr>';
+                }).join("") + `
+            </tbody>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <\/script>
+    </body>
+    </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Edit classroom modal - populate from data attributes
+    document.querySelectorAll('.edit-classroom-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var pk = this.dataset.pk;
+            document.getElementById('edit-classroom-form').action = '{% url "academics:classroom-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_name').value = this.dataset.name || '';
+            document.getElementById('edit_room_number').value = this.dataset.roomNumber || '';
+            document.getElementById('edit_capacity').value = this.dataset.capacity || '';
+            document.getElementById('edit_floor').value = this.dataset.floor || '';
+            var isActive = this.dataset.status === 'active';
+            document.getElementById('edit_status').checked = isActive;
+            document.getElementById('edit_status').value = isActive ? 'active' : 'inactive';
+        });
+    });
+
+    // Delete classroom modal - populate from data attributes
+    document.querySelectorAll('.delete-classroom-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var pk = this.dataset.pk;
+            document.getElementById('delete-classroom-form').action = '{% url "academics:classroom-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('delete-classroom-name').textContent = this.dataset.name;
+        });
+    });
+
+});
+</script>
+{% endblock extra_js %}

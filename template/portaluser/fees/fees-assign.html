@@ -1,0 +1,1292 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Fees Collection</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Fees Collection</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Assign Fees</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'fees:fees-assign-list' %}" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+						data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Print" data-bs-original-title="Print"
+						onclick="printOrExportPDF();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1"
+								onclick="printOrExportPDF();"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportToExcel();"><i
+									class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+						data-bs-target="#add_fees_assign"><i class="ti ti-square-rounded-plus me-2"></i>Assign
+						New</a>
+				</div>
+				<div class="mb-2 ms-1">
+					<a href="javascript:void(0);" class="btn btn-danger d-none" id="bulk-delete-btn"
+						onclick="bulkDeleteSelected();"><i class="ti ti-trash me-2"></i>Delete Selected</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Fees List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Fees Collection</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+							value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'fees:fees-assign-list' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Section</label>
+												<select class="select" name="filter_section">
+													<option value="">Select</option>
+													{% for section in sections %}
+													<option value="{{ section.pk }}" {% if filter_section == section.pk|stringformat:"s" %}selected{% endif %}>{{ section.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Gender</label>
+												<select class="select" name="filter_gender">
+													<option value="">Select</option>
+													<option value="male" {% if filter_gender == "male" %}selected{% endif %}>Male</option>
+													<option value="female" {% if filter_gender == "female" %}selected{% endif %}>Female</option>
+													<option value="both" {% if filter_gender == "both" %}selected{% endif %}>Both</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-0">
+												<label class="form-label">Student Category</label>
+												<select class="select" name="filter_category">
+													<option value="">Select</option>
+													{% for opt in category_options %}
+													<option value="{{ opt }}" {% if filter_category == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'fees:fees-assign-list' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'fees:fees-assign-list' %}?sort=asc{% if filter_section %}&filter_section={{ filter_section }}{% endif %}{% if filter_gender %}&filter_gender={{ filter_gender }}{% endif %}{% if filter_category %}&filter_category={{ filter_category }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+									Ascending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:fees-assign-list' %}?sort=desc{% if filter_section %}&filter_section={{ filter_section }}{% endif %}{% if filter_gender %}&filter_gender={{ filter_gender }}{% endif %}{% if filter_category %}&filter_category={{ filter_category }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+									Descending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:fees-assign-list' %}?sort=recent{% if filter_section %}&filter_section={{ filter_section }}{% endif %}{% if filter_gender %}&filter_gender={{ filter_gender }}{% endif %}{% if filter_category %}&filter_category={{ filter_category }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recent' %}active{% endif %}">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:fees-assign-list' %}?sort=recent_added{% if filter_section %}&filter_section={{ filter_section }}{% endif %}{% if filter_gender %}&filter_gender={{ filter_gender }}{% endif %}{% if filter_category %}&filter_category={{ filter_category }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recent_added' %}active{% endif %}">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+
+				<!-- Student List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>S. No</th>
+								<th>Fees Group</th>
+								<th>Fees Type</th>
+								<th>Class</th>
+								<th>Section</th>
+								<th>Amount ($)</th>
+								<th>Gender</th>
+								<th>Category</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for assign in fees_assigns %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" name="selected_items"
+											value="{{ assign.pk }}">
+									</div>
+								</td>
+								<td>{{ forloop.counter|stringformat:"02d" }}</td>
+								<td>{{ assign.fees_group.name|default:"-" }}</td>
+								<td>{{ assign.fees_type.name|default:"-" }}</td>
+								<td>{{ assign.school_class.name|default:"-" }}</td>
+								<td>{{ assign.section.name|default:"-" }}</td>
+								<td>{{ assign.amount }}</td>
+								<td>{% if assign.gender %}{{ assign.get_gender_display }}{% else %}-{% endif %}</td>
+								<td>{{ assign.category|default:"-" }}</td>
+								<td>
+									<div class="d-flex align-items-center">
+										<div class="dropdown">
+											<a href="#"
+												class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+												data-bs-toggle="dropdown" aria-expanded="false">
+												<i class="ti ti-dots-vertical fs-14"></i>
+											</a>
+											<ul class="dropdown-menu dropdown-menu-right p-3">
+												<li>
+													<a class="dropdown-item rounded-1 edit-assign-btn" href="#"
+														data-bs-toggle="modal" data-bs-target="#edit_fees_assign"
+														data-pk="{{ assign.pk }}"
+														data-group="{{ assign.fees_group.name|default:'' }}"
+														data-type="{{ assign.fees_type.name|default:'' }}"
+														data-amount="{{ assign.amount }}"
+														data-class-id="{{ assign.school_class_id|default:'' }}"
+														data-section-id="{{ assign.section_id|default:'' }}"
+														data-gender="{{ assign.gender }}"
+														data-category="{{ assign.category }}"
+														data-students="{% for s in assign.assigned_students.all %}{{ s.pk }}{% if not forloop.last %},{% endif %}{% endfor %}"><i
+															class="ti ti-edit-circle me-2"></i>Edit</a>
+												</li>
+												<li>
+													<a class="dropdown-item rounded-1 delete-assign-btn" href="#"
+														data-bs-toggle="modal" data-bs-target="#delete-modal"
+														data-pk="{{ assign.pk }}"
+														data-name="{{ assign.fees_group.name|default:'' }} - {{ assign.fees_type.name|default:'' }}"><i
+															class="ti ti-trash-x me-2"></i>Delete</a>
+												</li>
+											</ul>
+										</div>
+									</div>
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td class="text-center text-muted py-4">No fees assigned yet. Click "Assign New" to
+									create
+									one.</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Student List -->
+
+				<form method="post" id="bulk-delete-form" action="{% url 'fees:fees-assign-list' %}"
+					style="display:none;">
+					{% csrf_token %}
+					<input type="hidden" name="bulk_delete" value="1">
+					<div id="bulk-delete-items"></div>
+				</form>
+			</div>
+		</div>
+		<!-- /Fees List -->
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" id="delete-assign-form">
+				{% csrf_token %}
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete <strong id="delete-assign-name"></strong>, this cant be undone once you
+						delete.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+
+<!-- Add Fees Assign -->
+<div class="modal fade" id="add_fees_assign">
+	<div class="modal-dialog modal-dialog-centered  modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Assign New Fees</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" id="add-assign-form" action="{% url 'fees:fees-assign-list' %}">
+				{% csrf_token %}
+				<input type="hidden" name="assign_fees" value="1">
+				<div class="modal-body">
+					<!-- Table Filter -->
+					<div class="table-filter-head">
+						<div class="filter-head-left">
+							<h5>Search Criteria</h5>
+							<div class="dropdown mb-3 me-2">
+								<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+									data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+										class="ti ti-filter me-2"></i>Filter</a>
+								<div class="dropdown-menu drop-width">
+									<div class="d-flex align-items-center border-bottom p-3">
+										<h4>Filter</h4>
+									</div>
+									<div class="p-3 pb-0 border-bottom">
+										<div class="row">
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Fees Group</label>
+													<select class="select assign-filter-field" data-field="fees_group"
+														data-modal="add" name="fees_group">
+														<option value="">Select</option>
+														{% for fg in fees_groups %}
+														<option value="{{ fg.pk }}">{{ fg.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Fees Type</label>
+													<select class="select assign-filter-field" data-field="fees_type"
+														data-modal="add" name="fees_type">
+														<option value="">Select</option>
+														{% for ft in fees_types %}
+														<option value="{{ ft.pk }}">{{ ft.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Class</label>
+													<select class="select assign-filter-field" data-field="class_id"
+														data-modal="add" name="class_id">
+														<option value="">Select</option>
+														{% for cls in classes %}
+														<option value="{{ cls.pk }}">{{ cls.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Section</label>
+													<select class="select assign-filter-field" data-field="section_id"
+														data-modal="add" name="section_id">
+														<option value="">Select</option>
+														{% for sec in sections %}
+														<option value="{{ sec.pk }}">{{ sec.school_class.name }} - {{ sec.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Gender</label>
+													<select class="select assign-filter-field" data-field="gender"
+														data-modal="add" name="gender">
+														<option value="">Select</option>
+														<option value="male">Male</option>
+														<option value="female">Female</option>
+														<option value="both">Both</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Student Category</label>
+													<select class="select assign-filter-field" data-field="category"
+														data-modal="add" name="category">
+														<option value="">Select</option>
+														{% for opt in category_options %}
+														<option value="{{ opt }}">{{ opt }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="p-3 d-flex align-items-center justify-content-end">
+										<a href="javascript:void(0);" class="btn btn-light me-3"
+											onclick="resetAssignFilters('add'); return false;">Reset</a>
+										<button type="button" class="btn btn-primary"
+											onclick="applyAssignFilters('add');">Apply</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- /Table Filter -->
+					</div>
+					<!-- /Filter Section -->
+					<div class="modal-card-table">
+						<div class="modal-table-head">
+							<h4>List of Fees type</h4>
+						</div>
+						<div class="table-responsive custom-table no-datatable_length">
+							<table class="table datanew" id="add-fees-type-table">
+								<thead class="thead-light">
+									<tr>
+										<th class="no-sort">
+
+										</th>
+										<th class="no-sort">Fees Type</th>
+										<th class="no-sort">Fees Type</th>
+										<th class="no-sort">Amount</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for fm in fees_masters %}
+									<tr>
+										<td>
+											<label class="checkboxs">
+												<input type="checkbox" name="fee_items" value="{{ fm.pk }}">
+												<span class="checkmarks"></span>
+											</label>
+										</td>
+										<td>{{ fm.fees_type.name|default:"-" }}</td>
+										<td>{{ fm.fees_group.name|default:"-" }}</td>
+										<td>{{ fm.amount }}</td>
+									</tr>
+									{% empty %}
+									<tr>
+										<td colspan="4" class="text-center text-muted py-3">No fees available.</td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="modal-card-table">
+						<div class="modal-table-head">
+							<h4>Student Details</h4>
+						</div>
+						<div class="table-responsive custom-table no-datatable_length">
+							<table class="table datanew" id="add-student-table">
+								<thead class="thead-light">
+									<tr>
+										<th class="no-sort">
+											<label class="checkboxs"><input type="checkbox"
+													id="add_select_all_students"><span
+													class="checkmarks"></span></label>
+										</th>
+										<th class="no-sort">Admission Number</th>
+										<th class="no-sort">Student</th>
+										<th class="no-sort">Class</th>
+										<th class="no-sort">Section</th>
+										<th class="no-sort">Gender</th>
+										<th class="no-sort">Student Category</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for student in students %}
+									<tr>
+										<td>
+											<label class="checkboxs">
+												<input type="checkbox" name="student_items" value="{{ student.pk }}">
+												<span class="checkmarks"></span>
+											</label>
+										</td>
+										<td><a href="#" class="text-primary">{{ student.admission_no }}</a></td>
+										<td>
+											<div class="d-flex align-items-center">
+												<a href="{% url 'people:student-details' student.pk %}"
+													class="avatar avatar-md"><img
+														src="{% if student.profile_image %}{{ student.profile_image.url }}{% else %}{% static 'assets/img/students/student-01.jpg' %}{% endif %}"
+														class="img-fluid rounded-circle" alt="img"></a>
+												<div class="ms-2">
+													<p class="text-dark mb-0"><a
+															href="{% url 'people:student-details' student.pk %}">{{ student.name }}</a></p>
+												</div>
+											</div>
+										</td>
+										<td>{{ student.school_class.name|default:"-" }}</td>
+										<td>{{ student.section.name|default:"-" }}</td>
+										<td>{{ student.get_gender_display }}</td>
+										<td>{{ student.category|default:"-" }}</td>
+									</tr>
+									{% empty %}
+									<tr>
+										<td colspan="7" class="text-center text-muted py-3">No students found.</td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="student-pomote-note d-flex mb-0">
+						<span class="info-icon"><i class="ti ti-info-circle"></i></span>
+						<p id="add-assign-count">Selected 0 Fees Type, 0 Students</p>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add Fees</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Fees Assign -->
+
+<!-- Edit Fees Assign -->
+<div class="modal fade" id="edit_fees_assign">
+	<div class="modal-dialog modal-dialog-centered  modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Edit Fees</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" id="edit-assign-form">
+				{% csrf_token %}
+				<div class="modal-body">
+					<!-- Table Filter -->
+					<div class="table-filter-head">
+						<div class="filter-head-left">
+							<h5>Search Criteria</h5>
+							<div class="dropdown mb-3 me-2">
+								<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+									data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+										class="ti ti-filter me-2"></i>Filter</a>
+								<div class="dropdown-menu drop-width">
+									<div class="d-flex align-items-center border-bottom p-3">
+										<h4>Filter</h4>
+									</div>
+									<div class="p-3 pb-0 border-bottom">
+										<div class="row">
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Fees Group</label>
+													<select class="select assign-filter-field" data-field="fees_group"
+														data-modal="edit" name="fees_group">
+														<option value="">Select</option>
+														{% for fg in fees_groups %}
+														<option value="{{ fg.pk }}">{{ fg.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Fees Type</label>
+													<select class="select assign-filter-field" data-field="fees_type"
+														data-modal="edit" name="fees_type">
+														<option value="">Select</option>
+														{% for ft in fees_types %}
+														<option value="{{ ft.pk }}">{{ ft.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Class</label>
+													<select class="select assign-filter-field" data-field="class_id"
+														data-modal="edit" name="class_id">
+														<option value="">Select</option>
+														{% for cls in classes %}
+														<option value="{{ cls.pk }}">{{ cls.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Section</label>
+													<select class="select assign-filter-field" data-field="section_id"
+														data-modal="edit" name="section_id">
+														<option value="">Select</option>
+														{% for sec in sections %}
+														<option value="{{ sec.pk }}">{{ sec.school_class.name }} - {{ sec.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Gender</label>
+													<select class="select assign-filter-field" data-field="gender"
+														data-modal="edit" name="gender">
+														<option value="">Select</option>
+														<option value="male">Male</option>
+														<option value="female">Female</option>
+														<option value="both">Both</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Student Category</label>
+													<select class="select assign-filter-field" data-field="category"
+														data-modal="edit" name="category">
+														<option value="">Select</option>
+														{% for opt in category_options %}
+														<option value="{{ opt }}">{{ opt }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="p-3 d-flex align-items-center justify-content-end">
+										<a href="javascript:void(0);" class="btn btn-light me-3"
+											onclick="resetAssignFilters('edit'); return false;">Reset</a>
+										<button type="button" class="btn btn-primary"
+											onclick="applyAssignFilters('edit');">Apply</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- /Table Filter -->
+					</div>
+					<!-- /Filter Section -->
+					<div class="modal-card-table">
+						<div class="modal-table-head">
+							<h4>List of Fees type</h4>
+						</div>
+						<div class="table-responsive custom-table no-datatable_length">
+							<table class="table datanew" id="edit-fees-type-table">
+								<thead class="thead-light">
+									<tr>
+										<th class="no-sort">
+
+										</th>
+										<th class="no-sort">Fees Type</th>
+										<th class="no-sort">Fees Type</th>
+										<th class="no-sort">Amount</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for fm in fees_masters %}
+									<tr>
+										<td>
+											<label class="checkboxs">
+												<input type="checkbox" name="fee_items" value="{{ fm.pk }}">
+												<span class="checkmarks"></span>
+											</label>
+										</td>
+										<td>{{ fm.fees_type.name|default:"-" }}</td>
+										<td>{{ fm.fees_group.name|default:"-" }}</td>
+										<td>{{ fm.amount }}</td>
+									</tr>
+									{% empty %}
+									<tr>
+										<td colspan="4" class="text-center text-muted py-3">No fees available.</td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="modal-card-table">
+						<div class="modal-table-head">
+							<h4>Student Details</h4>
+						</div>
+						<div class="table-responsive custom-table no-datatable_length">
+							<table class="table datanew" id="edit-student-table">
+								<thead class="thead-light">
+									<tr>
+										<th class="no-sort">
+											<label class="checkboxs"><input type="checkbox"
+													id="edit_select_all_students"><span
+													class="checkmarks"></span></label>
+										</th>
+										<th class="no-sort">Admission Number</th>
+										<th class="no-sort">Student</th>
+										<th class="no-sort">Class</th>
+										<th class="no-sort">Section</th>
+										<th class="no-sort">Gender</th>
+										<th class="no-sort">Student Category</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for student in students %}
+									<tr>
+										<td>
+											<label class="checkboxs">
+												<input type="checkbox" name="student_items" value="{{ student.pk }}">
+												<span class="checkmarks"></span>
+											</label>
+										</td>
+										<td><a href="#" class="text-primary">{{ student.admission_no }}</a></td>
+										<td>
+											<div class="d-flex align-items-center">
+												<a href="{% url 'people:student-details' student.pk %}"
+													class="avatar avatar-md"><img
+														src="{% if student.profile_image %}{{ student.profile_image.url }}{% else %}{% static 'assets/img/students/student-01.jpg' %}{% endif %}"
+														class="img-fluid rounded-circle" alt="img"></a>
+												<div class="ms-2">
+													<p class="text-dark mb-0"><a
+															href="{% url 'people:student-details' student.pk %}">{{ student.name }}</a></p>
+												</div>
+											</div>
+										</td>
+										<td>{{ student.school_class.name|default:"-" }}</td>
+										<td>{{ student.section.name|default:"-" }}</td>
+										<td>{{ student.get_gender_display }}</td>
+										<td>{{ student.category|default:"-" }}</td>
+									</tr>
+									{% empty %}
+									<tr>
+										<td colspan="7" class="text-center text-muted py-3">No students found.</td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="student-pomote-note d-flex mb-0">
+						<span class="info-icon"><i class="ti ti-info-circle"></i></span>
+						<p id="edit-assign-count">Selected 0 Fees Type, 0 Students</p>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit Fees Assign -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+	var ASSIGN_STUDENT_DEFAULT_IMG = "{% static 'assets/img/students/student-01.jpg' %}";
+
+	function escapeHtml(value) {
+		var div = document.createElement("div");
+		div.textContent = value == null ? "" : String(value);
+		return div.innerHTML;
+	}
+
+	var assignSelections = {
+		add: { fees: {}, students: {} },
+		edit: { fees: {}, students: {} }
+	};
+
+	function recordAssignSelections(modalPrefix) {
+		var $modal = $('#' + modalPrefix + '_fees_assign');
+		var feesSel = {};
+		$modal.find('input[name="fee_items"]:checked').each(function () { feesSel[this.value] = true; });
+		var studentsSel = {};
+		$modal.find('input[name="student_items"]:checked').each(function () { studentsSel[this.value] = true; });
+		assignSelections[modalPrefix].fees = feesSel;
+		assignSelections[modalPrefix].students = studentsSel;
+	}
+
+	function getRowCheckboxes() {
+		if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+			var nodes = $('.datatable').DataTable().rows({ search: 'applied' }).nodes();
+			var $nodes = (nodes && nodes.to$) ? nodes.to$() : $(nodes);
+			return $nodes.find('input[type="checkbox"][name="selected_items"]');
+		}
+		return $('table.datatable tbody input[type="checkbox"][name="selected_items"]');
+	}
+
+	function bulkDeleteSelected() {
+		var checked = getRowCheckboxes().filter(':checked');
+		if (checked.length === 0) {
+			alert("Please select at least one item to delete.");
+			return;
+		}
+		if (!confirm("Are you sure you want to delete " + checked.length + " selected item(s)?")) {
+			return;
+		}
+		var container = document.getElementById('bulk-delete-items');
+		container.innerHTML = '';
+		checked.each(function () {
+			var input = document.createElement('input');
+			input.type = 'hidden';
+			input.name = 'selected_items';
+			input.value = this.value;
+			container.appendChild(input);
+		});
+		document.getElementById('bulk-delete-form').submit();
+	}
+
+	function toggleBulkDeleteBtn() {
+		var checked = getRowCheckboxes().filter(':checked');
+		var btn = document.getElementById('bulk-delete-btn');
+		if (checked.length > 0) {
+			btn.classList.remove('d-none');
+		} else {
+			btn.classList.add('d-none');
+		}
+	}
+
+	function getFeesAssignData() {
+		var headers = ["S. No", "Fees Group", "Fees Type", "Class", "Section", "Amount ($)", "Gender", "Category"];
+		var data = [];
+
+		function stripHtml(html) {
+			var div = document.createElement("div");
+			div.innerHTML = html;
+			return (div.textContent || div.innerText || "").trim();
+		}
+
+		function isBlankRow(row) {
+			for (var k = 0; k < row.length; k++) {
+				if (row[k] && row[k].toString().trim() !== "") return false;
+			}
+			return true;
+		}
+
+		function isPlaceholderRow(row) {
+			for (var k = 0; k < row.length; k++) {
+				if (row[k] && /no\s+fees\s+assigned/i.test(row[k])) return true;
+			}
+			return false;
+		}
+
+		if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+			var table = $('.datatable').DataTable();
+			table.rows({ search: 'applied' }).every(function () {
+				var rowData = this.data();
+				var row = [];
+				for (var i = 1; i < rowData.length - 1; i++) {
+					row.push(stripHtml(rowData[i]));
+				}
+				if (!isBlankRow(row) && !isPlaceholderRow(row)) data.push(row);
+			});
+		} else {
+			var rows = document.querySelectorAll("table.datatable tbody tr");
+			rows.forEach(function (tr) {
+				var cols = tr.querySelectorAll("td");
+				if (cols.length > 1) {
+					var row = [];
+					for (var j = 1; j < cols.length - 1; j++) {
+						row.push((cols[j].innerText || cols[j].textContent || "").trim());
+					}
+					if (!isBlankRow(row) && !isPlaceholderRow(row)) data.push(row);
+				}
+			});
+		}
+		return {
+			headers: headers,
+			rows: data,
+			reportTitle: "Fees Assign Report",
+			schoolName: "{{ school_name|default:'Global International'|escapejs }}"
+		};
+	}
+
+	function exportToExcel() {
+		var data = getFeesAssignData();
+		if (data.rows.length === 0) {
+			alert("No data available to export.");
+			return;
+		}
+		var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+			'<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fees Assign</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>' +
+			'<body><table border="1"><thead><tr>';
+		data.headers.forEach(function (h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+		html += '</tr></thead><tbody>';
+		data.rows.forEach(function (row) {
+			html += '<tr>';
+			row.forEach(function (val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+			html += '</tr>';
+		});
+		html += '</tbody></table></body></html>';
+		var blob = new Blob(["\uFEFF" + html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+		var downloadLink = document.createElement("a");
+		downloadLink.download = "fees_assign_" + new Date().toISOString().slice(0, 10) + ".xls";
+		downloadLink.href = window.URL.createObjectURL(blob);
+		downloadLink.style.display = "none";
+		document.body.appendChild(downloadLink);
+		downloadLink.click();
+		document.body.removeChild(downloadLink);
+	}
+
+	function printOrExportPDF() {
+		var data = getFeesAssignData();
+		if (data.rows.length === 0) {
+			alert("No data available to print.");
+			return;
+		}
+		var printWindow = null;
+		try {
+			printWindow = window.open("", "_blank");
+		} catch (e) {
+			printWindow = null;
+		}
+
+		var logoUrl = window.location.origin + "{% static 'assets/img/logo-small.svg' %}";
+
+		var html = '<html><head><title>' + escapeHtml(data.reportTitle) + '</title>' +
+			'<style>' +
+			'@page{size:A4 landscape;margin:15mm;}' +
+			'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+			'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+			'.header-container{text-align:center;margin-bottom:40px;}' +
+			'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+			'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+			'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+			'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+			'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+			'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+			'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+			'tr:nth-child(even){background-color:#f8fafc;}' +
+			'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+			'@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}' +
+			'</style></head><body>' +
+			'<div class="header-container">' +
+			'<div class="logo-section">' +
+			'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+			'<span class="logo-text">PreSkool</span>' +
+			'</div>' +
+			'<div class="report-title">' + escapeHtml(data.reportTitle) + '</div>' +
+			'<div class="report-meta">' + escapeHtml(data.schoolName) + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+			'</div>' +
+			'<table><thead><tr>';
+
+		data.headers.forEach(function (h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+		html += '</tr></thead><tbody>';
+		data.rows.forEach(function (row) {
+			html += '<tr>';
+			row.forEach(function (val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+			html += '</tr>';
+		});
+		html += '</tbody></table>' +
+			'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+			'<script>window.onload=function(){window.focus();if(window.top===window.self){window.onafterprint=function(){window.close();};}window.print();};<\/script>' +
+			'</body></html>';
+
+		if (printWindow) {
+			printWindow.document.write(html);
+			printWindow.document.close();
+			return;
+		}
+
+		var iframe = document.getElementById('fees-assign-print-frame');
+		if (!iframe) {
+			iframe = document.createElement('iframe');
+			iframe.id = 'fees-assign-print-frame';
+			iframe.style.position = 'fixed';
+			iframe.style.right = '0';
+			iframe.style.bottom = '0';
+			iframe.style.width = '0';
+			iframe.style.height = '0';
+			iframe.style.border = '0';
+			iframe.style.visibility = 'hidden';
+			document.body.appendChild(iframe);
+		}
+		iframe.srcdoc = html;
+		iframe.onload = function () {
+			try {
+				iframe.contentWindow.focus();
+				iframe.contentWindow.print();
+			} catch (e) {
+				alert("Popup blocked. Please allow pop-ups for this site to print the report.");
+			}
+		};
+	}
+
+	function destroyTable(el) {
+		if (el && window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable($(el))) {
+			$(el).DataTable().destroy();
+		}
+	}
+
+	function initModalTable(el) {
+		if (!el || !window.jQuery || !$.fn.DataTable) return;
+		$(el).DataTable({
+			"bFilter": true,
+			"ordering": true,
+			"info": false,
+			"paging": false,
+			"language": {
+				search: ' ',
+				sLengthMenu: '_MENU_',
+				searchPlaceholder: "Search",
+				info: "_START_ - _END_ of _TOTAL_ items",
+				paginate: { next: 'Next', previous: 'Prev' }
+			}
+		});
+	}
+
+	function renderAssignFeesTable(modalPrefix, fees) {
+		destroyTable(document.getElementById(modalPrefix + '-fees-type-table'));
+		var tbody = document.getElementById(modalPrefix + '-fees-type-table').getElementsByTagName('tbody')[0];
+		var html = '';
+		fees.forEach(function (f) {
+			var checked = assignSelections[modalPrefix].fees[f.id] ? ' checked' : '';
+			html += '<tr>' +
+				'<td><label class="checkboxs"><input type="checkbox" name="fee_items" value="' + f.id + '"' + checked + '><span class="checkmarks"></span></label></td>' +
+				'<td>' + escapeHtml(f.name) + '</td>' +
+				'<td>' + escapeHtml(f.group) + '</td>' +
+				'<td>' + escapeHtml(f.amount) + '</td></tr>';
+		});
+		if (fees.length === 0) {
+			html = '<tr><td colspan="4" class="text-center text-muted py-3">No fees found.</td></tr>';
+		}
+		tbody.innerHTML = html;
+		initModalTable(document.getElementById(modalPrefix + '-fees-type-table'));
+		bindAssignCheckboxCounts(modalPrefix);
+	}
+
+	function renderAssignStudentTable(modalPrefix, students) {
+		destroyTable(document.getElementById(modalPrefix + '-student-table'));
+		var tbody = document.getElementById(modalPrefix + '-student-table').getElementsByTagName('tbody')[0];
+		var html = '';
+		students.forEach(function (s) {
+			var img = s.image || ASSIGN_STUDENT_DEFAULT_IMG;
+			var checked = assignSelections[modalPrefix].students[s.id] ? ' checked' : '';
+			html += '<tr>' +
+				'<td><label class="checkboxs"><input type="checkbox" name="student_items" value="' + s.id + '"' + checked + '><span class="checkmarks"></span></label></td>' +
+				'<td><a href="#" class="text-primary">' + escapeHtml(s.admission_no) + '</a></td>' +
+				'<td><div class="d-flex align-items-center"><a href="#" class="avatar avatar-md"><img src="' + img + '" class="img-fluid rounded-circle" alt="img"></a>' +
+				'<div class="ms-2"><p class="text-dark mb-0"><a href="#">' + escapeHtml(s.name) + '</a></p></div></div></td>' +
+				'<td>' + escapeHtml(s['class']) + '</td>' +
+				'<td>' + escapeHtml(s.section) + '</td>' +
+				'<td>' + escapeHtml(s.gender) + '</td>' +
+				'<td>' + escapeHtml(s.category) + '</td></tr>';
+		});
+		if (students.length === 0) {
+			html = '<tr><td colspan="7" class="text-center text-muted py-3">No students found.</td></tr>';
+		}
+		tbody.innerHTML = html;
+		initModalTable(document.getElementById(modalPrefix + '-student-table'));
+		bindAssignCheckboxCounts(modalPrefix);
+	}
+
+	function bindAssignCheckboxCounts(modalPrefix) {
+		var $modal = $('#' + modalPrefix + '_fees_assign');
+		var $fee = $modal.find('input[name="fee_items"]');
+		var $stu = $modal.find('input[name="student_items"]');
+		var $count = $('#' + modalPrefix + '-assign-count');
+		function upd() {
+			var fc = $modal.find('input[name="fee_items"]:checked').length;
+			var sc = $modal.find('input[name="student_items"]:checked').length;
+			if ($count.length) $count.text('Selected ' + fc + ' Fees Type, ' + sc + ' Students');
+		}
+		$fee.off('change').on('change', function () {
+			recordAssignSelections(modalPrefix);
+			upd();
+		});
+		$stu.off('change').on('change', function () {
+			recordAssignSelections(modalPrefix);
+			upd();
+		});
+		upd();
+	}
+
+	function bindSelectAllStudents(modalPrefix) {
+		var $modal = $('#' + modalPrefix + '_fees_assign');
+		var $all = $('#' + modalPrefix + '_select_all_students');
+		if (!$all.length) return;
+		$all.off('change').on('change', function () {
+			var checked = this.checked;
+			$modal.find('input[name="student_items"]').each(function () {
+				this.checked = checked;
+			});
+			recordAssignSelections(modalPrefix);
+			bindAssignCheckboxCounts(modalPrefix);
+		});
+	}
+
+	function collectAssignFilters(modalPrefix) {
+		var params = {};
+		$('#' + modalPrefix + '_fees_assign').find('.assign-filter-field').each(function () {
+			var name = $(this).data('field');
+			var val = $(this).val();
+			params[name] = val || '';
+		});
+		return params;
+	}
+
+	function applyAssignFilters(modalPrefix) {
+		var params = collectAssignFilters(modalPrefix);
+		$.ajax({
+			url: "{% url 'fees:fees-assign-search' %}",
+			type: 'GET',
+			data: params,
+			dataType: 'json',
+			success: function (res) {
+				if (!res.success) return;
+				renderAssignFeesTable(modalPrefix, res.fees || []);
+				renderAssignStudentTable(modalPrefix, res.students || []);
+				bindSelectAllStudents(modalPrefix);
+				$('#' + modalPrefix + '_fees_assign').find('.dropdown-menu.show').removeClass('show');
+			}
+		});
+	}
+
+	function resetAssignFilters(modalPrefix) {
+		var $modal = $('#' + modalPrefix + '_fees_assign');
+		$modal.find('.assign-filter-field').each(function () {
+			$(this).val('').trigger('change');
+		});
+		$.ajax({
+			url: "{% url 'fees:fees-assign-search' %}",
+			type: 'GET',
+			data: {},
+			dataType: 'json',
+			success: function (res) {
+				if (!res.success) return;
+				renderAssignFeesTable(modalPrefix, res.fees || []);
+				renderAssignStudentTable(modalPrefix, res.students || []);
+				bindSelectAllStudents(modalPrefix);
+			}
+		});
+	}
+
+	document.addEventListener('DOMContentLoaded', function () {
+
+		var selectAllEl = document.getElementById('select-all');
+		if (selectAllEl) {
+			selectAllEl.addEventListener('change', function () {
+				getRowCheckboxes().each(function () {
+					this.checked = selectAllEl.checked;
+				});
+				toggleBulkDeleteBtn();
+			});
+		}
+
+		$(document).on('change', 'table.datatable tbody input[type="checkbox"][name="selected_items"]', toggleBulkDeleteBtn);
+
+		bindAssignCheckboxCounts('add');
+		bindAssignCheckboxCounts('edit');
+		bindSelectAllStudents('add');
+		bindSelectAllStudents('edit');
+
+		document.querySelectorAll('.edit-assign-btn').forEach(function (btn) {
+			btn.addEventListener('click', function (e) {
+				e.preventDefault();
+				var pk = this.dataset.pk;
+				var group = this.dataset.group || '';
+				var type = this.dataset.type || '';
+				var amount = this.dataset.amount || '';
+				var classId = this.dataset.classId || '';
+				var sectionId = this.dataset.sectionId || '';
+				var gender = this.dataset.gender || '';
+				var category = this.dataset.category || '';
+				var studentIds = (this.dataset.students || '').split(',').filter(Boolean);
+
+				document.getElementById('edit-assign-form').action = '{% url "fees:fees-assign-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+
+				var $modal = $('#edit_fees_assign');
+				$modal.find('.assign-filter-field').each(function () {
+					var field = $(this).data('field');
+					var value = '';
+					if (field === 'class_id') value = classId;
+					else if (field === 'section_id') value = sectionId;
+					else if (field === 'gender') value = gender;
+					else if (field === 'category') value = category;
+					else if (field === 'fees_group') {
+						var gv = '';
+						$(this).find('option').each(function () {
+							if ($.trim($(this).text()) === group) gv = this.value;
+						});
+						$(this).val(gv).trigger('change');
+						return;
+					}
+					else if (field === 'fees_type') {
+						var tv = '';
+						$(this).find('option').each(function () {
+							if ($.trim($(this).text()) === type) tv = this.value;
+						});
+						$(this).val(tv).trigger('change');
+						return;
+					}
+					$(this).val(value).trigger('change');
+				});
+
+				var feesSel = {};
+				$modal.find('input[name="fee_items"]').each(function () {
+					var $tr = $(this).closest('tr');
+					var tds = $tr.find('td');
+					var rowGroup = tds.length > 2 ? $.trim(tds.eq(2).text()) : '';
+					var rowType = tds.length > 1 ? $.trim(tds.eq(1).text()) : '';
+					var rowAmount = tds.length > 3 ? $.trim(tds.eq(3).text()) : '';
+					var matched = (rowGroup === group && rowType === type && rowAmount === String(amount));
+					this.checked = matched;
+					if (matched) feesSel[this.value] = true;
+				});
+				assignSelections.edit.fees = feesSel;
+
+				var studentsSel = {};
+				studentIds.forEach(function (id) { studentsSel[id] = true; });
+				assignSelections.edit.students = studentsSel;
+				$modal.find('input[name="student_items"]').each(function () {
+					this.checked = !!studentsSel[String(this.value)];
+				});
+
+				bindAssignCheckboxCounts('edit');
+			});
+		});
+
+		document.querySelectorAll('.delete-assign-btn').forEach(function (btn) {
+			btn.addEventListener('click', function (e) {
+				e.preventDefault();
+				var pk = this.dataset.pk;
+				document.getElementById('delete-assign-form').action = '{% url "fees:fees-assign-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+				document.getElementById('delete-assign-name').textContent = this.dataset.name || 'this item';
+			});
+		});
+
+		document.querySelectorAll('.modal').forEach(function (modal) {
+			modal.addEventListener('shown.bs.modal', function () {
+				$(this).find('.select').each(function () {
+					if ($(this).data('select2')) {
+						$(this).select2('destroy');
+					}
+					$(this).select2({ dropdownParent: $(this).closest('.modal'), width: '100%' });
+				});
+			});
+		});
+
+		$('#add_fees_assign').on('hidden.bs.modal', function () {
+			var form = document.getElementById('add-assign-form');
+			if (form) form.reset();
+			$('#add_fees_assign').find('input[name="fee_items"], input[name="student_items"]').prop('checked', false);
+			$('#add_fees_assign').find('.assign-filter-field').val('').trigger('change');
+			assignSelections.add.fees = {};
+			assignSelections.add.students = {};
+			bindAssignCheckboxCounts('add');
+			resetAssignFilters('add');
+		});
+
+		$('#edit_fees_assign').on('hidden.bs.modal', function () {
+			var form = document.getElementById('edit-assign-form');
+			if (form) form.reset();
+			$('#edit_fees_assign').find('input[name="fee_items"], input[name="student_items"]').prop('checked', false);
+			$('#edit_fees_assign').find('.assign-filter-field').val('').trigger('change');
+			assignSelections.edit.fees = {};
+			assignSelections.edit.students = {};
+			bindAssignCheckboxCounts('edit');
+			resetAssignFilters('edit');
+		});
+
+	});
+
+	$(window).on('load', function () {
+		['add', 'edit'].forEach(function (p) {
+			['fees-type', 'student'].forEach(function (t) {
+				var el = document.getElementById(p + '-' + t + '-table');
+				if (el && window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable($(el))) {
+					$(el).DataTable().destroy();
+				}
+				initModalTable(el);
+			});
+			bindAssignCheckboxCounts(p);
+			bindSelectAllStudents(p);
+		});
+	});
+</script>
+{% endblock extra_js %}

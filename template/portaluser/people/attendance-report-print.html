@@ -1,0 +1,133 @@
+{% load static %}
+{% load people_extras %}
+
+{# Print template for Attendance Report - accessed via people:attendance-report-export-pdf #}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Preskool</title>
+    <style>
+        @page { size: landscape; margin: 15mm; }
+        body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 30px; color: #333; background-color: #fff; }
+        body::before { content: "PRESKOOL"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 100px; font-weight: 900; color: rgba(79, 70, 229, 0.04); z-index: -1; pointer-events: none; white-space: nowrap; letter-spacing: 15px; }
+        .header-container { text-align: center; margin-bottom: 30px; }
+        .logo-section { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
+        .logo-text { font-size: 28px; font-weight: 700; color: #1e3a8a; letter-spacing: -0.5px; }
+        .report-title { font-size: 22px; font-weight: 800; color: #4f46e5; margin: 5px 0; }
+        .report-meta { font-size: 12px; color: #64748b; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: center; }
+        th { background-color: #f0f3ff; color: #4f46e5; font-weight: 600; white-space: nowrap; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        .attendance-range { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+        .bg-success { background-color: #28a745; }
+        .bg-danger { background-color: #dc3545; }
+        .bg-pending { background-color: #e67e00; }
+        .bg-dark { background-color: #343a40; }
+        .bg-info { background-color: #17a2b8; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 11px; font-weight: 600; }
+        .badge-soft-success { background-color: #d4edda; color: #155724; }
+        .badge-soft-info { background-color: #d1ecf1; color: #0c5460; }
+        .badge-soft-danger { background-color: #f8d7da; color: #721c24; }
+        .text-left { text-align: left; }
+        .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; }
+        .student-name { text-align: left; }
+        .student-name a { text-decoration: none; color: #333; }
+        .avatar-img { width: 28px; height: 28px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+        .day-num { font-weight: 600; display: block; }
+        @media print { @page { size: landscape; margin: 15mm; } body { padding: 0; margin: 0; } }
+    </style>
+</head>
+
+<body>
+    <div class="header-container">
+        <div class="logo-section">
+            <img src="{% static 'assets/img/logo-small.svg' %}" alt="Logo" style="width: 36px; height: 36px; vertical-align: middle;">
+            <span class="logo-text">PreSkool</span>
+        </div>
+        <div class="report-title">{{ title }}</div>
+        <div class="report-meta">{{ school_name }} | Generated on: {% now "d M Y" %}</div>
+    </div>
+
+    {% if students %}
+    <table>
+        <thead>
+            <tr>
+                <th>Student / Date</th>
+                <th>%</th>
+                <th>P</th>
+                <th>L</th>
+                <th>A</th>
+                <th>H</th>
+                <th>F</th>
+                {% for day in days_info %}
+                <th><span class="day-num">{{ day.day_num }}</span>{{ day.day_short }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td class="text-left">
+                    <img src="{% static 'assets/img/logo-small.svg' %}" class="avatar-img" alt="">
+                    <a href="#">{{ student.name }}</a>
+                </td>
+                {% with stats=student_stats|get_item:student.pk %}
+                <td>
+                    {% if stats.percentage >= 90 %}
+                    <span class="badge badge-soft-success">{{ stats.percentage }}</span>
+                    {% elif stats.percentage >= 50 %}
+                    <span class="badge badge-soft-info">{{ stats.percentage }}</span>
+                    {% else %}
+                    <span class="badge badge-soft-danger">{{ stats.percentage }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ stats.present }}</td>
+                <td>{{ stats.late }}</td>
+                <td>{{ stats.absent }}</td>
+                <td>{{ stats.holiday }}</td>
+                <td>{{ stats.half_day }}</td>
+                {% for day in days_info %}
+                <td>
+                    {% with status=attendance_matrix|get_item:student.pk|get_item:day.date %}
+                    {% if status == 'present' %}
+                    <span class="attendance-range bg-success"></span>
+                    {% elif status == 'late' %}
+                    <span class="attendance-range bg-pending"></span>
+                    {% elif status == 'absent' %}
+                    <span class="attendance-range bg-danger"></span>
+                    {% elif status == 'half_day' %}
+                    <span class="attendance-range bg-dark"></span>
+                    {% elif status == 'holiday' %}
+                    <span class="attendance-range bg-info"></span>
+                    {% else %}
+                    <span class="attendance-range" style="background:#e9ecef"></span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                {% endfor %}
+                {% endwith %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; padding: 40px; color: #999;">No attendance data available. Please go back, select filters and try again.</p>
+    {% endif %}
+
+    <div class="footer">
+        &copy; {% now "Y" %} PreSkool. All rights reserved.
+    </div>
+
+    <script>
+        window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+        };
+    </script>
+</body>
+
+</html>

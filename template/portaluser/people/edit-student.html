@@ -1,0 +1,993 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/plugins/bootstrap-tagsinput/bootstrap-tagsinput.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content content-two">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h4 class="mb-1">Edit Student</h4>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="{% url 'people:student-list' %}">Students</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Edit Student</li>
+					</ol>
+				</nav>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="row">
+
+			<div class="col-md-12">
+
+				<form method="post" enctype="multipart/form-data" action="{% url 'people:edit-student' student.pk %}">
+					{% csrf_token %}
+
+					<!-- Personal Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-info-square-rounded fs-16"></i>
+								</span>
+								<h4 class="text-dark">Personal Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-0">
+							<div class="row">
+								<div class="col-md-12">
+									<div class="d-flex align-items-center flex-wrap row-gap-3 mb-4">
+										<div
+											class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+											{% if student.profile_image %}
+											<img src="{{ student.profile_image.url }}" alt="Profile"
+												class="img-fluid rounded">
+											{% else %}
+											<i class="ti ti-photo-plus fs-16"></i>
+											{% endif %}
+										</div>
+										<div class="profile-upload">
+											<div class="profile-uploader d-flex align-items-center">
+												<div class="drag-upload-btn mb-3">
+													Upload
+													<input type="file" class="form-control image-sign"
+														name="profile_image" accept="image/*">
+												</div>
+												<button type="button" class="btn btn-primary mb-3">Remove</button>
+											</div>
+											<p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="row row-cols-xxl-5 row-cols-md-6">
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Academic Year</label>
+										<select class="select" name="academic_year">
+											<option value="">Select</option>
+											{% for yr in academic_years %}
+											<option value="{{ yr.pk }}" {% if student.academic_year and yr.pk == student.academic_year.pk %}selected{% endif %}>{{ yr.name }}
+											</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Admission Number</label>
+										<input type="text" class="form-control" name="admission_no"
+											value="{{ student.admission_no }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Admission Date</label>
+										<input type="date" class="form-control" name="admission_date"
+											value="{{ student.admission_date|date:'Y-m-d' }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Roll Number</label>
+										<input type="text" class="form-control" name="roll_no"
+											value="{{ student.roll_no }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Status</label>
+										<select class="select" name="status">
+											<option value="">Select</option>
+											<option value="active" {% if student.status == 'active' %}selected{% endif %}>
+												Active</option>
+											<option value="inactive" {% if student.status == 'inactive' %}selected{% endif %}>Inactive</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">First Name</label>
+										<input type="text" class="form-control" name="first_name"
+											value="{{ first_name }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Last Name</label>
+										<input type="text" class="form-control" name="last_name"
+											value="{{ last_name }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Class</label>
+										<select class="select" name="school_class" required>
+											<option value="">Select</option>
+											{% for cname in class_names %}
+												<option value="{{ cname }}" {% if student.school_class.name == cname %}selected{% endif %}>{{ cname }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Section</label>
+										<select class="select" name="section" required>
+											<option value="">Select</option>
+											{% for sname in section_names %}
+											<option value="{{ sname }}" {% if student.section.name == sname %}selected{% endif %}>{{ sname }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Gender</label>
+										<select class="select" name="gender">
+											<option value="">Select</option>
+											<option value="male" {% if student.gender == 'male' %}selected{% endif %}>Male
+											</option>
+											<option value="female" {% if student.gender == 'female' %}selected{% endif %}>
+												Female</option>
+											<option value="other" {% if student.gender == 'other' %}selected{% endif %}>
+												Other</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Date of Birth</label>
+										<input type="date" class="form-control" name="date_of_birth"
+											value="{{ student.date_of_birth|date:'Y-m-d' }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Blood Group</label>
+										<select class="select" name="blood_group">
+											<option value="">Select</option>
+											<option value="A+" {% if student.blood_group == 'A+' %}selected{% endif %}>A+
+											</option>
+											<option value="A-" {% if student.blood_group == 'A-' %}selected{% endif %}>A-
+											</option>
+											<option value="B+" {% if student.blood_group == 'B+' %}selected{% endif %}>B+
+											</option>
+											<option value="B-" {% if student.blood_group == 'B-' %}selected{% endif %}>B-
+											</option>
+											<option value="AB+" {% if student.blood_group == 'AB+' %}selected{% endif %}>
+												AB+</option>
+											<option value="AB-" {% if student.blood_group == 'AB-' %}selected{% endif %}>
+												AB-</option>
+											<option value="O+" {% if student.blood_group == 'O+' %}selected{% endif %}>O+
+											</option>
+											<option value="O-" {% if student.blood_group == 'O-' %}selected{% endif %}>O-
+											</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">House</label>
+										<select class="select" name="house">
+											<option value="">Select</option>
+											<option value="Blue" {% if student.house == 'Blue' %}selected{% endif %}>Blue
+											</option>
+											<option value="Green" {% if student.house == 'Green' %}selected{% endif %}>
+												Green</option>
+											<option value="Red" {% if student.house == 'Red' %}selected{% endif %}>Red
+											</option>
+											<option value="Yellow" {% if student.house == 'Yellow' %}selected{% endif %}>
+												Yellow</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Religion</label>
+										<select class="select" name="religion">
+											<option value="">Select</option>
+											<option value="Hindu" {% if student.religion == 'Hindu' %}selected{% endif %}>
+												Hindu</option>
+											<option value="Muslim" {% if student.religion == 'Muslim' %}selected{% endif %}>Muslim</option>
+											<option value="Christian" {% if student.religion == 'Christian' %}selected{% endif %}>Christian</option>
+											<option value="Sikh" {% if student.religion == 'Sikh' %}selected{% endif %}>
+												Sikh</option>
+											<option value="Buddhism" {% if student.religion == 'Buddhism' %}selected{% endif %}>Buddhism</option>
+											<option value="Other" {% if student.religion == 'Other' %}selected{% endif %}>
+												Other</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Category</label>
+										<select class="select" name="category">
+											<option value="">Select</option>
+											<option value="General" {% if student.category == 'General' %}selected{% endif %}>General</option>
+											<option value="OBC" {% if student.category == 'OBC' %}selected{% endif %}>OBC
+											</option>
+											<option value="SC" {% if student.category == 'SC' %}selected{% endif %}>SC
+											</option>
+											<option value="ST" {% if student.category == 'ST' %}selected{% endif %}>ST
+											</option>
+											<option value="EWS" {% if student.category == 'EWS' %}selected{% endif %}>EWS
+											</option>
+											<option value="Other" {% if student.category == 'Other' %}selected{% endif %}>
+												Other</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Primary Contact Number</label>
+										<input type="text" class="form-control" name="primary_contact_number"
+											value="{{ student.primary_contact_number }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Email Address</label>
+										<input type="email" class="form-control" name="email"
+											value="{{ student.email }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Caste</label>
+										<input type="text" class="form-control" name="caste"
+											value="{{ student.caste }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Mother Tongue</label>
+										<select class="select" name="mother_tongue">
+											<option value="">Select</option>
+											<option value="English" {% if student.mother_tongue == 'English' %}selected{% endif %}>English</option>
+											<option value="Nepali" {% if student.mother_tongue == 'Nepali' %}selected{% endif %}>Nepali</option>
+											<option value="Spanish" {% if student.mother_tongue == 'Spanish' %}selected{% endif %}>Spanish</option>
+											<option value="Hindi" {% if student.mother_tongue == 'Hindi' %}selected{% endif %}>Hindi</option>
+											<option value="Tamil" {% if student.mother_tongue == 'Tamil' %}selected{% endif %}>Tamil</option>
+											<option value="Telugu" {% if student.mother_tongue == 'Telugu' %}selected{% endif %}>Telugu</option>
+											<option value="Kannada" {% if student.mother_tongue == 'Kannada' %}selected{% endif %}>Kannada</option>
+											<option value="Malayalam" {% if student.mother_tongue == 'Malayalam' %}selected{% endif %}>Malayalam</option>
+											<option value="Marathi" {% if student.mother_tongue == 'Marathi' %}selected{% endif %}>Marathi</option>
+											<option value="Gujarati" {% if student.mother_tongue == 'Gujarati' %}selected{% endif %}>Gujarati</option>
+											<option value="Bengali" {% if student.mother_tongue == 'Bengali' %}selected{% endif %}>Bengali</option>
+											<option value="Punjabi" {% if student.mother_tongue == 'Punjabi' %}selected{% endif %}>Punjabi</option>
+											<option value="Urdu" {% if student.mother_tongue == 'Urdu' %}selected{% endif %}>Urdu</option>
+											<option value="Other" {% if student.mother_tongue == 'Other' %}selected{% endif %}>Other</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Language Known</label>
+										<input class="input-tags form-control" type="text" data-role="tagsinput"
+											name="languages_known" value="{{ student.languages_known }}">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Personal Information -->
+
+					<!-- Parents & Guardian Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-user-shield fs-16"></i>
+								</span>
+								<h4 class="text-dark">Parents & Guardian Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-0">
+							<div class="border-bottom mb-4">
+								<h5 class="mb-3">Father's Info</h5>
+								<div class="row">
+									<div class="col-md-12">
+										<div class="d-flex align-items-center flex-wrap row-gap-3 mb-4">
+											<div
+												class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+												{% if student.father_image %}
+												<img src="{{ student.father_image.url }}" alt="Father"
+													class="img-fluid rounded">
+												{% else %}
+												<i class="ti ti-photo-plus fs-16"></i>
+												{% endif %}
+											</div>
+											<div class="profile-upload">
+												<div class="profile-uploader d-flex align-items-center">
+													<div class="drag-upload-btn mb-3">
+														Upload
+														<input type="file" class="form-control image-sign"
+															name="father_image" accept="image/*">
+													</div>
+													<button type="button" class="btn btn-primary mb-3">Remove</button>
+												</div>
+												<p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+											</div>
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Father Name</label>
+											<input type="text" class="form-control" name="father_name"
+												value="{{ student.father_name }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Email</label>
+											<input type="email" class="form-control" name="father_email"
+												value="{{ student.father_email }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Phone Number</label>
+											<input type="text" class="form-control" name="father_phone"
+												value="{{ student.father_phone }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Father Occupation</label>
+											<input type="text" class="form-control" name="father_occupation"
+												value="{{ student.father_occupation }}">
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="border-bottom mb-4">
+								<h5 class="mb-3">Mother's Info</h5>
+								<div class="row">
+									<div class="col-md-12">
+										<div class="d-flex align-items-center flex-wrap row-gap-3 mb-4">
+											<div
+												class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+												{% if student.mother_image %}
+												<img src="{{ student.mother_image.url }}" alt="Mother"
+													class="img-fluid rounded">
+												{% else %}
+												<i class="ti ti-photo-plus fs-16"></i>
+												{% endif %}
+											</div>
+											<div class="profile-upload">
+												<div class="profile-uploader d-flex align-items-center">
+													<div class="drag-upload-btn mb-3">
+														Upload
+														<input type="file" class="form-control image-sign"
+															name="mother_image" accept="image/*">
+													</div>
+													<button type="button" class="btn btn-primary mb-3">Remove</button>
+												</div>
+												<p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+											</div>
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Mother Name</label>
+											<input type="text" class="form-control" name="mother_name"
+												value="{{ student.mother_name }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Email</label>
+											<input type="email" class="form-control" name="mother_email"
+												value="{{ student.mother_email }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Phone Number</label>
+											<input type="text" class="form-control" name="mother_phone"
+												value="{{ student.mother_phone }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Mother Occupation</label>
+											<input type="text" class="form-control" name="mother_occupation"
+												value="{{ student.mother_occupation }}">
+										</div>
+									</div>
+								</div>
+							</div>
+							<div>
+								<h5 class="mb-3">Guardian Details</h5>
+								<div class="row">
+									<div class="col-md-12">
+										<div class="mb-2">
+											<div class="d-flex align-items-center flex-wrap">
+												<label class="form-label text-dark fw-normal me-2">If Guardian
+													Is</label>
+												<div class="form-check me-3 mb-2">
+													<input class="form-check-input" type="radio" name="guardian_is"
+														value="parents" id="parents" {% if student.guardian_is == 'parents' %}checked{% endif %}>
+													<label class="form-check-label" for="parents">Parents</label>
+												</div>
+												<div class="form-check me-3 mb-2">
+													<input class="form-check-input" type="radio" name="guardian_is"
+														value="guardian" id="guardian" {% if student.guardian_is == 'guardian' %}checked{% endif %}>
+													<label class="form-check-label" for="guardian">Guardian</label>
+												</div>
+												<div class="form-check mb-2">
+													<input class="form-check-input" type="radio" name="guardian_is"
+														value="others" id="other" {% if student.guardian_is == 'others' %}checked{% endif %}>
+													<label class="form-check-label" for="other">Others</label>
+												</div>
+											</div>
+										</div>
+										<div class="d-flex align-items-center flex-wrap row-gap-3 mb-4">
+											<div
+												class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+												{% if student.guardian_image %}
+												<img src="{{ student.guardian_image.url }}" alt="Guardian"
+													class="img-fluid rounded">
+												{% else %}
+												<i class="ti ti-photo-plus fs-16"></i>
+												{% endif %}
+											</div>
+											<div class="profile-upload">
+												<div class="profile-uploader d-flex align-items-center">
+													<div class="drag-upload-btn mb-3">
+														Upload
+														<input type="file" class="form-control image-sign"
+															name="guardian_image" accept="image/*">
+													</div>
+													<button type="button" class="btn btn-primary mb-3">Remove</button>
+												</div>
+												<p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+											</div>
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Guardian Name</label>
+											<input type="text" class="form-control" name="guardian_name"
+												value="{{ student.guardian_name }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Guardian Relation</label>
+											<input type="text" class="form-control" name="guardian_relation"
+												value="{{ student.guardian_relation }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Phone Number</label>
+											<input type="text" class="form-control" name="guardian_phone"
+												value="{{ student.guardian_phone }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Email</label>
+											<input type="email" class="form-control" name="guardian_email"
+												value="{{ student.guardian_email }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Occupation</label>
+											<input type="text" class="form-control" name="guardian_occupation"
+												value="{{ student.guardian_occupation }}">
+										</div>
+									</div>
+									<div class="col-lg-3 col-md-6">
+										<div class="mb-4">
+											<label class="form-label">Address</label>
+											<input type="text" class="form-control" name="guardian_address"
+												value="{{ student.guardian_address }}">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Parents & Guardian Information -->
+
+					<!-- Siblings -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-users fs-16"></i>
+								</span>
+								<h4 class="text-dark">Siblings</h4>
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="addsibling-info">
+								<div class="row">
+									<div class="col-md-12">
+										<div class="mb-2">
+											<label class="form-label">Sibling Info</label>
+											<div class="d-flex align-items-center flex-wrap">
+												<label class="form-label text-dark fw-normal me-2">Is Sibling studying
+													in same school</label>
+												<div class="form-check me-3 mb-2">
+													<input class="form-check-input" type="radio"
+														name="has_sibling_in_school" value="yes" id="sibling_yes" {% if student.has_sibling_in_school %}checked{% endif %}
+														onchange="toggleSiblingFields(true)">
+													<label class="form-check-label" for="sibling_yes">Yes</label>
+												</div>
+												<div class="form-check mb-2">
+													<input class="form-check-input" type="radio"
+														name="has_sibling_in_school" value="no" id="sibling_no" {% if not student.has_sibling_in_school %}checked{% endif %}
+														onchange="toggleSiblingFields(false)">
+													<label class="form-check-label" for="sibling_no">No</label>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div id="sibling_fields"
+										style="{% if not student.has_sibling_in_school %}display: none;{% endif %}">
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-4">
+												<label class="form-label">Name</label>
+												<input type="text" class="form-control" name="sibling_name"
+													value="{{ student.sibling_name }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-4">
+												<label class="form-label">Roll No</label>
+												<input type="text" class="form-control" name="sibling_roll_no"
+													value="{{ student.sibling_roll_no }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-4">
+												<label class="form-label">Admission No</label>
+												<input type="text" class="form-control" name="sibling_admission_no"
+													value="{{ student.sibling_admission_no }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-4">
+												<div class="d-flex align-items-center">
+													<div class="w-100">
+														<label class="form-label">Class</label>
+														<select class="select w-100" name="sibling_class">
+															<option value="">Select</option>
+															{% for cname in class_names %}
+															<option value="{{ cname }}" {% if student.sibling_class == cname %}selected{% endif %}>{{ cname }}</option>
+															{% endfor %}
+														</select>
+													</div>
+													<div>
+														<label class="form-label">&nbsp;</label>
+														<a href="javascript:void(0);" class="trash-icon ms-3"><i
+																class="ti ti-trash-x"></i></a>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="border-top pt-4">
+								<a href="javascript:void(0);"
+									class="add-sibling btn btn-primary d-inline-flex align-items-center"><i
+										class="ti ti-circle-plus me-2"></i>Add New</a>
+							</div>
+						</div>
+					</div>
+					<!-- /Siblings -->
+
+					<!-- Address -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-map fs-16"></i>
+								</span>
+								<h4 class="text-dark">Address</h4>
+							</div>
+						</div>
+						<div class="card-body pb-0">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Current Address</label>
+										<input type="text" class="form-control" name="current_address"
+											value="{{ student.current_address }}">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Permanent Address</label>
+										<input type="text" class="form-control" name="permanent_address"
+											value="{{ student.permanent_address }}">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Address -->
+
+					<!-- Transport Information -->
+					<div class="card">
+						<div class="card-header bg-light d-flex align-items-center justify-content-between">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-bus-stop fs-16"></i>
+								</span>
+								<h4 class="text-dark">Transport Information</h4>
+							</div>
+							<div class="form-check form-switch">
+								<input class="form-check-input" type="checkbox" role="switch" id="transport_switch" {% if student.route or student.vehicle_number or student.pickup_point %}checked{% endif %}>
+							</div>
+						</div>
+						<div class="card-body pb-0" id="transport_fields">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Route</label>
+										<select class="select" name="route">
+											<option value="">Select</option>
+											<option value="Route 1" {% if student.route == 'Route 1' %}selected{% endif %}>Route 1</option>
+											<option value="Route 2" {% if student.route == 'Route 2' %}selected{% endif %}>Route 2</option>
+											<option value="Route 3" {% if student.route == 'Route 3' %}selected{% endif %}>Route 3</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Vehicle Number</label>
+										<select class="select" name="vehicle_number">
+											<option value="">Select</option>
+											<option value="AM 54548" {% if student.vehicle_number == 'AM 54548' %}selected{% endif %}>AM 54548</option>
+											<option value="AM 64528" {% if student.vehicle_number == 'AM 64528' %}selected{% endif %}>AM 64528</option>
+											<option value="AM 123548" {% if student.vehicle_number == 'AM 123548' %}selected{% endif %}>AM 123548</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Pickup Point</label>
+										<select class="select" name="pickup_point">
+											<option value="">Select</option>
+											<option value="Cincinatti" {% if student.pickup_point == 'Cincinatti' %}selected{% endif %}>Cincinatti</option>
+											<option value="Illinois" {% if student.pickup_point == 'Illinois' %}selected{% endif %}>Illinois</option>
+											<option value="Morgan" {% if student.pickup_point == 'Morgan' %}selected{% endif %}>Morgan</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Transport Information -->
+
+					<!-- Hostel Information -->
+					<div class="card">
+						<div class="card-header bg-light d-flex align-items-center justify-content-between">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-building-fortress fs-16"></i>
+								</span>
+								<h4 class="text-dark">Hostel Information</h4>
+							</div>
+							<div class="form-check form-switch">
+								<input class="form-check-input" type="checkbox" role="switch" id="hostel_switch" {% if student.hostel or student.room_no %}checked{% endif %}>
+							</div>
+						</div>
+						<div class="card-body pb-0" id="hostel_fields">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Hostel</label>
+										<select class="select" name="hostel">
+											<option value="">Select</option>
+											<option value="Phoenix Residence" {% if student.hostel == 'Phoenix Residence' %}selected{% endif %}>Phoenix Residence</option>
+											<option value="Tranquil Haven" {% if student.hostel == 'Tranquil Haven' %}selected{% endif %}>Tranquil Haven</option>
+											<option value="Radiant Towers" {% if student.hostel == 'Radiant Towers' %}selected{% endif %}>Radiant Towers</option>
+											<option value="Nova Nest" {% if student.hostel == 'Nova Nest' %}selected{% endif %}>Nova Nest</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Room No</label>
+										<select class="select" name="room_no">
+											<option value="">Select</option>
+											<option value="20" {% if student.room_no == '20' %}selected{% endif %}>20
+											</option>
+											<option value="22" {% if student.room_no == '22' %}selected{% endif %}>22
+											</option>
+											<option value="24" {% if student.room_no == '24' %}selected{% endif %}>24
+											</option>
+											<option value="26" {% if student.room_no == '26' %}selected{% endif %}>26
+											</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Hostel Information -->
+
+					<!-- Documents -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-file fs-16"></i>
+								</span>
+								<h4 class="text-dark">Documents</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-6">
+									<div class="mb-2">
+										<div class="mb-3">
+											<label class="form-label mb-1">Medical Condition</label>
+											<p>Upload image size of 4MB, Accepted Format PDF</p>
+										</div>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+												<i class="ti ti-file-upload me-1"></i>{% if student.medical_document %}Change{% else %}Upload{% endif %}
+												<input type="file" class="form-control image_sign"
+													name="medical_document" accept=".pdf">
+											</div>
+											{% if student.medical_document %}
+											<p class="mb-2"><a href="{{ student.medical_document.url }}"
+													target="_blank">{{ student.medical_document.name }}</a></p>
+											{% endif %}
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-6">
+									<div class="mb-2">
+										<div class="mb-3">
+											<label class="form-label mb-1">Upload Transfer Certificate</label>
+											<p>Upload image size of 4MB, Accepted Format PDF</p>
+										</div>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="btn btn-primary drag-upload-btn mb-2">
+												<i class="ti ti-file-upload me-1"></i>{% if student.transfer_certificate %}Change{% else %}Upload Document{% endif %}
+												<input type="file" class="form-control image_sign"
+													name="transfer_certificate" accept=".pdf">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Documents -->
+
+					<!-- Medical History -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-medical-cross fs-16"></i>
+								</span>
+								<h4 class="text-dark">Medical History</h4>
+							</div>
+						</div>
+						<div class="card-body pb-0">
+							<div class="row">
+								<div class="col-md-12">
+									<div class="mb-2">
+										<label class="form-label">Medical Condition</label>
+										<div class="d-flex align-items-center flex-wrap">
+											<label class="form-label text-dark fw-normal me-2">Medical Condition of a
+												Student</label>
+											<div class="form-check me-3 mb-2">
+												<input class="form-check-input" type="radio" name="medical_condition"
+													value="good" id="cond_good" {% if student.medical_condition == 'good' %}checked{% endif %}>
+												<label class="form-check-label" for="cond_good">Good</label>
+											</div>
+											<div class="form-check me-3 mb-2">
+												<input class="form-check-input" type="radio" name="medical_condition"
+													value="bad" id="cond_bad" {% if student.medical_condition == 'bad' %}checked{% endif %}>
+												<label class="form-check-label" for="cond_bad">Bad</label>
+											</div>
+											<div class="form-check mb-2">
+												<input class="form-check-input" type="radio" name="medical_condition"
+													value="others" id="cond_others" {% if student.medical_condition == 'others' %}checked{% endif %}>
+												<label class="form-check-label" for="cond_others">Others</label>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="mb-4">
+									<label class="form-label">Allergies</label>
+									<input class="input-tags form-control" type="text" data-role="tagsinput"
+										name="allergies" value="{{ student.allergies }}">
+								</div>
+								<div class="mb-4">
+									<label class="form-label">Medications</label>
+									<input class="input-tags form-control" type="text" data-role="tagsinput"
+										name="medications" value="{{ student.medications }}">
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Medical History -->
+
+					<!-- Previous School details -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-building fs-16"></i>
+								</span>
+								<h4 class="text-dark">Previous School Details</h4>
+							</div>
+						</div>
+						<div class="card-body pb-0">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-4">
+										<label class="form-label">School Name</label>
+										<input type="text" class="form-control" name="previous_school_name"
+											value="{{ student.previous_school_name }}">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-4">
+										<label class="form-label">Address</label>
+										<input type="text" class="form-control" name="previous_school_address"
+											value="{{ student.previous_school_address }}">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Previous School details -->
+
+					<!-- Other Details -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-building-bank fs-16"></i>
+								</span>
+								<h4 class="text-dark">Other Details</h4>
+							</div>
+						</div>
+						<div class="card-body pb-0">
+							<div class="row">
+								<div class="col-md-5">
+									<div class="mb-4">
+										<label class="form-label">Bank Name</label>
+										<input type="text" class="form-control" name="bank_name"
+											value="{{ student.bank_name }}">
+									</div>
+								</div>
+								<div class="col-md-2">
+									<div class="mb-4">
+										<label class="form-label">Branch</label>
+										<input type="text" class="form-control" name="bank_branch"
+											value="{{ student.bank_branch }}">
+									</div>
+								</div>
+								<div class="col-md-5">
+									<div class="mb-4">
+										<label class="form-label">IFSC Number</label>
+										<input type="text" class="form-control" name="ifsc_number"
+											value="{{ student.ifsc_number }}">
+									</div>
+								</div>
+								<div class="col-md-12">
+									<div class="mb-4">
+										<label class="form-label">Other Information</label>
+										<textarea class="form-control" name="other_information"
+											rows="3">{{ student.other_information }}</textarea>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Other Details -->
+
+					<div class="text-end">
+						<a href="{% url 'people:student-list' %}" class="btn btn-light me-3">Cancel</a>
+						<button type="submit" class="btn btn-primary">Save Changes</button>
+					</div>
+
+				</form>
+
+			</div>
+
+		</div>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/plugins/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+<script>
+	function toggleSiblingFields(show) {
+		document.getElementById('sibling_fields').style.display = show ? 'block' : 'none';
+	}
+
+	document.addEventListener('DOMContentLoaded', function () {
+		var transportSwitch = document.getElementById('transport_switch');
+		var transportFields = document.getElementById('transport_fields');
+		if (transportSwitch && transportFields) {
+			transportSwitch.addEventListener('change', function () {
+				var inputs = transportFields.querySelectorAll('select, input');
+				inputs.forEach(function (input) {
+					input.disabled = !transportSwitch.checked;
+				});
+			});
+			var inputs = transportFields.querySelectorAll('select, input');
+			inputs.forEach(function (input) {
+				input.disabled = !transportSwitch.checked;
+			});
+		}
+
+		var hostelSwitch = document.getElementById('hostel_switch');
+		var hostelFields = document.getElementById('hostel_fields');
+		if (hostelSwitch && hostelFields) {
+			hostelSwitch.addEventListener('change', function () {
+				var inputs = hostelFields.querySelectorAll('select, input');
+				inputs.forEach(function (input) {
+					input.disabled = !hostelSwitch.checked;
+				});
+			});
+			var inputs = hostelFields.querySelectorAll('select, input');
+			inputs.forEach(function (input) {
+				input.disabled = !hostelSwitch.checked;
+			});
+		}
+	});
+</script>
+{% endblock extra_js %}

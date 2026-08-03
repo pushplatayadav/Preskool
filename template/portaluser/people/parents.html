@@ -1,0 +1,731 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="content">
+
+    {% if messages %}
+    <div class="messages-container mb-3">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Page Header -->
+    <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+      <div class="my-auto mb-2">
+        <h3 class="page-title mb-1">Parents</h3>
+        <nav>
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+              <a href="{% url 'home' %}">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+              <a href="javascript:void(0);">People</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Parents</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+        <div class="pe-1 mb-2">
+          <a href="{% url 'people:parent-list' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+            data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+            <i class="ti ti-refresh"></i>
+          </a>
+        </div>
+        <div class="pe-1 mb-2">
+          <button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printParents();"
+            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print">
+            <i class="ti ti-printer"></i>
+          </button>
+        </div>
+        <div class="dropdown me-2 mb-2">
+          <a href="javascript:void(0);"
+            class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+            data-bs-toggle="dropdown">
+            <i class="ti ti-file-export me-2"></i>Export
+          </a>
+          <ul class="dropdown-menu  dropdown-menu-end p-3">
+            <li>
+              <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportParentsPDF();"><i
+                  class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+            </li>
+            <li>
+              <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportParentsExcel();"><i
+                  class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+            </li>
+          </ul>
+        </div>
+        <div class="mb-2">
+          <a href="#" data-bs-toggle="modal" data-bs-target="#add_parent" class="btn btn-primary"><i
+              class="ti ti-square-rounded-plus me-2"></i>Add Parent</a>
+        </div>
+      </div>
+    </div>
+    <!-- /Page Header -->
+
+    <!-- Parent List -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+        <h4 class="mb-3">Parents List</h4>
+        <div class="d-flex align-items-center flex-wrap">
+          <div class="input-icon-start mb-3 me-2 position-relative">
+            <span class="icon-addon">
+              <i class="ti ti-calendar"></i>
+            </span>
+            <input type="text" class="form-control date-range bookingrange" placeholder="Select"
+              value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+          </div>
+          <div class="dropdown mb-3 me-2">
+            <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+              data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ti ti-filter me-2"></i>Filter</a>
+            <div class="dropdown-menu drop-width">
+              <form method="get" action="{% url 'people:parent-list' %}">
+                <div class="d-flex align-items-center border-bottom p-3">
+                  <h4>Filter</h4>
+                </div>
+                <div class="p-3 border-bottom pb-0">
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="mb-3">
+                        <label class="form-label">Parent</label>
+                        <select class="select" name="filter_parent">
+                          <option value="">Select</option>
+                          {% for p in parent_list %}
+                          <option value="{{ p.parent_name }}" {% if filter_parent == p.parent_name %}selected{% endif %}>{{ p.parent_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="mb-3">
+                        <label class="form-label">Child</label>
+                        <select class="select" name="filter_child">
+                          <option value="">Select</option>
+                          {% for cname in child_names %}
+                          <option value="{{ cname }}" {% if filter_child == cname %}selected{% endif %}>{{ cname }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="mb-3">
+                        <label class="form-label">Class</label>
+                        <select class="select" name="filter_class">
+                          <option value="">Select</option>
+                          {% for cname in class_names %}
+                          <option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="select" name="filter_status">
+                          <option value="">Select</option>
+                          <option value="active" {% if filter_status == "active" %}selected{% endif %}>Active</option>
+                          <option value="inactive" {% if filter_status == "inactive" %}selected{% endif %}>Inactive</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-3 d-flex align-items-center justify-content-end">
+                  <a href="{% url 'people:parent-list' %}" class="btn btn-light me-3">Reset</a>
+                  <button type="submit" class="btn btn-primary">Apply</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div class="d-flex align-items-center bg-white border rounded-2 p-1 mb-3 me-2">
+            <a href="{% url 'people:parent-list' %}" class="active btn btn-icon btn-sm me-1 primary-hover"><i
+                class="ti ti-list-tree"></i></a>
+            <a href="#" class="btn btn-icon btn-sm bg-light primary-hover"><i
+                class="ti ti-grid-dots"></i></a>
+          </div>
+          <div class="dropdown mb-3">
+            <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+              data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>
+              {% if sort == "desc" %}Z-A{% else %}A-Z{% endif %}
+            </a>
+            <ul class="dropdown-menu p-3">
+              <li>
+                <a href="{% url 'people:parent-list' %}?sort=asc{% if filter_parent %}&filter_parent={{ filter_parent }}{% endif %}{% if filter_child %}&filter_child={{ filter_child }}{% endif %}{% if filter_class %}&filter_class={{ filter_class }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+                  Ascending
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'people:parent-list' %}?sort=desc{% if filter_parent %}&filter_parent={{ filter_parent }}{% endif %}{% if filter_child %}&filter_child={{ filter_child }}{% endif %}{% if filter_class %}&filter_class={{ filter_class }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+                  Descending
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0);" class="dropdown-item rounded-1">
+                  Recently Viewed
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0);" class="dropdown-item rounded-1">
+                  Recently Added
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0 py-3">
+
+        <!-- Student List -->
+        <div class="custom-datatable-filter table-responsive">
+          <table class="table datatable">
+            <thead class="thead-light">
+              <tr>
+                <th class="no-sort">
+                  <div class="form-check form-check-md">
+                    <input class="form-check-input" type="checkbox" id="select-all">
+                  </div>
+                </th>
+                <th>ID</th>
+                <th>Parent Name</th>
+                <th>Child</th>
+                <th>Phone </th>
+                <th>Email</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for parent in parent_list %}
+              {% with child=parent.first_child %}
+              <tr>
+                <td>
+                  <div class="form-check form-check-md">
+                    <input class="form-check-input parent-checkbox" type="checkbox" value="{{ forloop.counter }}">
+                  </div>
+                </td>
+                <td><a href="javascript:void(0);" class="link-primary view-parent-btn"
+                  data-parent-name="{{ parent.parent_name }}"
+                  data-parent-email="{{ parent.parent_email }}"
+                  data-parent-phone="{{ parent.parent_phone }}"
+                  data-bs-toggle="modal" data-bs-target="#view_details">{{ parent.parent_id }}</a></td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <a href="javascript:void(0);" class="avatar avatar-md view-parent-btn"
+                      data-parent-name="{{ parent.parent_name }}"
+                      data-parent-email="{{ parent.parent_email }}"
+                      data-parent-phone="{{ parent.parent_phone }}"
+                      data-bs-toggle="modal" data-bs-target="#view_details">
+                      {% if parent.parent_image %}
+                      <img src="{{ parent.parent_image.url }}" class="img-fluid rounded-circle" alt="img">
+                      {% else %}
+                      <img src="{% static 'assets/img/parents/parent-01.jpg' %}" class="img-fluid rounded-circle" alt="img">
+                      {% endif %}
+                    </a>
+                    <div class="ms-2">
+                      <p class="text-dark mb-0"><a href="javascript:void(0);" class="view-parent-btn"
+                        data-parent-name="{{ parent.parent_name }}"
+                        data-parent-email="{{ parent.parent_email }}"
+                        data-parent-phone="{{ parent.parent_phone }}"
+                        data-bs-toggle="modal" data-bs-target="#view_details">{{ parent.parent_name }}</a></p>
+                      <span class="fs-12">Added on {{ child.created_at|date:"d M Y" }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <a href="{% url 'people:student-details' child.pk %}" class="avatar avatar-md">
+                      {% if child.profile_image %}
+                      <img src="{{ child.profile_image.url }}" class="img-fluid rounded-circle" alt="img">
+                      {% else %}
+                      <img src="{% static 'assets/img/students/student-01.jpg' %}" class="img-fluid rounded-circle" alt="img">
+                      {% endif %}
+                    </a>
+                    <div class="ms-2">
+                      <p class="text-dark mb-0"><a href="{% url 'people:student-details' child.pk %}">{{ child.name }}</a></p>
+                      <span class="fs-12">{{ child.school_class.name }}, {{ child.section.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ parent.parent_phone }}</td>
+                <td>{{ parent.parent_email }}</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown">
+                      <a href="#"
+                        class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="ti ti-dots-vertical fs-14"></i>
+                      </a>
+                      <ul class="dropdown-menu dropdown-menu-right p-3">
+                        <li>
+                          <a class="dropdown-item rounded-1 view-parent-btn" href="javascript:void(0);"
+                            data-parent-name="{{ parent.parent_name }}"
+                            data-parent-email="{{ parent.parent_email }}"
+                            data-parent-phone="{{ parent.parent_phone }}"
+                            data-bs-toggle="modal" data-bs-target="#view_details"><i class="ti ti-menu me-2"></i>View Parent</a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item rounded-1 edit-parent-btn" href="javascript:void(0);"
+                            data-parent-name="{{ parent.parent_name }}"
+                            data-parent-email="{{ parent.parent_email }}"
+                            data-parent-phone="{{ parent.parent_phone }}"
+                            {% for c in parent.children %}data-child-{{ forloop.counter }}="{{ c.pk }}"{% endfor %}
+                            data-child-count="{{ parent.children|length }}"
+                            data-bs-toggle="modal" data-bs-target="#edit_parent"><i class="ti ti-edit-circle me-2"></i>Edit</a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item rounded-1 delete-parent-btn" href="javascript:void(0);"
+                            data-parent-name="{{ parent.parent_name }}"
+                            data-bs-toggle="modal" data-bs-target="#delete-modal"><i class="ti ti-trash-x me-2"></i>Delete</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% endwith %}
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center">No parents found</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <!-- /Student List -->
+      </div>
+    </div>
+    <!-- /Students List -->
+
+  </div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Parent -->
+<div class="modal fade" id="add_parent">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Add Parent</h4>
+        <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <form action="{% url 'people:parent-list' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="add_parent" value="1">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="d-flex align-items-center upload-pic flex-wrap row-gap-3 mb-3">
+                <div
+                  class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+                  <i class="ti ti-photo-plus fs-16"></i>
+                </div>
+                <div class="profile-upload">
+                  <div class="profile-uploader d-flex align-items-center">
+                    <div class="drag-upload-btn mb-3">
+                      Upload
+                      <input type="file" class="form-control image-sign" multiple>
+                    </div>
+                    <a href="javascript:void(0);" class="btn btn-primary mb-3">Remove</a>
+                  </div>
+                  <p>Upload image size 4MB, Format JPG, PNG, SVG</p>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control" name="parent_name" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="text" class="form-control" name="parent_phone">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" name="parent_email">
+              </div>
+              <div class="mb-0">
+                <label class="form-label">Child</label>
+                <select class="select" name="child_ids" multiple required>
+                  {% for student in students %}
+                  <option value="{{ student.pk }}">{{ student.name }} ({{ student.school_class.name }}, {{ student.section.name }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+          <button type="submit" class="btn btn-primary">Add Parent</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- /Add Parent -->
+
+<!-- Edit Parent -->
+<div class="modal fade" id="edit_parent">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Edit Parent</h4>
+        <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <form action="{% url 'people:parent-list' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="edit_parent" value="1">
+        <input type="hidden" name="old_parent_name" id="edit_old_parent_name" value="">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="d-flex align-items-center upload-pic flex-wrap row-gap-3 mb-3">
+                <div
+                  class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+                  <i class="ti ti-photo-plus fs-16"></i>
+                </div>
+                <div class="profile-upload">
+                  <div class="profile-uploader d-flex align-items-center">
+                    <div class="drag-upload-btn mb-3">
+                      Upload
+                      <input type="file" class="form-control image-sign" multiple>
+                    </div>
+                    <a href="javascript:void(0);" class="btn btn-primary mb-3">Remove</a>
+                  </div>
+                  <p>Upload image size 4MB, Format JPG, PNG, SVG</p>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control" name="parent_name" id="edit_parent_name" placeholder="Enter Name">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="text" class="form-control" name="parent_phone" id="edit_parent_phone" placeholder="Enter Phone Number">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" name="parent_email" id="edit_parent_email" placeholder="Enter Email Address">
+              </div>
+              <div class="mb-0">
+                <label class="form-label">Child</label>
+                <select class="select" name="child_ids" id="edit_child_ids" multiple>
+                  {% for student in students %}
+                  <option value="{{ student.pk }}">{{ student.name }} ({{ student.school_class.name }}, {{ student.section.name }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- /Edit Parent -->
+
+<!-- View Details -->
+<div class="modal fade" id="view_details">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">View Details</h4>
+        <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <div class="modal-body mb-0" id="view_details_body">
+      </div>
+    </div>
+  </div>
+</div>
+<!-- /View Details -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form action="{% url 'people:parent-list' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="delete_parent" value="1">
+        <input type="hidden" name="parent_name" id="delete_parent_name" value="">
+        <div class="modal-body text-center">
+          <span class="delete-icon">
+            <i class="ti ti-trash-x"></i>
+          </span>
+          <h4>Confirm Deletion</h4>
+          <p>You want to delete <strong id="delete_parent_name_display"></strong>, this can't be undone once you delete.</p>
+          <div class="d-flex justify-content-center">
+            <a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+var parentData = {{ parent_list_json|safe }};
+
+function getParentsData() {
+    var headers = ["ID", "Parent Name", "Child", "Phone", "Email"];
+    var rows = [];
+    document.querySelectorAll('.datatable tbody tr').forEach(function(row) {
+        if (row.querySelector('td')) {
+            var cells = row.querySelectorAll('td');
+            var id = cells[1] ? cells[1].textContent.trim() : '';
+            var name = cells[2] ? cells[2].textContent.trim() : '';
+            var child = cells[3] ? cells[3].textContent.trim() : '';
+            var phone = cells[4] ? cells[4].textContent.trim() : '';
+            var email = cells[5] ? cells[5].textContent.trim() : '';
+            rows.push([id, name, child, phone, email]);
+        }
+    });
+    return {
+        headers: headers,
+        rows: rows,
+        reportTitle: "Parents List Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportParentsExcel() {
+    var data = getParentsData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "parents_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printParents() {
+    var data = getParentsData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    var html = '<html><head><title>' + data.reportTitle + '</title>' +
+    '<style>' +
+    '@page{size:A4 landscape;margin:15mm;}' +
+    'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+    'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+    '.header-container{text-align:center;margin-bottom:40px;}' +
+    '.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+    '.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+    '.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+    '.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+    'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+    'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+    'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+    'tr:nth-child(even){background-color:#f8fafc;}' +
+    '.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+    '@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}' +
+    '</style></head><body>' +
+    '<div class="header-container">' +
+    '<div class="logo-section">' +
+    '<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+    '<span class="logo-text">PreSkool</span>' +
+    '</div>' +
+    '<div class="report-title">' + data.reportTitle + '</div>' +
+    '<div class="report-meta">' + data.schoolName + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+    '</div>' +
+    '<table><thead><tr>';
+    data.headers.forEach(function(h) { html += '<th>' + h + '</th>'; });
+    html += '</tr></thead><tbody>';
+    data.rows.forEach(function(row) {
+        html += '<tr>';
+        row.forEach(function(val) { html += '<td>' + val + '</td>'; });
+        html += '</tr>';
+    });
+    html += '</tbody></table>' +
+    '<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+    '<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+    '</body></html>';
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+function exportParentsPDF() {
+    printParents();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    var selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.parent-checkbox').forEach(function(cb) {
+                cb.checked = selectAll.checked;
+            });
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        var viewBtn = e.target.closest('.view-parent-btn');
+        if (viewBtn) {
+            e.preventDefault();
+            var name = viewBtn.dataset.parentName;
+            var email = viewBtn.dataset.parentEmail;
+            var phone = viewBtn.dataset.parentPhone;
+            var parentInfo = null;
+            if (typeof parentData !== 'undefined') {
+                parentData.forEach(function(p) {
+                    if (p.parent_name === name) {
+                        parentInfo = p;
+                    }
+                });
+            }
+            var body = document.getElementById('view_details_body');
+            if (!body) return;
+            if (parentInfo && parentInfo.children && parentInfo.children.length > 0) {
+                var html = '<div class="parent-wrap">';
+                html += '<div class="row align-items-center">';
+                html += '<div class="col-lg-6">';
+                html += '<div class="d-flex align-items-center mb-3">';
+                html += '<span class="avatar avatar-xl me-2"><img src="{% static 'assets/img/parents/parent-01.jpg' %}" alt="img"></span>';
+                html += '<div class="parent-name">';
+                html += '<h5 class="mb-1">' + escapeHtml(name) + '</h5>';
+                html += '<p>Added on ' + (parentInfo.children[0].created_at || 'N/A') + '</p>';
+                html += '</div></div></div>';
+                html += '<div class="col-lg-6">';
+                html += '<ul class="d-flex align-items-center">';
+                html += '<li class="mb-3 me-5"><p class="mb-1">Email</p><h6 class="fw-normal">' + escapeHtml(email) + '</h6></li>';
+                html += '<li class="mb-3"><p class="mb-1">Phone</p><h6 class="fw-normal">' + escapeHtml(phone) + '</h6></li>';
+                html += '</ul></div></div></div>';
+                html += '<h5 class="mb-3">Children Details</h5>';
+                parentInfo.children.forEach(function(child) {
+                    html += '<div class="border rounded p-4 pb-1 mb-3">';
+                    html += '<div class="d-flex align-items-center justify-content-between flex-wrap pb-1 mb-3 border-bottom">';
+                    html += '<span class="link-primary mb-2">' + escapeHtml(child.admission_no) + '</span>';
+                    html += '<span class="badge badge-soft-success badge-md mb-2"><i class="ti ti-circle-filled me-2"></i>Active</span>';
+                    html += '</div>';
+                    html += '<div class="d-flex align-items-center justify-content-between flex-wrap">';
+                    html += '<div class="d-flex align-items-center mb-3">';
+                    html += '<a href="#" class="avatar"><img src="{% static 'assets/img/students/student-01.jpg' %}" class="img-fluid rounded-circle" alt="img"></a>';
+                    html += '<div class="ms-2">';
+                    html += '<p class="mb-0"><a href="{% url 'people:student-details' 0 %}'.replace('0', child.pk) + '">' + escapeHtml(child.name) + '</a></p>';
+                    html += '<span>' + escapeHtml(child.class_name) + ', ' + escapeHtml(child.section_name) + '</span>';
+                    html += '</div></div>';
+                    html += '<ul class="d-flex align-items-center flex-wrap">';
+                    html += '<li class="mb-3 me-4"><p class="mb-1">Roll No</p><h6 class="fw-normal">' + escapeHtml(child.roll_no) + '</h6></li>';
+                    html += '<li class="mb-3 me-4"><p class="mb-1">Gender</p><h6 class="fw-normal">' + escapeHtml(child.gender) + '</h6></li>';
+                    html += '<li class="mb-3"><p class="mb-1">Date of Joined</p><h6 class="fw-normal">' + escapeHtml(child.admission_date) + '</h6></li>';
+                    html += '</ul>';
+                    html += '<div class="d-flex align-items-center">';
+                    html += '<a href="#" class="btn btn-light mb-3 me-3">Add Fees</a>';
+                    html += '<a href="{% url 'people:student-details' 0 %}'.replace('0', child.pk) + '" class="btn btn-primary mb-3">View Details</a>';
+                    html += '</div></div></div>';
+                });
+                body.innerHTML = html;
+            } else {
+                body.innerHTML = '<div class="text-center py-5"><p>No details available for this parent.</p></div>';
+            }
+            var modalEl = document.getElementById('view_details');
+            if (modalEl) {
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.edit-parent-btn');
+        if (btn) {
+            e.preventDefault();
+            document.getElementById('edit_old_parent_name').value = btn.dataset.parentName;
+            document.getElementById('edit_parent_name').value = btn.dataset.parentName;
+            document.getElementById('edit_parent_phone').value = btn.dataset.parentPhone;
+            document.getElementById('edit_parent_email').value = btn.dataset.parentEmail;
+            var select = document.getElementById('edit_child_ids');
+            if (select) {
+                var options = select.options;
+                for (var i = 0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                var count = parseInt(btn.dataset.childCount) || 0;
+                for (var j = 1; j <= count; j++) {
+                    var childPk = btn.dataset['child' + j];
+                    if (childPk) {
+                        for (var k = 0; k < options.length; k++) {
+                            if (options[k].value === childPk) {
+                                options[k].selected = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            var modalEl = document.getElementById('edit_parent');
+            if (modalEl) {
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.delete-parent-btn');
+        if (btn) {
+            e.preventDefault();
+            var name = btn.dataset.parentName;
+            document.getElementById('delete_parent_name').value = name;
+            var displayEl = document.getElementById('delete_parent_name_display');
+            if (displayEl) displayEl.textContent = name;
+            var modalEl = document.getElementById('delete-modal');
+            if (modalEl) {
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    });
+
+});
+
+function escapeHtml(text) {
+    if (!text) return '-';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+</script>
+{% endblock extra_js %}

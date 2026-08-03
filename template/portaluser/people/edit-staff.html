@@ -1,0 +1,626 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+
+		<!-- Page Wrapper -->
+		<div class="page-wrapper">
+			<div class="content content-two">
+
+				{% if messages %}
+				<div class="messages-container mb-3">
+					{% for message in messages %}
+					<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+						{{ message }}
+						<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+
+				<!-- Page Header -->
+				<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+					<div class="my-auto mb-2">
+						<h3 class="mb-1">Edit Staff</h3>
+                     	<nav>
+                       		<ol class="breadcrumb mb-0">
+                          		<li class="breadcrumb-item">
+                            		<a href="{% url 'home' %}">Dashboard</a>
+                          		</li>
+                          		<li class="breadcrumb-item">HRM</li>
+                          		<li class="breadcrumb-item active" aria-current="page">Edit Staff</li>
+                        	</ol>
+                      	</nav>
+                    </div>
+				</div>
+				<!-- /Page Header -->
+
+				<div class="row">
+
+					<div class="col-md-12">
+
+						<form action="{% url 'people:edit-staff' staff_member.pk %}" method="post" enctype="multipart/form-data">
+							{% csrf_token %}
+
+							<!-- Personal Information -->
+							<div class="card">
+								<div class="card-header bg-light">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-info-square-rounded fs-16"></i>
+										</span>
+										<h4 class="text-dark">Personal Information</h4>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="add-section">
+										<div class="row">
+											<div class="col-md-12">
+												<div class="d-flex align-items-center flex-wrap row-gap-3 mb-3">
+													<div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+														{% if staff_member.profile_image %}
+														<img src="{{ staff_member.profile_image.url }}" alt="Profile" class="img-fluid rounded-circle">
+														{% else %}
+														<i class="ti ti-photo-plus fs-16"></i>
+														{% endif %}
+													</div>
+													<div class="profile-upload">
+														<div class="profile-uploader d-flex align-items-center">
+															<div class="drag-upload-btn mb-3">
+																Upload
+																<input type="file" class="form-control image-sign" name="profile_image" accept="image/*">
+															</div>
+															<a href="javascript:void(0);" class="btn btn-primary mb-3">Remove</a>
+														</div>
+														<p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="row row-cols-xxl-5 row-cols-md-6">
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">First Name <span class="text-danger">*</span></label>
+													<input type="text" class="form-control" name="first_name" value="{{ first_name }}" required>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Last Name</label>
+													<input type="text" class="form-control" name="last_name" value="{{ last_name }}">
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Role</label>
+													<select class="select" name="role">
+														<option value="">Select</option>
+														<option value="Teacher" {% if staff_member.role == 'Teacher' %}selected{% endif %}>Teacher</option>
+														<option value="Accountant" {% if staff_member.role == 'Accountant' %}selected{% endif %}>Accountant</option>
+														<option value="Librarian" {% if staff_member.role == 'Librarian' %}selected{% endif %}>Librarian</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Department</label>
+													<select class="select" name="department">
+														<option value="">Select</option>
+														<option value="Admin" {% if staff_member.department == 'Admin' %}selected{% endif %}>Admin</option>
+														<option value="Management" {% if staff_member.department == 'Management' %}selected{% endif %}>Management</option>
+														<option value="Academic" {% if staff_member.department == 'Academic' %}selected{% endif %}>Academic</option>
+														<option value="Library" {% if staff_member.department == 'Library' %}selected{% endif %}>Library</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Designation</label>
+													<select class="select" name="designation">
+														<option value="">Select</option>
+														<option value="Teacher" {% if staff_member.designation == 'Teacher' %}selected{% endif %}>Teacher</option>
+														<option value="Accountant" {% if staff_member.designation == 'Accountant' %}selected{% endif %}>Accountant</option>
+														<option value="Librarian" {% if staff_member.designation == 'Librarian' %}selected{% endif %}>Librarian</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Gender</label>
+													<select class="select" name="gender">
+														<option value="">Select</option>
+														<option value="female" {% if staff_member.gender == 'female' %}selected{% endif %}>Female</option>
+														<option value="male" {% if staff_member.gender == 'male' %}selected{% endif %}>Male</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Primary Contact Number</label>
+													<input type="text" class="form-control" name="primary_contact_number" value="{{ staff_member.primary_contact_number }}">
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Email Address</label>
+													<input type="email" class="form-control" name="email" value="{{ staff_member.email }}">
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Blood Group</label>
+													<select class="select" name="blood_group">
+														<option value="">Select</option>
+														<option value="A+" {% if staff_member.blood_group == 'A+' %}selected{% endif %}>A +ve</option>
+														<option value="A-" {% if staff_member.blood_group == 'A-' %}selected{% endif %}>A -ve</option>
+														<option value="B+" {% if staff_member.blood_group == 'B+' %}selected{% endif %}>B +ve</option>
+														<option value="B-" {% if staff_member.blood_group == 'B-' %}selected{% endif %}>B -ve</option>
+														<option value="AB+" {% if staff_member.blood_group == 'AB+' %}selected{% endif %}>AB +ve</option>
+														<option value="AB-" {% if staff_member.blood_group == 'AB-' %}selected{% endif %}>AB -ve</option>
+														<option value="O+" {% if staff_member.blood_group == 'O+' %}selected{% endif %}>O +ve</option>
+														<option value="O-" {% if staff_member.blood_group == 'O-' %}selected{% endif %}>O -ve</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Marital Status</label>
+													<select class="select" name="marital_status">
+														<option value="">Select</option>
+														<option value="single" {% if staff_member.marital_status == 'single' %}selected{% endif %}>Single</option>
+														<option value="married" {% if staff_member.marital_status == 'married' %}selected{% endif %}>Married</option>
+													</select>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Father's Name</label>
+													<input type="text" class="form-control" name="father_name" value="{{ staff_member.father_name }}">
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Mother's Name</label>
+													<input type="text" class="form-control" name="mother_name" value="{{ staff_member.mother_name }}">
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Date of Birth</label>
+													<div class="input-icon position-relative">
+														<span class="input-icon-addon">
+															<i class="ti ti-calendar"></i>
+														</span>
+														<input type="text" class="form-control datetimepicker" name="date_of_birth" placeholder="dd-mm-yyyy" value="{{ staff_member.date_of_birth|date:'d-m-Y'|default:'' }}">
+													</div>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Date of Joining</label>
+													<div class="input-icon position-relative">
+														<span class="input-icon-addon">
+															<i class="ti ti-calendar"></i>
+														</span>
+														<input type="text" class="form-control datetimepicker" name="date_of_join" placeholder="dd-mm-yyyy" value="{{ staff_member.date_of_join|date:'d-m-Y'|default:'' }}">
+													</div>
+												</div>
+											</div>
+											<div class="col-xxl col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Language Known</label>
+													<input class="input-tags form-control" type="text" data-role="tagsinput" name="languages_known" value="{{ staff_member.languages_known|default:'English' }}">
+												</div>
+											</div>
+											<div class="col-xxl-4 col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Qualification</label>
+													<input type="text" class="form-control" name="qualification" value="{{ staff_member.qualification }}">
+												</div>
+											</div>
+											<div class="col-xxl-4 col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Work Experience</label>
+													<input type="text" class="form-control" name="experience" value="{{ staff_member.experience }}">
+												</div>
+											</div>
+											<div class="col-xxl-4 col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Note</label>
+													<input type="text" class="form-control" name="notes" value="{{ staff_member.notes }}">
+												</div>
+											</div>
+											<div class="col-xxl-6 col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Address</label>
+													<input type="text" class="form-control" name="address" value="{{ staff_member.address }}">
+												</div>
+											</div>
+											<div class="col-xxl-6 col-xl-3 col-md-6">
+												<div class="mb-3">
+													<label class="form-label">Permanent Address</label>
+													<input type="text" class="form-control" name="permanent_address" value="{{ staff_member.permanent_address }}">
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Personal Information -->
+
+							<!-- Payroll -->
+							<div class="card ">
+								<div class="card-header bg-light">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-user-shield fs-16"></i>
+										</span>
+										<h4 class="text-dark">Payroll</h4>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">EPF No</label>
+												<input type="text" class="form-control" name="epf_no" value="{{ staff_member.epf_no }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Basic Salary</label>
+												<input type="text" class="form-control" name="basic_salary" value="{{ staff_member.basic_salary }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Contract Type</label>
+												<select class="select" name="contract_type">
+													<option value="">Select</option>
+													<option value="permanent" {% if staff_member.contract_type == 'permanent' %}selected{% endif %}>Permanent</option>
+													<option value="temporary" {% if staff_member.contract_type == 'temporary' %}selected{% endif %}>Temporary</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Work Shift</label>
+												<select class="select" name="work_shift">
+													<option value="">Select</option>
+													<option value="morning" {% if staff_member.work_shift == 'morning' %}selected{% endif %}>Morning</option>
+													<option value="afternoon" {% if staff_member.work_shift == 'afternoon' %}selected{% endif %}>Afternoon</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Work Location</label>
+												<input type="text" class="form-control" name="work_location" value="{{ staff_member.work_location }}">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Payroll -->
+
+							<!-- Leaves -->
+							<div class="card">
+								<div class="card-header bg-light">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-users fs-16"></i>
+										</span>
+										<h4 class="text-dark">Leaves</h4>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Medical Leaves</label>
+												<input type="text" class="form-control" name="medical_leaves" value="{{ staff_member.medical_leaves }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Casual Leaves</label>
+												<input type="text" class="form-control" name="casual_leaves" value="{{ staff_member.casual_leaves }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Maternity Leaves</label>
+												<input type="text" class="form-control" name="maternity_leaves" value="{{ staff_member.maternity_leaves }}">
+											</div>
+										</div>
+										<div class="col-lg-3 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Sick Leaves</label>
+												<input type="text" class="form-control" name="sick_leaves" value="{{ staff_member.sick_leaves }}">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Leaves -->
+
+							<!-- Bank Details -->
+							<div class="card">
+								<div class="card-header bg-light">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-users fs-16"></i>
+										</span>
+										<h4 class="text-dark">Bank Account Detail</h4>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Account Name</label>
+												<input type="text" class="form-control" name="account_name" value="{{ staff_member.account_name }}">
+											</div>
+										</div>
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Account Number</label>
+												<input type="text" class="form-control" name="account_number" value="{{ staff_member.account_number }}">
+											</div>
+										</div>
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Bank Name</label>
+												<input type="text" class="form-control" name="bank_name" value="{{ staff_member.bank_name }}">
+											</div>
+										</div>
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">IFSC Code</label>
+												<input type="text" class="form-control" name="ifsc_code" value="{{ staff_member.ifsc_code }}">
+											</div>
+										</div>
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Branch Name</label>
+												<input type="text" class="form-control" name="branch_name" value="{{ staff_member.branch_name }}">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Bank Details -->
+
+							<!-- Transport Information -->
+							<div class="card">
+								<div class="card-header bg-light d-flex align-items-center justify-content-between">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-bus-stop fs-16"></i>
+										</span>
+										<h4 class="text-dark">Transport Information</h4>
+									</div>
+									<div class="form-check form-switch">
+										<input class="form-check-input" type="checkbox" role="switch" name="transport_enabled" {% if staff_member.route %}checked{% endif %}>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Route</label>
+												<select class="select" name="route">
+													<option value="">Select</option>
+													<option value="Newyork" {% if staff_member.route == 'Newyork' %}selected{% endif %}>Newyork</option>
+													<option value="Denver" {% if staff_member.route == 'Denver' %}selected{% endif %}>Denver</option>
+													<option value="Chicago" {% if staff_member.route == 'Chicago' %}selected{% endif %}>Chicago</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Vehicle Number</label>
+												<select class="select" name="vehicle_number">
+													<option value="">Select</option>
+													<option value="AM 54548" {% if staff_member.vehicle_number == 'AM 54548' %}selected{% endif %}>AM 54548</option>
+													<option value="AM 64528" {% if staff_member.vehicle_number == 'AM 64528' %}selected{% endif %}>AM 64528</option>
+													<option value="AM 123548" {% if staff_member.vehicle_number == 'AM 123548' %}selected{% endif %}>AM 123548</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-lg-4 col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Pickup Point</label>
+												<select class="select" name="pickup_point">
+													<option value="">Select</option>
+													<option value="Cincinatti" {% if staff_member.pickup_point == 'Cincinatti' %}selected{% endif %}>Cincinatti</option>
+													<option value="Illinois" {% if staff_member.pickup_point == 'Illinois' %}selected{% endif %}>Illinois</option>
+													<option value="Morgan" {% if staff_member.pickup_point == 'Morgan' %}selected{% endif %}>Morgan</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Transport Information -->
+
+							<!-- Hostel Information -->
+							<div class="card">
+								<div class="card-header bg-light d-flex align-items-center justify-content-between">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-building-fortress fs-16"></i>
+										</span>
+										<h4 class="text-dark">Hostel Information</h4>
+									</div>
+									<div class="form-check form-switch">
+										<input class="form-check-input" type="checkbox" role="switch" name="hostel_enabled" {% if staff_member.hostel %}checked{% endif %}>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Hostel</label>
+												<select class="select" name="hostel">
+													<option value="">Select</option>
+													<option value="Phoenix Residence" {% if staff_member.hostel == 'Phoenix Residence' %}selected{% endif %}>Phoenix Residence</option>
+													<option value="Tranquil Haven" {% if staff_member.hostel == 'Tranquil Haven' %}selected{% endif %}>Tranquil Haven</option>
+													<option value="Radiant Towers" {% if staff_member.hostel == 'Radiant Towers' %}selected{% endif %}>Radiant Towers</option>
+													<option value="Nova Nest" {% if staff_member.hostel == 'Nova Nest' %}selected{% endif %}>Nova Nest</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Room No</label>
+												<select class="select" name="room_no">
+													<option value="">Select</option>
+													<option value="20" {% if staff_member.room_no == '20' %}selected{% endif %}>20</option>
+													<option value="22" {% if staff_member.room_no == '22' %}selected{% endif %}>22</option>
+													<option value="24" {% if staff_member.room_no == '24' %}selected{% endif %}>24</option>
+													<option value="26" {% if staff_member.room_no == '26' %}selected{% endif %}>26</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Hostel Information -->
+
+							<!-- Social Media Links -->
+							<div class="card">
+								<div class="card-header bg-light">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-building fs-16"></i>
+										</span>
+										<h4 class="text-dark">Social Media Links</h4>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Facebook URL</label>
+												<input type="text" class="form-control" name="facebook" value="{{ staff_member.facebook }}">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Twitter URL</label>
+												<input type="text" class="form-control" name="twitter" value="{{ staff_member.twitter }}">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Linkedin URL</label>
+												<input type="text" class="form-control" name="linkedin" value="{{ staff_member.linkedin }}">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Instagram URL</label>
+												<input type="text" class="form-control" name="instagram" value="{{ staff_member.instagram }}">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Social Media Links -->
+
+							<!-- Documents -->
+							<div class="card">
+								<div class="card-header bg-light">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-file fs-16"></i>
+										</span>
+										<h4 class="text-dark">Documents</h4>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-lg-6">
+											<div class="mb-2">
+												<div class="mb-3">
+													<label class="form-label">Upload Resume</label>
+													<p>Upload image size of 4MB, Accepted Format PDF</p>
+												</div>
+												<div class="d-flex align-items-center flex-wrap">
+													<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+														<i class="ti ti-file-upload me-1"></i>Change
+														<input type="file" class="form-control image_sign" name="resume" accept=".pdf,.doc,.docx">
+													</div>
+													{% if staff_member.resume %}
+													<p class="mb-2">{{ staff_member.resume.name }}</p>
+													{% else %}
+													<p class="mb-2">No file uploaded</p>
+													{% endif %}
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6">
+											<div class="mb-2">
+												<div class="mb-3">
+													<label class="form-label">Upload Joining Letter</label>
+													<p>Upload image size of 4MB, Accepted Format PDF</p>
+												</div>
+												<div class="d-flex align-items-center flex-wrap">
+													<div class="btn btn-primary drag-upload-btn mb-2">
+														<i class="ti ti-file-upload me-1"></i>Upload Document
+														<input type="file" class="form-control image_sign" name="joining_letter" accept=".pdf,.doc,.docx">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Documents -->
+
+							<!-- Password -->
+							<div class="card">
+								<div class="card-header bg-light">
+									<div class="d-flex align-items-center">
+										<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+											<i class="ti ti-file fs-16"></i>
+										</span>
+										<h4 class="text-dark">Password</h4>
+									</div>
+								</div>
+								<div class="card-body pb-1">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">New Password</label>
+												<input type="password" class="form-control" name="new_password">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Confirm Password</label>
+												<input type="password" class="form-control" name="confirm_password">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /Password -->
+
+							<div class="text-end">
+								<a href="{% url 'people:staff-list' %}" class="btn btn-light me-3">Cancel</a>
+								<button type="submit" class="btn btn-primary">Save Changes</button>
+							</div>
+
+						</form>
+
+					</div>
+
+				</div>
+
+			</div>
+		</div>
+		<!-- /Page Wrapper -->
+
+{% endblock content %}

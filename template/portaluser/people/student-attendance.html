@@ -1,0 +1,689 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+{% load people_extras %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<style>
+.check-radio-group .custom-radio { margin-right: 10px; white-space: nowrap; }
+.check-radio-group .custom-radio:last-child { margin-right: 0; }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Student Attendance</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Report</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Student Attendance</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'people:student-attendance' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print" id="btn-print" onclick="printAttendanceReport();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-pdf"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-excel"><i class="ti ti-file-type-xls me-1"></i>Export as Excel</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Student List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Student Attendance List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+						value="{% if current_academic_year %}Academic Year : {{ current_academic_year.name }}{% else %}Select{% endif %}" readonly>
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'people:student-attendance' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Class</label>
+												<select class="select" name="filter_class">
+													<option value="">Select</option>
+													{% for cname in class_names %}
+													<option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Section</label>
+												<select class="select" name="filter_section">
+													<option value="">Select</option>
+													{% for sname in section_names %}
+													<option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-0">
+												<label class="form-label">Date</label>
+												<input type="date" class="form-control" name="filter_date" value="{{ filter_date }}">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'people:student-attendance' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort != 'desc' %}active{% endif %}" data-sort="asc">Ascending</a>
+							</li>
+							<li>
+								<a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'desc' %}active{% endif %}" data-sort="desc">Descending</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+				<form method="post" action="{% url 'people:student-attendance' %}?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}" id="attendance-form">
+					{% csrf_token %}
+					<div class="custom-datatable-filter table-responsive">
+						<table class="table" id="attendance-table">
+							<thead class="thead-light">
+								<tr>
+									<th class="no-sort">
+										<div class="form-check form-check-md">
+											<input class="form-check-input" type="checkbox" id="select-all">
+										</div>
+									</th>
+									<th>Admission No</th>
+									<th>Roll No</th>
+									<th>Name</th>
+									<th>Class</th>
+									<th>Section</th>
+									<th style="min-width: 500px;">Attendance</th>
+									<th style="min-width: 200px;">Notes</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for student in students %}
+								<tr>
+									<td>
+										<div class="form-check form-check-md">
+											<input class="form-check-input" type="checkbox" name="selected_items" value="{{ student.pk }}">
+										</div>
+									</td>
+									<td><a href="{% url 'people:student-details' student.pk %}" class="link-primary">{{ student.admission_no }}</a></td>
+									<td>{{ student.roll_no|default:"-" }}</td>
+									<td>
+										<div class="d-flex align-items-center">
+											<a href="javascript:void(0);" class="avatar avatar-md">
+												{% if student.profile_image %}
+												<img src="{{ student.profile_image.url }}" class="img-fluid rounded-circle" alt="img">
+												{% else %}
+												<span class="d-inline-flex align-items-center justify-content-center w-100 h-100 bg-primary rounded-circle text-white">{{ student.name|first }}</span>
+												{% endif %}
+											</a>
+											<div class="ms-2">
+												<p class="text-dark mb-0"><a href="javascript:void(0);">{{ student.name }}</a></p>
+											</div>
+										</div>
+									</td>
+									<td>{{ student.school_class.name }}</td>
+									<td>{{ student.section.name }}</td>
+									<td>
+										<div class="d-flex align-items-center check-radio-group flex-nowrap">
+											{% for status_key, status_label in attendance_statuses %}
+											<label class="custom-radio">
+												<input type="radio" name="status_{{ student.pk }}" value="{{ status_key }}"
+												{% if attendance_status_dict|get_item:student.pk == status_key %}checked{% elif forloop.first and attendance_status_dict|get_item:student.pk == None %}checked{% endif %}>
+												<span class="checkmark"></span>
+												{{ status_label }}
+											</label>
+											{% endfor %}
+										</div>
+									</td>
+									<td>
+										<input type="text" class="form-control" name="remarks_{{ student.pk }}" placeholder="Enter notes"
+										value="{{ attendance_remarks_dict|get_item:student.pk|default:'' }}" />
+									</td>
+								</tr>
+								{% empty %}
+								<tr>
+									<td colspan="8" class="text-center text-muted py-4">
+										{% if filter_class or filter_section %}
+										No students found for the selected filters.
+										{% else %}
+										No active students found. Please add students first.
+										{% endif %}
+									</td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+					{% if students %}
+					<div class="d-flex align-items-center justify-content-between p-3 border-top">
+						<div>
+							<button type="button" class="btn btn-danger" id="bulk-delete-btn" disabled><i class="ti ti-trash me-1"></i>Delete Selected</button>
+						</div>
+						<div>
+							<button type="submit" name="mark_attendance" class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Save Attendance</button>
+						</div>
+					</div>
+					{% endif %}
+				</form>
+			</div>
+		</div>
+		<!-- /Student List -->
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="delete-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" id="bulk-delete-form">
+				{% csrf_token %}
+				<input type="hidden" name="bulk_delete" value="1">
+				<div class="modal-body text-center">
+					<span class="delete-icon"><i class="ti ti-trash-x"></i></span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete selected attendance records, this can't be undone once you delete.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+// Initialize DataTable with rows-per-page (length menu) and info display
+// This runs before the global DataTable init in script.js
+if ($('#attendance-table').length > 0 && !$.fn.DataTable.isDataTable('#attendance-table')) {
+	$('#attendance-table').DataTable({
+		"bFilter": true,
+		"ordering": true,
+		"info": true,
+		"lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+		"pageLength": 25,
+		"language": {
+			search: ' ',
+			sLengthMenu: 'Row Per Page _MENU_ Entries',
+			searchPlaceholder: "Search",
+			info: "_START_ - _END_ of _TOTAL_ entries",
+			paginate: {
+				next: ' Next',
+				previous: 'Prev '
+			}
+		}
+	});
+}
+</script>
+<script>
+function getAttendanceData() {
+	var headers = ["Admission No", "Roll No", "Name", "Class", "Section", "Attendance", "Notes"];
+	var data = [];
+	var rows = [];
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('#attendance-table')) {
+		var table = $('#attendance-table').DataTable();
+		table.rows({ search: 'applied' }).every(function() {
+			rows.push(this.node());
+		});
+	} else {
+		rows = document.querySelectorAll("#attendance-table tbody tr");
+	}
+	rows.forEach(function(tr) {
+		if (!tr.parentNode) return;
+		var cols = tr.querySelectorAll("td");
+		if (cols.length < 8) return;
+		var row = [];
+		var admLink = cols[1].querySelector("a");
+		row.push(admLink ? admLink.innerText.trim() : cols[1].innerText.trim());
+		row.push(cols[2].innerText.trim());
+		var nameLink = cols[3].querySelector(".text-dark a");
+		row.push(nameLink ? nameLink.innerText.trim() : cols[3].innerText.trim());
+		row.push(cols[4].innerText.trim());
+		row.push(cols[5].innerText.trim());
+		var checkedRadio = cols[6].querySelector('input[type="radio"]:checked');
+		if (checkedRadio) {
+			var label = checkedRadio.closest("label");
+			row.push(label ? label.innerText.trim() : checkedRadio.value);
+		} else {
+			row.push("-");
+		}
+		var notesInput = cols[7].querySelector('input');
+		row.push(notesInput ? notesInput.value.trim() : "");
+		data.push(row);
+	});
+	return {
+		headers: headers,
+		rows: data,
+		reportTitle: "Student Attendance Report",
+		schoolName: "{{ school_name|default:'Global International' }}"
+	};
+}
+
+function printAttendanceReport() {
+	var data = getAttendanceData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = window.open("", "_blank");
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+	var html = `
+	<html>
+	<head>
+		<title>` + data.reportTitle + `</title>
+		<style>
+			@page {
+				size: A4 portrait;
+				margin: 20mm;
+			}
+			body {
+				font-family: 'Inter', -apple-system, sans-serif;
+				margin: 0;
+				padding: 40px;
+				color: #333;
+				background-color: #fff;
+				position: relative;
+				min-height: 100%;
+			}
+			body::before {
+				content: "PRESKOOL";
+				position: fixed;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%) rotate(-30deg);
+				font-size: 100px;
+				font-weight: 900;
+				color: rgba(79, 70, 229, 0.04);
+				z-index: -1;
+				pointer-events: none;
+				white-space: nowrap;
+				letter-spacing: 15px;
+			}
+			.header-container {
+				text-align: center;
+				margin-bottom: 40px;
+			}
+			.logo-section {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 12px;
+				margin-bottom: 15px;
+			}
+			.logo-text {
+				font-size: 32px;
+				font-weight: 700;
+				color: #1e3a8a;
+				letter-spacing: -0.5px;
+			}
+			.report-title {
+				font-size: 26px;
+				font-weight: 800;
+				color: #4f46e5;
+				margin: 5px 0;
+			}
+			.report-meta {
+				font-size: 13px;
+				color: #64748b;
+				margin-top: 8px;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 20px;
+				font-size: 13px;
+				background: transparent;
+			}
+			th, td {
+				border: 1px solid #e2e8f0;
+				padding: 12px 16px;
+				text-align: left;
+			}
+			th {
+				background-color: #f0f3ff;
+				color: #4f46e5;
+				font-weight: 600;
+			}
+			tr:nth-child(even) {
+				background-color: #f8fafc;
+			}
+			.st-present { color: #28a745; font-weight: 600; }
+			.st-absent { color: #dc3545; font-weight: 600; }
+			.st-late { color: #e67e00; font-weight: 600; }
+			.st-half_day { color: #fd7e14; font-weight: 600; }
+			.st-holiday { color: #6f42c1; font-weight: 600; }
+			.st-none { color: #999; }
+			.footer {
+				margin-top: 60px;
+				text-align: center;
+				font-size: 12px;
+				color: #94a3b8;
+			}
+			@media print {
+				@page {
+					size: A4 portrait;
+					margin: 20mm;
+				}
+				body {
+					padding: 0;
+					margin: 0;
+					width: 210mm;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="header-container">
+			<div class="logo-section">
+				<img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+				<span class="logo-text">PreSkool</span>
+			</div>
+			<div class="report-title">` + data.reportTitle + `</div>
+			<div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+		</div>
+		<table>
+			<thead>
+				<tr>
+					` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+				</tr>
+			</thead>
+			<tbody>
+				` + data.rows.map(function(row) {
+					var statusClass = "";
+					var statusValue = row[5] ? row[5].toLowerCase().replace(/ /g, "_") : "none";
+					if (row[5] === "Present") statusClass = ' class="st-present"';
+					else if (row[5] === "Absent") statusClass = ' class="st-absent"';
+					else if (row[5] === "Late") statusClass = ' class="st-late"';
+					else if (row[5] === "Half Day") statusClass = ' class="st-half_day"';
+					else if (row[5] === "Holiday") statusClass = ' class="st-holiday"';
+					return '<tr>' + row.map(function(val, idx) {
+						if (idx === 5) return '<td' + statusClass + '>' + val + '</td>';
+						return '<td>' + val + '</td>';
+					}).join("") + '</tr>';
+				}).join("") + `
+			</tbody>
+		</table>
+		<div class="footer">
+			&copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+		</div>
+		<script>
+			window.onload = function() {
+				window.print();
+				setTimeout(function() { window.close(); }, 500);
+			};
+		<\/script>
+	</body>
+	</html>
+	`;
+	printWindow.document.write(html);
+	printWindow.document.close();
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+	// Print
+	document.getElementById('btn-print').addEventListener('click', function() {
+		printAttendanceReport();
+	});
+
+	// Export PDF - opens print-friendly page in new tab
+	document.getElementById('export-pdf').addEventListener('click', function(e) {
+		e.preventDefault();
+		var params = new URLSearchParams(window.location.search);
+		var url = '{% url "people:student-attendance-export-pdf" %}?';
+		if (params.get('filter_class')) url += 'filter_class=' + encodeURIComponent(params.get('filter_class')) + '&';
+		if (params.get('filter_section')) url += 'filter_section=' + encodeURIComponent(params.get('filter_section')) + '&';
+		if (params.get('filter_date')) url += 'filter_date=' + encodeURIComponent(params.get('filter_date')) + '&';
+		if (params.get('sort')) url += 'sort=' + encodeURIComponent(params.get('sort')) + '&';
+		window.open(url, '_blank');
+	});
+
+	// Export Excel - triggers CSV download
+	document.getElementById('export-excel').addEventListener('click', function(e) {
+		e.preventDefault();
+		var params = new URLSearchParams(window.location.search);
+		var url = '{% url "people:student-attendance-export-excel" %}?';
+		if (params.get('filter_class')) url += 'filter_class=' + encodeURIComponent(params.get('filter_class')) + '&';
+		if (params.get('filter_section')) url += 'filter_section=' + encodeURIComponent(params.get('filter_section')) + '&';
+		if (params.get('filter_date')) url += 'filter_date=' + encodeURIComponent(params.get('filter_date')) + '&';
+		if (params.get('sort')) url += 'sort=' + encodeURIComponent(params.get('sort')) + '&';
+		window.location.href = url;
+	});
+
+	// Sort
+	document.querySelectorAll('.sort-option').forEach(function(opt) {
+		opt.addEventListener('click', function(e) {
+			e.preventDefault();
+			var sortVal = this.getAttribute('data-sort');
+			var url = new URL(window.location.href);
+			url.searchParams.set('sort', sortVal);
+			window.location.href = url.toString();
+		});
+	});
+
+	// AJAX save on radio change
+	document.querySelectorAll('#attendance-table tbody input[type="radio"]').forEach(function(radio) {
+		radio.addEventListener('change', function() {
+			var studentId = this.name.replace('status_', '');
+			var status = this.value;
+			var remarksInput = document.querySelector('input[name="remarks_' + studentId + '"]');
+			var remarks = remarksInput ? remarksInput.value : '';
+			var filterDate = new URLSearchParams(window.location.search).get('filter_date');
+			if (!filterDate) {
+				filterDate = '{{ filter_date|default:"" }}';
+			}
+
+			var row = this.closest('tr');
+			var indicator = row.querySelector('.save-indicator');
+			if (!indicator) {
+				indicator = document.createElement('span');
+				indicator.className = 'save-indicator ms-2 badge bg-soft-success text-success fs-10';
+				indicator.style.display = 'none';
+				var td = row.querySelector('td:last-child');
+				if (td) td.appendChild(indicator);
+			}
+
+			indicator.textContent = 'Saving...';
+			indicator.className = 'save-indicator ms-2 badge bg-soft-warning text-warning fs-10';
+			indicator.style.display = 'inline-block';
+
+			fetch('{% url "people:student-attendance-save-ajax" %}', {
+				method: 'POST',
+				headers: {
+					'X-CSRFToken': '{{ csrf_token }}',
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: 'student_id=' + encodeURIComponent(studentId) + '&status=' + encodeURIComponent(status) + '&remarks=' + encodeURIComponent(remarks) + '&attendance_date=' + encodeURIComponent(filterDate),
+			})
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				if (data.success) {
+					indicator.textContent = 'Saved';
+					indicator.className = 'save-indicator ms-2 badge bg-soft-success text-success fs-10';
+					setTimeout(function() { indicator.style.display = 'none'; }, 2000);
+				} else {
+					indicator.textContent = 'Error';
+					indicator.className = 'save-indicator ms-2 badge bg-soft-danger text-danger fs-10';
+				}
+			})
+			.catch(function() {
+				indicator.textContent = 'Failed';
+				indicator.className = 'save-indicator ms-2 badge bg-soft-danger text-danger fs-10';
+			});
+		});
+	});
+
+	// AJAX save on notes blur
+	document.querySelectorAll('#attendance-table tbody input[name^="remarks_"]').forEach(function(input) {
+		input.addEventListener('blur', function() {
+			var studentId = this.name.replace('remarks_', '');
+			var remarks = this.value;
+			var row = this.closest('tr');
+			var checkedRadio = row.querySelector('input[type="radio"]:checked');
+			if (!checkedRadio) return;
+			var status = checkedRadio.value;
+
+			var indicator = row.querySelector('.save-indicator');
+			if (!indicator) {
+				indicator = document.createElement('span');
+				indicator.className = 'save-indicator ms-2 badge bg-soft-success text-success fs-10';
+				indicator.style.display = 'none';
+				var td = row.querySelector('td:last-child');
+				if (td) td.appendChild(indicator);
+			}
+
+			indicator.textContent = 'Saving...';
+			indicator.className = 'save-indicator ms-2 badge bg-soft-warning text-warning fs-10';
+			indicator.style.display = 'inline-block';
+
+			var filterDate = new URLSearchParams(window.location.search).get('filter_date');
+			if (!filterDate) {
+				filterDate = '{{ filter_date|default:"" }}';
+			}
+
+			fetch('{% url "people:student-attendance-save-ajax" %}', {
+				method: 'POST',
+				headers: {
+					'X-CSRFToken': '{{ csrf_token }}',
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: 'student_id=' + encodeURIComponent(studentId) + '&status=' + encodeURIComponent(status) + '&remarks=' + encodeURIComponent(remarks) + '&attendance_date=' + encodeURIComponent(filterDate),
+			})
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				if (data.success) {
+					indicator.textContent = 'Saved';
+					indicator.className = 'save-indicator ms-2 badge bg-soft-success text-success fs-10';
+					setTimeout(function() { indicator.style.display = 'none'; }, 2000);
+				} else {
+					indicator.textContent = 'Error';
+					indicator.className = 'save-indicator ms-2 badge bg-soft-danger text-danger fs-10';
+				}
+			})
+			.catch(function() {
+				indicator.textContent = 'Failed';
+				indicator.className = 'save-indicator ms-2 badge bg-soft-danger text-danger fs-10';
+			});
+		});
+	});
+
+	// Select all checkbox
+	var selectAll = document.getElementById('select-all');
+	if (selectAll) {
+		selectAll.addEventListener('change', function() {
+			var checkboxes = document.querySelectorAll('#attendance-table tbody .form-check-input');
+			checkboxes.forEach(function(cb) {
+				cb.checked = selectAll.checked;
+			});
+			updateBulkDeleteBtn();
+		});
+	}
+
+	document.querySelectorAll('#attendance-table tbody .form-check-input').forEach(function(cb) {
+		cb.addEventListener('change', updateBulkDeleteBtn);
+	});
+
+	function updateBulkDeleteBtn() {
+		var checked = document.querySelectorAll('#attendance-table tbody .form-check-input:checked');
+		var btn = document.getElementById('bulk-delete-btn');
+		if (btn) btn.disabled = checked.length === 0;
+	}
+
+	var bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+	if (bulkDeleteBtn) {
+		bulkDeleteBtn.addEventListener('click', function() {
+			var checked = document.querySelectorAll('#attendance-table tbody .form-check-input:checked');
+			if (checked.length === 0) return;
+			var form = document.getElementById('bulk-delete-form');
+			form.innerHTML = '{% csrf_token %}<input type="hidden" name="bulk_delete" value="1">';
+			checked.forEach(function(cb) {
+				var clone = cb.cloneNode(true);
+				clone.type = 'hidden';
+				clone.name = 'selected_items';
+				form.appendChild(clone);
+			});
+			var modal = new bootstrap.Modal(document.getElementById('delete-modal'));
+			modal.show();
+		});
+	}
+
+});
+</script>
+{% endblock extra_js %}

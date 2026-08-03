@@ -1,0 +1,199 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+                    <div class="my-auto mb-2">
+                        <h3 class="page-title mb-1">Student Exam & Results</h3>
+                        <nav>
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="javascript:void(0);">Student</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Exam & Results</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <!-- Student Information -->
+            <div class="col-xxl-3 col-xl-4 theiaStickySidebar">
+                <div class="card border-white">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center flex-wrap row-gap-3">
+                            <div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+                                {% if student.profile_image %}
+                                <img src="{{ student.profile_image.url }}" class="img-fluid" alt="img">
+                                {% else %}
+                                <img src="{% static 'assets/img/students/student-01.jpg' %}" class="img-fluid" alt="img">
+                                {% endif %}
+                            </div>
+                            <div class="overflow-hidden">
+                                <span class="badge badge-soft-success d-inline-flex align-items-center mb-1"><i class="ti ti-circle-filled fs-5 me-1"></i>Active</span>
+                                <h5 class="mb-1 text-truncate">{{ student.name }}</h5>
+                                <p class="text-primary">{{ student.admission_no }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-3">Basic Information</h5>
+                        <dl class="row mb-0">
+                            <dt class="col-6 fw-medium text-dark mb-3">Roll No</dt>
+                            <dd class="col-6 mb-3">{{ student.roll_no|default:"-" }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Class</dt>
+                            <dd class="col-6 mb-3">{{ student.school_class.name }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Section</dt>
+                            <dd class="col-6 mb-3">{{ student.section.name }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Gender</dt>
+                            <dd class="col-6 mb-3">{{ student.get_gender_display }}</dd>
+                            {% if student.date_of_birth %}
+                            <dt class="col-6 fw-medium text-dark mb-3">Date Of Birth</dt>
+                            <dd class="col-6 mb-3">{{ student.date_of_birth|date:"d M Y" }}</dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+
+                {% if siblings %}
+                <div class="card border-white">
+                    <div class="card-body">
+                        <h5 class="mb-3">Siblings</h5>
+                        {% for sibling in siblings %}
+                        <div class="d-flex align-items-center bg-light-300 rounded p-3 mb-3">
+                            <span class="avatar avatar-lg">
+                                {% if sibling.profile_image %}
+                                <img src="{{ sibling.profile_image.url }}" class="img-fluid rounded" alt="img">
+                                {% else %}
+                                <img src="{% static 'assets/img/students/student-06.jpg' %}" class="img-fluid rounded" alt="img">
+                                {% endif %}
+                            </span>
+                            <div class="ms-2">
+                                <h5 class="fs-14">{{ sibling.name }}</h5>
+                                <p>{{ sibling.school_class.name }}, {{ sibling.section.name }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <!-- /Student Information -->
+
+            <div class="col-xxl-9 col-xl-8">
+                <div class="row">
+                    <div class="col-md-12">
+                        <ul class="nav nav-tabs nav-tabs-bottom mb-4">
+                            <li><a href="student-details.html" class="nav-link"><i class="ti ti-school me-2"></i>Student Details</a></li>
+                            <li><a href="student-time-table.html" class="nav-link"><i class="ti ti-table-options me-2"></i>Time Table</a></li>
+                            <li><a href="student-leaves.html" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a></li>
+                            <li><a href="student-fees.html" class="nav-link"><i class="ti ti-report-money me-2"></i>Fees</a></li>
+                            <li><a href="{% url 'exam:student-result' student.pk %}" class="nav-link active"><i class="ti ti-bookmark-edit me-2"></i>Exam & Results</a></li>
+                            <li><a href="student-library.html" class="nav-link"><i class="ti ti-books me-2"></i>Library</a></li>
+                        </ul>
+
+                        <!-- Overall Summary -->
+                        <div class="row mb-4">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card flex-fill">
+                                    <div class="card-body">
+                                        <span class="bg-primary badge badge-sm mb-2">Total Exams</span>
+                                        <p class="text-dark fw-semibold">{{ results|length }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card flex-fill">
+                                    <div class="card-body">
+                                        <span class="bg-success badge badge-sm mb-2">Passed</span>
+                                        <p class="text-dark fw-semibold">{{ passed_exams }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card flex-fill">
+                                    <div class="card-body">
+                                        <span class="bg-danger badge badge-sm mb-2">Failed</span>
+										<p class="text-dark fw-semibold">{{ failed_exams }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card flex-fill">
+                                    <div class="card-body">
+                                        <span class="bg-warning badge badge-sm mb-2">Overall %</span>
+                                        <p class="text-dark fw-semibold">{{ overall_percentage }}%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">Exam Results</h4>
+                            </div>
+                            <div class="card-body p-0 py-3">
+                                <div class="table-responsive">
+                                    <table class="table datatable">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th>Exam Name</th>
+                                                <th>Subject</th>
+                                                <th>Date</th>
+                                                <th>Total Marks</th>
+                                                <th>Marks Obtained</th>
+                                                <th>Grade</th>
+                                                <th>Percentage</th>
+                                                <th>Result</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for result in results %}
+                                            <tr>
+                                                <td>{{ result.exam.name }}</td>
+                                                <td>{{ result.exam.subject.name }}</td>
+                                                <td>{{ result.exam.exam_date|date:"d M Y" }}</td>
+                                                <td>{{ result.exam.total_marks }}</td>
+                                                <td>{{ result.marks_obtained }}</td>
+                                                <td>{% if result.grade %}{{ result.grade.name }}{% else %}-{% endif %}</td>
+                                                <td>{{ result.percentage }}%</td>
+                                                <td>
+                                                    {% if result.is_passed %}
+                                                    <span class="badge badge-soft-success d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-5 me-1"></i>Pass</span>
+                                                    {% else %}
+                                                    <span class="badge badge-soft-danger d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-5 me-1"></i>Fail</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="8" class="text-center text-muted py-4">No exam results found for this student.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+{% endblock extra_js %}

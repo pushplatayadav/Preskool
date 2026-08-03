@@ -1,0 +1,660 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/plugins/bootstrap-tagsinput/bootstrap-tagsinput.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content content-two">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="mb-1">Edit Teacher</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="{% url 'people:teacher-list' %}">Teachers</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Edit Teacher</li>
+					</ol>
+				</nav>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="row">
+
+			<div class="col-md-12">
+
+				<form method="post" enctype="multipart/form-data" action="{% url 'people:edit-teacher' teacher.pk %}">
+					{% csrf_token %}
+
+					<!-- Personal Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-info-square-rounded fs-16"></i>
+								</span>
+								<h4 class="text-dark">Personal Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-md-12">
+									<div class="d-flex align-items-center flex-wrap row-gap-3 mb-3">
+										<div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+											{% if teacher.profile_image %}
+											<img src="{{ teacher.profile_image.url }}" alt="Profile" class="img-fluid rounded">
+											{% else %}
+											<i class="ti ti-photo-plus fs-16"></i>
+											{% endif %}
+										</div>
+										<div class="profile-upload">
+											<div class="profile-uploader d-flex align-items-center">
+												<div class="drag-upload-btn mb-3">
+													Upload
+													<input type="file" name="profile_image" class="form-control image-sign" accept="image/*">
+												</div>
+												<a href="javascript:void(0);" class="btn btn-primary mb-3">Remove</a>
+											</div>
+											<p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="row row-cols-xxl-5 row-cols-md-6">
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Teacher ID</label>
+										<input type="text" name="teacher_id" class="form-control" value="{{ teacher.teacher_id }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">First Name <span class="text-danger">*</span></label>
+										<input type="text" name="first_name" class="form-control" value="{{ first_name }}" required>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Last Name</label>
+										<input type="text" name="last_name" class="form-control" value="{{ last_name }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Class</label>
+										<select class="select" name="school_class">
+											<option>Select</option>
+											{% for cname in class_names %}
+											<option value="{{ cname }}" {% if teacher.school_class and teacher.school_class.name == cname %}selected{% endif %}>{{ cname }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Subject</label>
+										<select class="select" name="subject">
+											<option>Select</option>
+											{% for subject in subjects %}
+											<option value="{{ subject.pk }}" {% if teacher.subject and teacher.subject.pk == subject.pk %}selected{% endif %}>{{ subject.name }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Gender</label>
+										<select class="select" name="gender">
+											<option>Select</option>
+											<option value="male" {% if teacher.gender == "male" %}selected{% endif %}>Male</option>
+											<option value="female" {% if teacher.gender == "female" %}selected{% endif %}>Female</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Contact Number</label>
+										<input type="text" name="phone" class="form-control" value="{{ teacher.phone }}">
+									</div>
+								</div>
+
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Email Address</label>
+										<input type="email" name="email" class="form-control" value="{{ teacher.email }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Blood Group</label>
+										<select class="select" name="blood_group">
+											<option>Select</option>
+											<option value="A+" {% if teacher.blood_group == "A+" %}selected{% endif %}>A+</option>
+											<option value="A-" {% if teacher.blood_group == "A-" %}selected{% endif %}>A-</option>
+											<option value="B+" {% if teacher.blood_group == "B+" %}selected{% endif %}>B+</option>
+											<option value="B-" {% if teacher.blood_group == "B-" %}selected{% endif %}>B-</option>
+											<option value="AB+" {% if teacher.blood_group == "AB+" %}selected{% endif %}>AB+</option>
+											<option value="AB-" {% if teacher.blood_group == "AB-" %}selected{% endif %}>AB-</option>
+											<option value="O+" {% if teacher.blood_group == "O+" %}selected{% endif %}>O+</option>
+											<option value="O-" {% if teacher.blood_group == "O-" %}selected{% endif %}>O-</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Date of Joining</label>
+										<div class="input-icon position-relative">
+											<span class="input-icon-addon">
+												<i class="ti ti-calendar"></i>
+											</span>
+											<input type="text" name="date_of_join" class="form-control datetimepicker" value="{{ teacher.date_of_join|date:'d/m/Y' }}">
+										</div>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Father's Name</label>
+										<input type="text" name="father_name" class="form-control" value="{{ teacher.father_name }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Mother's Name</label>
+										<input type="text" name="mother_name" class="form-control" value="{{ teacher.mother_name }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Date of Birth</label>
+										<div class="input-icon position-relative">
+											<span class="input-icon-addon">
+												<i class="ti ti-calendar"></i>
+											</span>
+											<input type="text" name="date_of_birth" class="form-control datetimepicker" value="{{ teacher.date_of_birth|date:'d/m/Y' }}">
+										</div>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Marital Status</label>
+										<select class="select" name="marital_status">
+											<option>Select</option>
+											<option value="single" {% if teacher.marital_status == "single" %}selected{% endif %}>Single</option>
+											<option value="married" {% if teacher.marital_status == "married" %}selected{% endif %}>Married</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Language Known</label>
+										<input class="input-tags form-control" type="text" data-role="tagsinput" name="languages_known" value="{{ teacher.languages_known }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Qualification</label>
+										<input type="text" name="qualification" class="form-control" value="{{ teacher.qualification }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Work Experience</label>
+										<input type="text" name="work_experience" class="form-control" value="{{ teacher.experience }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Previous School if Any</label>
+										<input type="text" name="previous_school" class="form-control" value="{{ teacher.previous_school }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Previous School Address</label>
+										<input type="text" name="previous_school_address" class="form-control" value="{{ teacher.previous_school_address }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Previous School Phone No</label>
+										<input type="text" name="previous_school_phone" class="form-control" value="{{ teacher.previous_school_phone }}">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Address</label>
+										<input type="text" name="address" class="form-control" value="{{ teacher.address }}">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Permanent Address</label>
+										<input type="text" name="permanent_address" class="form-control" value="{{ teacher.permanent_address }}">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">PAN Number / ID Number</label>
+										<input type="text" name="pan_number" class="form-control" value="{{ teacher.pan_number }}">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Status</label>
+										<select class="select" name="status">
+											<option>Select</option>
+											<option value="active" {% if teacher.status == "active" %}selected{% endif %}>Active</option>
+											<option value="inactive" {% if teacher.status == "inactive" %}selected{% endif %}>Inactive</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl-12 col-xl-12">
+									<div class="mb-3">
+										<label class="form-label">Notes</label>
+										<textarea class="form-control" name="notes" placeholder="Other Information" rows="4">{{ teacher.notes }}</textarea>
+									</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+					<!-- /Personal Information -->
+
+					<!-- Payroll -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-user-shield fs-16"></i>
+								</span>
+								<h4 class="text-dark">Payroll</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">EPF No</label>
+										<input type="text" name="epf_no" class="form-control" value="{{ teacher.epf_no }}">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Basic Salary</label>
+										<input type="text" name="basic_salary" class="form-control" value="{{ teacher.basic_salary }}">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Contract Type</label>
+										<select class="select" name="contract_type">
+											<option>Select</option>
+											<option value="permanent" {% if teacher.contract_type == "permanent" %}selected{% endif %}>Permanent</option>
+											<option value="temporary" {% if teacher.contract_type == "temporary" %}selected{% endif %}>Temporary</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Work Shift</label>
+										<select class="select" name="work_shift">
+											<option>Select</option>
+											<option value="morning" {% if teacher.work_shift == "morning" %}selected{% endif %}>Morning</option>
+											<option value="afternoon" {% if teacher.work_shift == "afternoon" %}selected{% endif %}>Afternoon</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Work Location</label>
+										<input type="text" name="work_location" class="form-control" value="{{ teacher.work_location }}">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Date of Leaving</label>
+										<div class="input-icon position-relative">
+											<span class="input-icon-addon">
+												<i class="ti ti-calendar"></i>
+											</span>
+											<input type="text" name="date_of_leaving" class="form-control datetimepicker" value="{{ teacher.date_of_leaving|date:'d/m/Y' }}">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Payroll -->
+
+					<!-- Leaves -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-users fs-16"></i>
+								</span>
+								<h4 class="text-dark">Leaves</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Medical Leaves</label>
+										<input type="text" name="medical_leaves" class="form-control" value="{{ teacher.medical_leaves }}">
+									</div>
+								</div>
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Casual Leaves</label>
+										<input type="text" name="casual_leaves" class="form-control" value="{{ teacher.casual_leaves }}">
+									</div>
+								</div>
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Maternity Leaves</label>
+										<input type="text" name="maternity_leaves" class="form-control" value="{{ teacher.maternity_leaves }}">
+									</div>
+								</div>
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Sick Leaves</label>
+										<input type="text" name="sick_leaves" class="form-control" value="{{ teacher.sick_leaves }}">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Leaves -->
+
+					<!-- Bank Details -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-map fs-16"></i>
+								</span>
+								<h4 class="text-dark">Bank Account Detail</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Account Name</label>
+										<input type="text" name="account_name" class="form-control" value="{{ teacher.account_name }}">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Account Number</label>
+										<input type="text" name="account_number" class="form-control" value="{{ teacher.account_number }}">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Bank Name</label>
+										<input type="text" name="bank_name" class="form-control" value="{{ teacher.bank_name }}">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">IFSC Code</label>
+										<input type="text" name="ifsc_code" class="form-control" value="{{ teacher.ifsc_code }}">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Branch Name</label>
+										<input type="text" name="branch_name" class="form-control" value="{{ teacher.branch_name }}">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Bank Details -->
+
+					<!-- Transport Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-bus-stop fs-16"></i>
+								</span>
+								<h4 class="text-dark">Transport Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Route</label>
+										<select class="select" name="route">
+											<option>Select</option>
+											<option {% if teacher.route == "Newyork" %}selected{% endif %}>Newyork</option>
+											<option {% if teacher.route == "Denver" %}selected{% endif %}>Denver</option>
+											<option {% if teacher.route == "Chicago" %}selected{% endif %}>Chicago</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle Number</label>
+										<select class="select" name="vehicle_number">
+											<option>Select</option>
+											<option {% if teacher.vehicle_number == "AM 54548" %}selected{% endif %}>AM 54548</option>
+											<option {% if teacher.vehicle_number == "AM 64528" %}selected{% endif %}>AM 64528</option>
+											<option {% if teacher.vehicle_number == "AM 123548" %}selected{% endif %}>AM 123548</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Pickup Point</label>
+										<select class="select" name="pickup_point">
+											<option>Select</option>
+											<option {% if teacher.pickup_point == "Cincinatti" %}selected{% endif %}>Cincinatti</option>
+											<option {% if teacher.pickup_point == "Illinois" %}selected{% endif %}>Illinois</option>
+											<option {% if teacher.pickup_point == "Morgan" %}selected{% endif %}>Morgan</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Transport Information -->
+
+					<!-- Hostel Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-building-fortress fs-16"></i>
+								</span>
+								<h4 class="text-dark">Hostel Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Hostel</label>
+										<select class="select" name="hostel">
+											<option>Select</option>
+											<option {% if teacher.hostel == "Phoenix Residence" %}selected{% endif %}>Phoenix Residence</option>
+											<option {% if teacher.hostel == "Tranquil Haven" %}selected{% endif %}>Tranquil Haven</option>
+											<option {% if teacher.hostel == "Radiant Towers" %}selected{% endif %}>Radiant Towers</option>
+											<option {% if teacher.hostel == "Nova Nest" %}selected{% endif %}>Nova Nest</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Room No</label>
+										<select class="select" name="room_no">
+											<option>Select</option>
+											<option {% if teacher.room_no == "20" %}selected{% endif %}>20</option>
+											<option {% if teacher.room_no == "22" %}selected{% endif %}>22</option>
+											<option {% if teacher.room_no == "24" %}selected{% endif %}>24</option>
+											<option {% if teacher.room_no == "26" %}selected{% endif %}>26</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Hostel Information -->
+
+					<!-- Social Media Links -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-building fs-16"></i>
+								</span>
+								<h4 class="text-dark">Social Media Links</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row rows-cols-xxl-5">
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Facebook</label>
+										<input type="text" name="facebook" class="form-control" value="{{ teacher.facebook }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Instagram</label>
+										<input type="text" name="instagram" class="form-control" value="{{ teacher.instagram }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Linked In</label>
+										<input type="text" name="linkedin" class="form-control" value="{{ teacher.linkedin }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Youtube</label>
+										<input type="text" name="youtube" class="form-control" value="{{ teacher.youtube }}">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Twitter URL</label>
+										<input type="text" name="twitter" class="form-control" value="{{ teacher.twitter }}">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Social Media Links -->
+
+					<!-- Documents -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-file fs-16"></i>
+								</span>
+								<h4 class="text-dark">Documents</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-6">
+									<div class="mb-2">
+										<div class="mb-3">
+											<label class="form-label">Upload Resume</label>
+											<p>Upload image size of 4MB, Accepted Format PDF</p>
+										</div>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+												<i class="ti ti-file-upload me-1"></i>Change
+												<input type="file" name="resume" class="form-control image_sign" accept=".pdf">
+											</div>
+											{% if teacher.resume %}
+											<p class="mb-2">{{ teacher.resume.name }}</p>
+											{% endif %}
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-6">
+									<div class="mb-2">
+										<div class="mb-3">
+											<label class="form-label">Upload Joining Letter</label>
+											<p>Upload image size of 4MB, Accepted Format PDF</p>
+										</div>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+												<i class="ti ti-file-upload me-1"></i>Upload Document
+												<input type="file" name="joining_letter" class="form-control image_sign" accept=".pdf">
+											</div>
+											{% if teacher.joining_letter %}
+											<p class="mb-2">{{ teacher.joining_letter.name }}</p>
+											{% endif %}
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Documents -->
+
+					<div class="text-end">
+						<a href="{% url 'people:teacher-list' %}" class="btn btn-light me-3">Cancel</a>
+						<button type="submit" class="btn btn-primary">Update Teacher</button>
+					</div>
+
+				</form>
+
+			</div>
+
+		</div>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/plugins/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+<script>
+	$(document).ready(function() {
+		$('.datetimepicker').datetimepicker({
+			format: 'DD/MM/YYYY',
+			icons: {
+				up: "ti ti-chevron-up",
+				down: "ti ti-chevron-down",
+				next: "ti ti-chevron-right",
+				previous: "ti ti-chevron-left"
+			}
+		});
+
+		$('.input-tags').tagsinput({
+			tagClass: 'badge badge-primary'
+		});
+	});
+</script>
+{% endblock extra_js %}

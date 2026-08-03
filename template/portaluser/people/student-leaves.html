@@ -1,0 +1,917 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+		<div class="row">
+
+			{% if messages %}
+			<div class="col-md-12">
+				{% for message in messages %}
+				<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+					{{ message }}
+					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+				</div>
+				{% endfor %}
+			</div>
+			{% endif %}
+
+			<!-- Page Header -->
+			<div class="col-md-12">
+				<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+					<div class="my-auto mb-2">
+						<h3 class="page-title mb-1">Student Details</h3>
+						<nav>
+							<ol class="breadcrumb mb-0">
+								<li class="breadcrumb-item">
+									<a href="{% url 'home' %}">Dashboard</a>
+								</li>
+								<li class="breadcrumb-item">
+									<a href="{% url 'people:student-list' %}">Student</a>
+								</li>
+								<li class="breadcrumb-item active" aria-current="page">Student Details</li>
+							</ol>
+						</nav>
+					</div>
+					<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+						<a href="#" class="btn btn-light me-2 mb-2" data-bs-toggle="modal"
+							data-bs-target="#login_detail"><i class="ti ti-lock me-2"></i>Login Details</a>
+						<a href="{% url 'people:edit-student' student.pk %}" class="btn btn-primary d-flex align-items-center mb-2"><i
+								class="ti ti-edit-circle me-2"></i>Edit Student</a>
+					</div>
+				</div>
+			</div>
+			<!-- /Page Header -->
+
+		</div>
+
+		<div class="row">
+
+			<!-- Student Information -->
+			<div class="col-xxl-3 col-xl-4 theiaStickySidebar">
+				<div class="card border-white">
+					<div class="card-header">
+						<div class="d-flex align-items-center flex-wrap row-gap-3">
+							<div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+								{% if student.profile_image %}
+								<img src="{{ student.profile_image.url }}" class="img-fluid" alt="img">
+								{% else %}
+								<img src="{% static 'assets/img/students/student-01.jpg' %}" class="img-fluid" alt="img">
+								{% endif %}
+							</div>
+							<div class="overflow-hidden">
+								{% if student.status == "active" %}
+								<span class="badge badge-soft-success d-inline-flex align-items-center mb-1"><i class="ti ti-circle-filled fs-5 me-1"></i>Active</span>
+								{% else %}
+								<span class="badge badge-soft-danger d-inline-flex align-items-center mb-1"><i class="ti ti-circle-filled fs-5 me-1"></i>Inactive</span>
+								{% endif %}
+								<h5 class="mb-1 text-truncate">{{ student.name }}</h5>
+								<p class="text-primary">{{ student.admission_no }}</p>
+							</div>
+						</div>
+					</div>
+
+					<!-- Basic Information -->
+					<div class="card-body">
+						<h5 class="mb-3">Basic Information</h5>
+						<dl class="row mb-0">
+							<dt class="col-6 fw-medium text-dark mb-3">Roll No</dt>
+							<dd class="col-6 mb-3">{{ student.roll_no|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Gender</dt>
+							<dd class="col-6 mb-3">{{ student.get_gender_display }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Date Of Birth</dt>
+							<dd class="col-6 mb-3">{{ student.date_of_birth|date:"d M Y"|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Blood Group</dt>
+							<dd class="col-6 mb-3">{{ student.blood_group|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">House</dt>
+							<dd class="col-6 mb-3">{{ student.house|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Religion</dt>
+							<dd class="col-6 mb-3">{{ student.religion|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Caste</dt>
+							<dd class="col-6 mb-3">{{ student.caste|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Category</dt>
+							<dd class="col-6 mb-3">{{ student.category|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Mother tongue</dt>
+							<dd class="col-6 mb-3">{{ student.mother_tongue|default:"-" }}</dd>
+							<dt class="col-6 fw-medium text-dark mb-3">Language</dt>
+							<dd class="col-6 mb-3">
+								{% if languages %}
+									{% for lang in languages %}
+									<span class="badge badge-light text-dark me-2">{{ lang }}</span>
+									{% endfor %}
+								{% else %}
+								-
+								{% endif %}
+							</dd>
+						</dl>
+						<a href="#" data-bs-toggle="modal" data-bs-target="#add_fees_collect" class="btn btn-primary btn-sm w-100">Add Fees</a>
+					</div>
+					<!-- /Basic Information -->
+
+				</div>
+
+				<!-- Primary Contact Info -->
+				<div class="card border-white">
+					<div class="card-body">
+						<h5 class="mb-3">Primary Contact Info</h5>
+						<div class="d-flex align-items-center mb-3">
+							<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-phone"></i></span>
+							<div>
+								<span class="text-dark fw-medium mb-1">Phone Number</span>
+								<p>{{ student.primary_contact_number|default:"-" }}</p>
+							</div>
+						</div>
+						<div class="d-flex align-items-center">
+							<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-mail"></i></span>
+							<div>
+								<span class="text-dark fw-medium mb-1">Email Address</span>
+								<p>{{ student.email|default:"-" }}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /Primary Contact Info -->
+
+				{% if student.has_sibling_in_school %}
+				<!-- Sibling Information -->
+				<div class="card border-white">
+					<div class="card-body">
+						<h5 class="mb-3">Sibling Information</h5>
+						<div class="d-flex align-items-center bg-light-300 rounded p-3 mb-3">
+							<span class="avatar avatar-lg">
+								<img src="{% static 'assets/img/students/student-06.jpg' %}" class="img-fluid rounded" alt="img">
+							</span>
+							<div class="ms-2">
+								<h5 class="fs-14">{{ student.sibling_name|default:"-" }}</h5>
+								<p>{{ student.sibling_class|default:"-" }}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /Sibling Information -->
+				{% endif %}
+
+				<!-- Transport Information -->
+				<div class="card border-white">
+					<div class="card-body pb-1">
+						<ul class="nav nav-tabs nav-tabs-bottom mb-3">
+							<li class="nav-item"><a class="nav-link active" href="#hostel" data-bs-toggle="tab">Hostel</a></li>
+							<li class="nav-item"><a class="nav-link" href="#transport" data-bs-toggle="tab">Transportation</a></li>
+						</ul>
+						<div class="tab-content">
+							<div class="tab-pane fade show active" id="hostel">
+								<div class="d-flex align-items-center mb-3">
+									<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-building-fortress fs-16"></i></span>
+									<div>
+										<h6 class="fs-14 mb-1">{{ student.hostel|default:"Not Alloted" }}</h6>
+										<p class="text-primary">Room No : {{ student.room_no|default:"-" }}</p>
+									</div>
+								</div>
+							</div>
+							<div class="tab-pane fade" id="transport">
+								<div class="d-flex align-items-center mb-3">
+									<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-bus fs-16"></i></span>
+									<div>
+										<span class="fs-12 mb-1">Route</span>
+										<p class="text-dark">{{ student.route|default:"-" }}</p>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-6">
+										<div class="mb-3">
+											<span class="fs-12 mb-1">Bus Number</span>
+											<p class="text-dark">{{ student.vehicle_number|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-sm-6">
+										<div class="mb-3">
+											<span class="fs-12 mb-1">Pickup Point</span>
+											<p class="text-dark">{{ student.pickup_point|default:"-" }}</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /Transport Information -->
+
+			</div>
+			<!-- /Student Information -->
+
+			<div class="col-xxl-9 col-xl-8">
+				<div class="row">
+					<div class="col-md-12">
+
+						<!-- List -->
+						<ul class="nav nav-tabs nav-tabs-bottom mb-4">
+							<li>
+								<a href="{% url 'people:student-details' student.pk %}" class="nav-link"><i
+										class="ti ti-school me-2"></i>Student Details</a>
+							</li>
+							<li>
+								<a href="{% url 'academics:student-time-table' student.pk %}" class="nav-link"><i
+										class="ti ti-table-options me-2"></i>Time Table</a>
+							</li>
+							<li>
+								<a href="{% url 'people:student-leaves' student.pk %}" class="nav-link active"><i
+										class="ti ti-calendar-due me-2"></i>Leave & Attendance</a>
+							</li>
+							<li>
+								<a href="student-fees.html" class="nav-link"><i
+										class="ti ti-report-money me-2"></i>Fees</a>
+							</li>
+							<li>
+								<a href="student-result.html" class="nav-link"><i
+										class="ti ti-bookmark-edit me-2"></i>Exam & Results</a>
+							</li>
+							<li>
+								<a href="student-library.html" class="nav-link"><i
+										class="ti ti-books me-2"></i>Library</a>
+							</li>
+						</ul>
+						<!-- /List -->
+
+						<!-- Leave Nav-->
+						<div class="card">
+							<div class="card-body pb-1">
+								<ul class="nav nav-tabs nav-tabs-solid nav-tabs-rounded-fill">
+									<li class="me-3 mb-3">
+										<a href="#" class="nav-link active rounded fs-12 fw-semibold"
+											data-bs-toggle="tab" data-bs-target="#leave">Leaves</a>
+									</li>
+									<li class="mb-3">
+										<a href="#" class="nav-link rounded fs-12 fw-semibold"
+											data-bs-toggle="tab" data-bs-target="#attendance">Attendance</a>
+									</li>
+								</ul>
+							</div>
+						</div>
+						<!-- /Leave Nav-->
+
+						<div class="tab-content">
+
+							<!-- Leave -->
+							<div class="tab-pane fade show active" id="leave">
+								<div class="row gx-3">
+									<div class="col-lg-6 col-xxl-3 d-flex">
+										<div class="card flex-fill">
+											<div class="card-body">
+												<h5 class="mb-2">Medical Leave ({{ leave_quotas.medical.total }})</h5>
+												<div class="d-flex align-items-center flex-wrap">
+													<p class="border-end pe-2 me-2 mb-0">Used : {{ leave_quotas.medical.used }}</p>
+													<p class="mb-0">Available : {{ leave_quotas.medical.available }}</p>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-lg-6 col-xxl-3 d-flex">
+										<div class="card flex-fill">
+											<div class="card-body">
+												<h5 class="mb-2">Casual Leave ({{ leave_quotas.casual.total }})</h5>
+												<div class="d-flex align-items-center flex-wrap">
+													<p class="border-end pe-2 me-2 mb-0">Used : {{ leave_quotas.casual.used }}</p>
+													<p class="mb-0">Available : {{ leave_quotas.casual.available }}</p>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-lg-6 col-xxl-3 d-flex">
+										<div class="card flex-fill">
+											<div class="card-body">
+												<h5 class="mb-2">Maternity Leave ({{ leave_quotas.maternity.total }})</h5>
+												<div class="d-flex align-items-center flex-wrap">
+													<p class="border-end pe-2 me-2 mb-0">Used : {{ leave_quotas.maternity.used }}</p>
+													<p class="mb-0">Available : {{ leave_quotas.maternity.available }}</p>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-lg-6 col-xxl-3 d-flex">
+										<div class="card flex-fill">
+											<div class="card-body">
+												<h5 class="mb-2">Paternity Leave ({{ leave_quotas.paternity.total }})</h5>
+												<div class="d-flex align-items-center flex-wrap">
+													<p class="border-end pe-2 me-2 mb-0">Used : {{ leave_quotas.paternity.used }}</p>
+													<p class="mb-0">Available : {{ leave_quotas.paternity.available }}</p>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="card">
+									<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+										<h4 class="mb-3">Leaves</h4>
+										<a href="#" data-bs-target="#apply_leave" data-bs-toggle="modal"
+											class="btn btn-primary d-inline-flex align-items-center mb-3"><i
+												class="ti ti-calendar-event me-2"></i>Apply Leave</a>
+									</div>
+									<!-- Leaves List -->
+									<div class="card-body p-0 py-3">
+										<div class="custom-datatable-filter table-responsive">
+										<table class="table datatable" id="leave-table">
+											<thead class="thead-light">
+												<tr>
+													<th class="no-sort">Leave Type</th>
+														<th class="no-sort">Leave Date</th>
+														<th class="no-sort">No of Days</th>
+														<th class="no-sort">Applied On</th>
+														<th class="no-sort">Status</th>
+													</tr>
+												</thead>
+												<tbody>
+													{% for leave in leaves %}
+													<tr>
+														<td class="text-dark">{{ leave.get_leave_type_display }}</td>
+														<td>{{ leave.from_date|date:"d M Y" }} - {{ leave.to_date|date:"d M Y" }}</td>
+														<td>{{ leave.no_of_days }}</td>
+														<td>{{ leave.applied_on|date:"d M Y" }}</td>
+														<td>
+															{% if leave.status == "approved" %}
+															<span class="badge badge-soft-success d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-5 me-1"></i>Approved</span>
+															{% elif leave.status == "pending" %}
+															<span class="badge badge-soft-pending d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-5 me-1"></i>Pending</span>
+															{% elif leave.status == "rejected" %}
+															<span class="badge badge-soft-danger d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-5 me-1"></i>Rejected</span>
+															{% endif %}
+														</td>
+													</tr>
+													{% empty %}
+													<tr>
+														<td></td>
+														<td></td>
+														<td class="text-center">No leave records found.</td>
+														<td></td>
+														<td></td>
+													</tr>
+													{% endfor %}
+												</tbody>
+											</table>
+										</div>
+									</div>
+									<!-- /Leaves List -->
+								</div>
+
+							</div>
+							<!-- /Leave -->
+
+							<!-- Attendance -->
+							<div class="tab-pane fade" id="attendance">
+								<div class="card">
+									<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-1">
+										<h4 class="mb-3">Attendance</h4>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="d-flex align-items-center flex-wrap me-3">
+												<p class="text-dark mb-3 me-2">Last Updated on : {% now "d M Y" %}
+												</p>
+												<a href="{% url 'people:student-leaves' student.pk %}"
+													class="btn btn-primary btn-icon btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 mb-3"><i
+														class="ti ti-refresh-dot"></i></a>
+											</div>
+											<div class="dropdown mb-3">
+												<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+													data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+														class="ti ti-calendar-due me-2"></i>Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}</a>
+												<ul class="dropdown-menu p-3">
+													{% for ay in academic_years %}
+													<li>
+														<a href="javascript:void(0);" class="dropdown-item rounded-1">
+															Year : {{ ay.name }}
+														</a>
+													</li>
+													{% endfor %}
+												</ul>
+											</div>
+										</div>
+									</div>
+									<div class="card-body pb-1">
+										<div class="row">
+
+											<div class="col-md-6 col-xxl-3 d-flex">
+												<div class="d-flex align-items-center rounded border p-3 mb-3 flex-fill">
+													<span class="avatar avatar-lg bg-primary-transparent rounded me-2 flex-shrink-0 text-primary"><i class="ti ti-user-check fs-24"></i></span>
+													<div class="ms-2">
+														<p class="mb-1">Present</p>
+														<h5>{{ total_present }}</h5>
+													</div>
+												</div>
+											</div>
+
+											<div class="col-md-6 col-xxl-3 d-flex">
+												<div class="d-flex align-items-center rounded border p-3 mb-3 flex-fill">
+													<span class="avatar avatar-lg bg-danger-transparent rounded me-2 flex-shrink-0 text-danger"><i class="ti ti-user-check fs-24"></i></span>
+													<div class="ms-2">
+														<p class="mb-1">Absent</p>
+														<h5>{{ total_absent }}</h5>
+													</div>
+												</div>
+											</div>
+
+											<div class="col-md-6 col-xxl-3 d-flex">
+												<div class="d-flex align-items-center rounded border p-3 mb-3 flex-fill">
+													<span class="avatar avatar-lg bg-info-transparent rounded me-2 flex-shrink-0 text-info"><i class="ti ti-user-check fs-24"></i></span>
+													<div class="ms-2">
+														<p class="mb-1">Half Day</p>
+														<h5>{{ total_half_day }}</h5>
+													</div>
+												</div>
+											</div>
+
+											<div class="col-md-6 col-xxl-3 d-flex">
+												<div class="d-flex align-items-center rounded border p-3 mb-3 flex-fill">
+													<span class="avatar avatar-lg bg-warning-transparent rounded me-2 flex-shrink-0 text-warning"><i class="ti ti-user-check fs-24"></i></span>
+													<div class="ms-2">
+														<p class="mb-1">Late</p>
+														<h5>{{ total_late }}</h5>
+													</div>
+												</div>
+											</div>
+
+										</div>
+									</div>
+								</div>
+
+								<div class="card">
+									<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-1">
+										<h4 class="mb-3">Mark Attendance</h4>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="dropdown mb-3">
+												<a href="javascript:void(0);"
+													class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+													data-bs-toggle="dropdown">
+													<i class="ti ti-file-export me-2"></i>Export
+												</a>
+												<ul class="dropdown-menu dropdown-menu-end p-3">
+													<li>
+														<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-pdf"><i
+																class="ti ti-file-type-pdf me-2"></i>Export as PDF</a>
+													</li>
+													<li>
+														<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-excel"><i
+																class="ti ti-file-type-xls me-2"></i>Export as Excel</a>
+													</li>
+												</ul>
+											</div>
+										</div>
+									</div>
+
+									<div class="card-body">
+										<form method="post" action="{% url 'people:student-leaves' student.pk %}">
+											{% csrf_token %}
+											<input type="hidden" name="mark_attendance" value="1">
+											<div class="row align-items-end">
+												<div class="col-md-4">
+													<div class="mb-3">
+														<label class="form-label">Date</label>
+														<div class="date-pic">
+															<input type="text" class="form-control datetimepicker" name="attendance_date"
+																placeholder="{% now 'd M Y' %}" value="{% now 'Y-m-d' %}">
+															<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+														</div>
+													</div>
+												</div>
+												<div class="col-md-4">
+													<div class="mb-3">
+														<label class="form-label">Status</label>
+														<select class="select" name="attendance_status">
+															<option value="present">Present</option>
+															<option value="absent">Absent</option>
+															<option value="late">Late</option>
+															<option value="half_day">Half Day</option>
+															<option value="holiday">Holiday</option>
+														</select>
+													</div>
+												</div>
+												<div class="col-md-4">
+													<div class="mb-3">
+														<button type="submit" class="btn btn-primary w-100">Mark Attendance</button>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+
+								<div class="card">
+									<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-1">
+										<h4 class="mb-3">Leave & Attendance</h4>
+									</div>
+									<div class="card-body p-0 py-3">
+
+									<div class="px-3">
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="d-flex align-items-center bg-white border rounded p-2 me-3 mb-3">
+												<span class="avatar avatar-sm bg-success rounded me-2 flex-shrink-0"><i class="ti ti-checks"></i></span>
+												<p class="text-dark">Present</p>
+											</div>
+											<div class="d-flex align-items-center bg-white border rounded p-2 me-3 mb-3">
+												<span class="avatar avatar-sm bg-danger rounded me-2 flex-shrink-0"><i class="ti ti-x"></i></span>
+												<p class="text-dark">Absent</p>
+											</div>
+											<div class="d-flex align-items-center bg-white border rounded p-2 me-3 mb-3">
+												<span class="avatar avatar-sm bg-pending rounded me-2 flex-shrink-0"><i class="ti ti-clock-x"></i></span>
+												<p class="text-dark">Late</p>
+											</div>
+											<div class="d-flex align-items-center bg-white border rounded p-2 me-3 mb-3">
+												<span class="avatar avatar-sm bg-dark rounded me-2 flex-shrink-0"><i class="ti ti-calendar-event"></i></span>
+												<p class="text-dark">Halfday</p>
+											</div>
+											<div class="d-flex align-items-center bg-white border rounded p-2 me-3 mb-3">
+												<span class="avatar avatar-sm bg-info rounded me-2 flex-shrink-0"><i class="ti ti-calendar-event"></i></span>
+												<p class="text-dark">Holiday</p>
+											</div>
+										</div>
+									</div>
+
+									<!-- Attendance List -->
+									<div class="custom-datatable-filter table-responsive">
+										<table class="table datatable" id="attendance-grid-table">
+											<thead class="thead-light">
+												<tr>
+													<th>Date <span class="divide-bar"> | </span> Month</th>
+													{% for m in month_info %}
+													<th>{{ m.name }}</th>
+													{% endfor %}
+												</tr>
+											</thead>
+											<tbody>
+												{% for row in attendance_grid %}
+												<tr>
+													<td>{{ forloop.counter|stringformat:"02d" }}</td>
+													{% for status in row %}
+													<td>
+														{% if status %}
+														<span class="attendance-range
+															{% if status == 'present' %}bg-success
+															{% elif status == 'absent' %}bg-danger
+															{% elif status == 'late' %}bg-pending
+															{% elif status == 'half_day' %}bg-dark
+															{% elif status == 'holiday' %}bg-info
+															{% endif %}"></span>
+														{% endif %}
+													</td>
+													{% endfor %}
+												</tr>
+												{% endfor %}
+											</tbody>
+										</table>
+									</div>
+									<!-- /Attendance List -->
+									</div>
+								</div>
+
+							</div>
+							<!-- /Attendance -->
+
+						</div>
+
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Page Wrapper -->
+
+<!-- Apply Leave -->
+<div class="modal fade" id="apply_leave">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Apply Leave</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'people:student-leaves' student.pk %}">
+				{% csrf_token %}
+				<input type="hidden" name="apply_leave" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Leave Type</label>
+								<select class="select" name="leave_type" required>
+									<option value="">Select</option>
+									<option value="medical">Medical Leave</option>
+									<option value="casual">Casual Leave</option>
+									<option value="special">Special Leave</option>
+									<option value="maternity">Maternity Leave</option>
+									<option value="paternity">Paternity Leave</option>
+								</select>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Leave From date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="from_date"
+										placeholder="15 May 2024" required>
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Leave to Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="to_date"
+										placeholder="15 May 2024" required>
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Leave Days</label>
+								<div class="d-flex align-items-center check-radio-group">
+									<label class="custom-radio">
+										<input type="radio" name="leave_days_type" value="full" checked="">
+										<span class="checkmark"></span>
+										Full day
+									</label>
+									<label class="custom-radio">
+										<input type="radio" name="leave_days_type" value="first_half">
+										<span class="checkmark"></span>
+										First Half
+									</label>
+									<label class="custom-radio">
+										<input type="radio" name="leave_days_type" value="second_half">
+										<span class="checkmark"></span>
+										Second Half
+									</label>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">No of Days</label>
+								<input type="number" class="form-control" name="no_of_days" value="1" min="1">
+							</div>
+							<div class="mb-0">
+								<label class="form-label">Reason</label>
+								<input type="text" class="form-control" name="reason" placeholder="Enter reason">
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Apply Leave</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Apply Leave -->
+
+<!-- Login Details -->
+<div class="modal fade" id="login_detail">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Login Details</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<div class="modal-body">
+				<div class="student-detail-info">
+					<span class="student-img">
+						{% if student.profile_image %}
+						<img src="{{ student.profile_image.url }}" alt="Img">
+						{% else %}
+						<img src="{% static 'assets/img/students/student-01.jpg' %}" alt="Img">
+						{% endif %}
+					</span>
+					<div class="name-info">
+						<h6>{{ student.name }} <span>{{ student.school_class.name }}, {{ student.section.name }}</span></h6>
+					</div>
+				</div>
+				<div class="table-responsive custom-table no-datatable_length">
+					<table class="table datanew">
+						<thead class="thead-light">
+							<tr>
+								<th>User Type</th>
+								<th>User Name</th>
+								<th>Password </th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Parent</td>
+								<td>parent{{ student.admission_no|slice:"-2:" }}</td>
+								<td>parent@{{ student.admission_no|slice:"-2:" }}</td>
+							</tr>
+							<tr>
+								<td>Student</td>
+								<td>student{{ student.admission_no|slice:"-2:" }}</td>
+								<td>stdt@{{ student.admission_no|slice:"-2:" }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Login Details -->
+
+<!-- Add Fees Collect -->
+<div class="modal fade" id="add_fees_collect">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<div class="d-flex align-items-center">
+					<h4 class="modal-title">Collect Fees</h4>
+					<span class="badge badge-sm bg-primary ms-2">{{ student.admission_no }}</span>
+				</div>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form action="collect-fees.html">
+				<div class="modal-body">
+					<div class="bg-light-300 p-3 pb-0 rounded mb-4">
+						<div class="row align-items-center">
+							<div class="col-lg-3 col-md-6">
+								<div class="d-flex align-items-center mb-3">
+									<a href="{% url 'people:student-details' student.pk %}" class="avatar avatar-md me-2">
+										{% if student.profile_image %}
+										<img src="{{ student.profile_image.url }}" alt="img">
+										{% else %}
+										<img src="{% static 'assets/img/students/student-01.jpg' %}" alt="img">
+										{% endif %}
+									</a>
+									<a href="{% url 'people:student-details' student.pk %}" class="d-flex flex-column"><span class="text-dark">{{ student.name }}</span>{{ student.school_class.name }}, {{ student.section.name }}</a>
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-6">
+								<div class="mb-3">
+									<span class="fs-12 mb-1">Total Outstanding</span>
+									<p class="text-dark">2000</p>
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-6">
+								<div class="mb-3">
+									<span class="fs-12 mb-1">Last Date</span>
+									<p class="text-dark">25 May 2024</p>
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-6">
+								<div class="mb-3">
+									<span class="badge badge-soft-danger"><i class="ti ti-circle-filled me-2"></i>Unpaid</span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Fees Group</label>
+								<select class="select">
+									<option>Select</option>
+									<option>Class 1 General</option>
+									<option>Monthly Fees</option>
+									<option>Admission-Fees</option>
+									<option>Class 1- I Installment</option>
+								</select>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Fees Type</label>
+								<select class="select">
+									<option>Select</option>
+									<option>Tuition Fees</option>
+									<option>Monthly Fees</option>
+									<option>Admission Fees</option>
+									<option>Bus Fees</option>
+								</select>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Amount</label>
+								<input type="text" class="form-control" placeholder="Enter Amout">
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Collection Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" placeholder="Select">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Payment Type</label>
+								<select class="select">
+									<option>Select</option>
+									<option>Paytm</option>
+									<option>Cash On Delivery</option>
+								</select>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Payment Reference No</label>
+								<input type="text" class="form-control" placeholder="Enter Payment Reference No">
+							</div>
+						</div>
+						<div class="col-lg-12">
+							<div class="d-flex align-items-center justify-content-between">
+								<div class="status-title">
+									<h5>Status</h5>
+									<p>Change the Status by toggle </p>
+								</div>
+								<div class="form-check form-switch">
+									<input class="form-check-input" type="checkbox" role="switch" id="switch-sm2">
+								</div>
+							</div>
+						</div>
+						<div class="col-lg-12">
+							<div class="mb-0">
+								<label class="form-label">Notes</label>
+								<textarea rows="4" class="form-control" placeholder="Add Notes"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Pay Fees</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Fees Collect -->
+{% endblock content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+if ($('#leave-table').length > 0 && !$.fn.DataTable.isDataTable('#leave-table')) {
+    $('#leave-table').DataTable({
+        "bFilter": true,
+        "ordering": true,
+        "info": true,
+        "pageLength": 25,
+        "language": {
+            search: ' ',
+            sLengthMenu: 'Row Per Page _MENU_ Entries',
+            searchPlaceholder: "Search",
+            info: "_START_ - _END_ of _TOTAL_ entries",
+            paginate: {
+                next: ' Next',
+                previous: 'Prev '
+            }
+        }
+    });
+}
+if ($('#attendance-grid-table').length > 0 && !$.fn.DataTable.isDataTable('#attendance-grid-table')) {
+    $('#attendance-grid-table').DataTable({
+        "bFilter": true,
+        "ordering": true,
+        "info": true,
+        "pageLength": 25,
+        "language": {
+            search: ' ',
+            sLengthMenu: 'Row Per Page _MENU_ Entries',
+            searchPlaceholder: "Search",
+            info: "_START_ - _END_ of _TOTAL_ entries",
+            paginate: {
+                next: ' Next',
+                previous: 'Prev '
+            }
+        }
+    });
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var exportPdf = document.getElementById('export-pdf');
+    var exportExcel = document.getElementById('export-excel');
+    if (exportPdf) {
+        exportPdf.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.open('{% url "people:student-attendance-export-pdf" %}?student_id={{ student.pk }}', '_blank');
+        });
+    }
+    if (exportExcel) {
+        exportExcel.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '{% url "people:student-attendance-export-excel" %}?student_id={{ student.pk }}';
+        });
+    }
+});
+</script>
+{% endblock %}

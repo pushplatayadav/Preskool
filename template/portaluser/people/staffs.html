@@ -1,0 +1,435 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Staffs</h3>
+				 <nav>
+					   <ol class="breadcrumb mb-0">
+						  <li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						  </li>
+						  <li class="breadcrumb-item">
+							<a href="javascript:void(0);">HRM</a>
+						  </li>
+						  <li class="breadcrumb-item active" aria-current="page">Staffs</li>
+					</ol>
+				  </nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				  <div class="pe-1 mb-2">
+					   <a href="{% url 'people:staff-list' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						 <i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				  <div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printStaff();" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print">
+						 <i class="ti ti-printer"></i>
+					</button>
+				 </div>    
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);" class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"  data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportStaffPDF();"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportStaffExcel();"><i class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>                  
+				  <div class="mb-2">
+					<a href="{% url 'people:add-staff' %}" class="btn btn-primary d-flex align-items-center"><i
+						class="ti ti-square-rounded-plus me-2"></i>Add Staff</a>
+				  </div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Staff List</h4>
+				<div class="d-flex align-items-center flex-wrap">		
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+						value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"  data-bs-toggle="dropdown"  data-bs-auto-close="outside"><i class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'people:staff-list' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Name</label>
+												<select class="select" name="filter_name">
+													<option value="">Select</option>
+													{% for sname in staff_names %}
+													<option value="{{ sname }}" {% if filter_name == sname %}selected{% endif %}>{{ sname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Department</label>
+												<select class="select" name="filter_department">
+													<option value="">Select</option>
+													{% for dept in departments %}
+													<option value="{{ dept }}" {% if filter_department == dept %}selected{% endif %}>{{ dept }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Designation</label>
+												<select class="select" name="filter_designation">
+													<option value="">Select</option>
+													{% for desig in designations %}
+													<option value="{{ desig }}" {% if filter_designation == desig %}selected{% endif %}>{{ desig }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">More Filter</label>
+												<select class="select">
+													<option>Select</option>
+													<option>ID</option>
+													<option>Name</option>
+													<option>Department</option>
+													<option>Designation</option>
+													<option>Phone</option>
+													<option>Email</option>
+												</select>
+											</div>
+										</div>
+										
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'people:staff-list' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>									
+						</div>
+					</div>
+					
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"  data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by
+							{% if sort == "desc" %}Z-A{% else %}A-Z{% endif %}
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'people:staff-list' %}?sort=asc{% if filter_name %}&filter_name={{ filter_name }}{% endif %}{% if filter_department %}&filter_department={{ filter_department }}{% endif %}{% if filter_designation %}&filter_designation={{ filter_designation }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+									Ascending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'people:staff-list' %}?sort=desc{% if filter_name %}&filter_name={{ filter_name }}{% endif %}{% if filter_department %}&filter_department={{ filter_department }}{% endif %}{% if filter_designation %}&filter_designation={{ filter_designation }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+									Descending
+								</a>
+							</li>
+							<li>
+								<a href="javascript:void(0);" class="dropdown-item rounded-1">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="javascript:void(0);" class="dropdown-item rounded-1">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>	
+			</div>
+			<div class="card-body p-0 py-3">
+
+				<!-- Staffs List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>ID</th>
+							<th>Name</th>
+							<th>Department</th>
+							<th>Designation </th>
+							<th>Phone</th>
+							<th>Email</th>
+							<th>Date of Join</th>
+							<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for staff in staff_members %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input staff-checkbox" type="checkbox" value="{{ staff.pk }}">
+									</div>
+								</td>
+								<td><a href="{% url 'people:staff-details' staff.pk %}" class="link-primary">{{ staff.staff_id }}</a></td>
+								<td>
+									<div class="d-flex align-items-center">
+										<a href="{% url 'people:staff-details' staff.pk %}" class="avatar avatar-md">
+											{% if staff.profile_image %}
+											<img src="{{ staff.profile_image.url }}" class="img-fluid rounded-circle" alt="img">
+											{% else %}
+											<img src="{% static 'assets/img/profiles/avatar-27.jpg' %}" class="img-fluid rounded-circle" alt="img">
+											{% endif %}
+										</a>
+										<div class="ms-2">
+											<p class="text-dark mb-0"><a href="{% url 'people:staff-details' staff.pk %}">{{ staff.name }}</a>
+											</p>
+										</div>
+									</div>
+								</td>
+								<td>{{ staff.department|default:"-" }}</td>
+								<td>{{ staff.designation|default:"-" }}</td>
+								<td>{{ staff.primary_contact_number|default:"-" }}</td>
+								<td>{{ staff.email|default:"-" }}</td>
+								<td>{{ staff.date_of_join|date:"d M Y"|default:"-" }}</td>
+								<td>
+									<div class="d-flex align-items-center">
+										<div class="dropdown">
+											<a href="#"
+												class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+												data-bs-toggle="dropdown" aria-expanded="false">
+												<i class="ti ti-dots-vertical fs-14"></i>
+											</a>
+											<ul class="dropdown-menu dropdown-menu-right p-3">
+												<li>
+													<a class="dropdown-item rounded-1"
+														href="{% url 'people:staff-details' staff.pk %}"><i
+															class="ti ti-menu me-2"></i>View Staff</a>
+												</li>
+												<li>
+													<a class="dropdown-item rounded-1" href="{% url 'people:edit-staff' staff.pk %}"><i
+															class="ti ti-edit-circle me-2"></i>Edit</a>
+												</li>
+												<li>
+													<a class="dropdown-item rounded-1 delete-staff-btn"
+														href="javascript:void(0);"
+														data-pk="{{ staff.pk }}" data-name="{{ staff.name }}"><i
+															class="ti ti-trash-x me-2"></i>Delete</a>
+												</li>
+											</ul>
+										</div>
+									</div>
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Staffs List -->
+			</div>
+		</div>
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form action="{% url 'people:staff-list' %}" method="post">
+				{% csrf_token %}
+				<input type="hidden" name="delete_staff" value="1">
+				<input type="hidden" name="staff_id" id="delete-staff-id" value="">
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete <strong id="delete-staff-name"></strong>, this can't be undone once you delete.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+function getStaffData() {
+    var headers = ["ID", "Name", "Department", "Designation", "Phone", "Email", "Date of Join"];
+    var rows = [];
+    document.querySelectorAll('.datatable tbody tr').forEach(function(row) {
+        if (row.querySelector('td')) {
+            var cells = row.querySelectorAll('td');
+            var id = cells[1] ? cells[1].textContent.trim() : '';
+            var name = cells[2] ? cells[2].textContent.trim() : '';
+            var dept = cells[3] ? cells[3].textContent.trim() : '';
+            var desig = cells[4] ? cells[4].textContent.trim() : '';
+            var phone = cells[5] ? cells[5].textContent.trim() : '';
+            var email = cells[6] ? cells[6].textContent.trim() : '';
+            var joinDate = cells[7] ? cells[7].textContent.trim() : '';
+            rows.push([id, name, dept, desig, phone, email, joinDate]);
+        }
+    });
+    return {
+        headers: headers,
+        rows: rows,
+        reportTitle: "Staff List Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportStaffExcel() {
+    var data = getStaffData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "staff_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printStaff() {
+    var data = getStaffData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    var html = '<html><head><title>' + data.reportTitle + '</title>' +
+    '<style>' +
+    '@page{size:A4 landscape;margin:15mm;}' +
+    'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+    'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+    '.header-container{text-align:center;margin-bottom:40px;}' +
+    '.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+    '.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+    '.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+    '.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+    'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+    'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+    'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+    'tr:nth-child(even){background-color:#f8fafc;}' +
+    '.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+    '@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}' +
+    '</style></head><body>' +
+    '<div class="header-container">' +
+    '<div class="logo-section">' +
+    '<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+    '<span class="logo-text">PreSkool</span>' +
+    '</div>' +
+    '<div class="report-title">' + data.reportTitle + '</div>' +
+    '<div class="report-meta">' + data.schoolName + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+    '</div>' +
+    '<table><thead><tr>';
+    data.headers.forEach(function(h) { html += '<th>' + h + '</th>'; });
+    html += '</tr></thead><tbody>';
+    data.rows.forEach(function(row) {
+        html += '<tr>';
+        row.forEach(function(val) { html += '<td>' + val + '</td>'; });
+        html += '</tr>';
+    });
+    html += '</tbody></table>' +
+    '<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+    '<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+    '</body></html>';
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+function exportStaffPDF() {
+    printStaff();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Select all checkbox
+    var selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.staff-checkbox').forEach(function(cb) {
+                cb.checked = selectAll.checked;
+            });
+        });
+    }
+
+    // Delete staff button handler
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.delete-staff-btn');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            var pk = btn.dataset.pk;
+            var name = btn.dataset.name;
+            var idField = document.getElementById('delete-staff-id');
+            var nameField = document.getElementById('delete-staff-name');
+            if (idField) idField.value = pk;
+            if (nameField) nameField.textContent = name;
+            var modalEl = document.getElementById('delete-modal');
+            if (modalEl) {
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    });
+
+});
+</script>
+{% endblock extra_js %}

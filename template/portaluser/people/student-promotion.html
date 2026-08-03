@@ -1,0 +1,586 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<div class="row">
+			<div class="col-md-12">
+				<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+					<div class="my-auto mb-2">
+						<h3 class="page-title mb-1">Student Promotion</h3>
+						<nav>
+							<ol class="breadcrumb mb-0">
+								<li class="breadcrumb-item">
+									<a href="{% url 'home' %}">Dashboard</a>
+								</li>
+								<li class="breadcrumb-item">
+									<a href="javascript:void(0);">Students</a>
+								</li>
+								<li class="breadcrumb-item active" aria-current="page">Student Promotion</li>
+							</ol>
+						</nav>
+					</div>
+					<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+						<div class="pe-1 mb-2">
+							<a href="{% url 'people:student-promotion' %}" class="btn btn-outline-light bg-white btn-icon me-1"
+								data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+								data-bs-original-title="Refresh">
+								<i class="ti ti-refresh"></i>
+							</a>
+						</div>
+						<div class="pe-1 mb-2">
+							<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printPromotionStudents();"
+								data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+								data-bs-original-title="Print">
+								<i class="ti ti-printer"></i>
+							</button>
+						</div>
+						<div class="dropdown me-2 mb-2">
+							<a href="javascript:void(0);"
+								class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+								data-bs-toggle="dropdown">
+								<i class="ti ti-file-export me-2"></i>Export
+							</a>
+							<ul class="dropdown-menu  dropdown-menu-end p-3">
+								<li>
+									<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportPromotionStudentsPDF();"><i
+											class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+								</li>
+								<li>
+									<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportPromotionStudentsExcel();"><i
+											class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				<div
+					class="alert alert-outline-primary bg-primary-transparent p-2 d-flex align-items-center flex-wrap row-gap-2 mb-4">
+					<i class="ti ti-info-circle me-1"></i><strong>Note :</strong> Promoting Student from the
+					Present class to the Next Class will Create an enrollment of the student to the next Session
+				</div>
+				<div class="card">
+					<div class="card-header border-0 pb-0">
+						<div class="bg-light-gray p-3 rounded">
+							<h4>Promotion</h4>
+							<p>Select a Class to Promote next session and new class</p>
+						</div>
+					</div>
+					<div class="card-body">
+						<form method="get" action="{% url 'people:student-promotion' %}">
+							<div class="d-md-flex align-items-center justify-content-between">
+								<div class="card flex-fill w-100">
+									<div class="card-body pb-1">
+										<div class="mb-3">
+											<label class="form-label">Current Session <span class="text-danger">
+													*</span></label>
+											<div class="form-control-plaintext p-0">{{ current_academic_year.name|default:"2024 - 2025" }}</div>
+										</div>
+										<div>
+											<label class="form-label mb-2">Promotion from Class<span
+													class="text-danger"> *</span></label>
+											<div class="d-block d-md-flex">
+												<div class="mb-3 flex-fill me-md-3 me-0">
+													<label class="form-label">Class</label>
+													<select class="select" name="from_class" onchange="this.form.submit()">
+														<option value="">Select</option>
+														{% for cls in classes %}
+														<option value="{{ cls.name }}" {% if from_class == cls.name %}selected{% endif %}>{{ cls.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+												<div class="mb-3 flex-fill">
+													<label class="form-label">Section</label>
+													<select class="select" name="from_section" onchange="this.form.submit()">
+														<option value="">Select</option>
+														{% for sec in sections %}
+														<option value="{{ sec.name }}" {% if from_section == sec.name %}selected{% endif %}>{{ sec.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<a href="#"
+									class="badge bg-primary badge-xl exchange-link text-white d-flex align-items-center justify-content-center mx-md-4 mx-auto my-md-0 my-4 flex-shrink-0">
+									<span><i class="ti ti-arrows-exchange fs-16"></i></span>
+								</a>
+								<div class="card flex-fill w-100">
+									<div class="card-body pb-1">
+										<div class="mb-3">
+											<label class="form-label">Promote to Session <span
+													class="text-danger"> *</span></label>
+											<select class="select" name="to_session">
+												<option value="">Select</option>
+												<option value="2025/2026" {% if to_session == "2025/2026" %}selected{% endif %}>2025/2026</option>
+												{% for ay in academic_years %}
+												<option value="{{ ay.pk }}" {% if to_session|slugify == ay.pk|slugify %}selected{% endif %}>{{ ay.name }}</option>
+												{% endfor %}
+											</select>
+										</div>
+										<div>
+											<label class="form-label mb-2">Promotion to Class<span
+													class="text-danger"> *</span></label>
+											<div class="d-block d-md-flex">
+												<div class="mb-3 flex-fill me-md-3 me-0">
+													<label class="form-label">Class</label>
+													<select class="select" name="to_class" onchange="this.form.submit()">
+														<option value="">Select</option>
+														{% for cls in classes %}
+														<option value="{{ cls.name }}" {% if to_class == cls.name %}selected{% endif %}>{{ cls.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+												<div class="mb-3 flex-fill">
+													<label class="form-label">Section</label>
+													<select class="select" name="to_section">
+														<option value="">Select</option>
+														{% for sec in to_sections %}
+														<option value="{{ sec.name }}" {% if to_section == sec.name %}selected{% endif %}>{{ sec.name }}</option>
+														{% endfor %}
+													</select>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-12">
+								<div
+									class="manage-promote-btn d-flex justify-content-center flex-wrap row-gap-2">
+									<button type="reset" class="btn btn-light reset-promote me-3">Reset
+										Promotion</button>
+									<button type="submit" class="btn btn-primary promote-students-btn">Manage
+										Promotion</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				{% if from_class and to_class %}
+				<div class="promote-card-main">
+					<div class="card">
+						<div class="card-header border-0 pb-0">
+							<div class="bg-light-gray p-3 rounded">
+								<h4>Map Class Sections</h4>
+								<p>Select section mapping of old class to new class</p>
+							</div>
+						</div>
+						<div class="card-body pb-0">
+							<form method="get" action="{% url 'people:student-promotion' %}">
+								<input type="hidden" name="from_class" value="{{ from_class }}">
+								<input type="hidden" name="from_section" value="{{ from_section }}">
+								<input type="hidden" name="to_class" value="{{ to_class }}">
+								<input type="hidden" name="to_session" value="{{ to_session }}">
+								<div class="d-flex align-items-center justify-content-between">
+									<div class="card w-100">
+										<div class="card-body">
+											<div class="mb-3">
+												<label class="form-label">From Class<span class="text-danger">
+														*</span></label>
+												<div class="form-control-plaintext p-0">{{ from_class }}</div>
+											</div>
+											<div class="mb-0">
+												<label class="form-label d-block mb-3">Promotion from
+													Section<span class="text-danger"> *</span></label>
+												<label class="form-label d-block mb-2">Student From Section
+													<span class="text-danger"> *</span></label>
+												<div class="form-control-plaintext p-0">{{ from_section|default:"A" }}</div>
+											</div>
+										</div>
+									</div>
+									<a href="#"
+										class="badge bg-primary badge-xl exchange-link text-white d-flex align-items-center justify-content-center mx-md-4 mx-auto my-md-0 my-4 flex-shrink-0">
+										<span><i class="ti ti-arrows-exchange fs-16"></i></span>
+									</a>
+									<div class="card w-100">
+										<div class="card-body">
+											<div class="mb-3">
+												<label class="form-label">Promote to Class <span
+														class="text-danger"> *</span></label>
+												<div class="form-control-plaintext p-0">{{ to_class }}</div>
+											</div>
+											<div>
+												<label class="form-label mb-2">Assign to Section<span
+														class="text-danger"> *</span></label>
+												<div class="d-block d-md-flex">
+													<div class="mb-0 flex-fill me-0">
+														<label class="form-label">Section</label>
+														<select class="select" name="to_section" onchange="this.form.submit()">
+															<option value="">Select</option>
+															{% for sec in to_sections %}
+															<option value="{{ sec.name }}" {% if to_section == sec.name %}selected{% endif %}>{{ sec.name }}</option>
+															{% endfor %}
+														</select>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+					<!-- Students List -->
+					<div class="card">
+						<div
+							class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+							<h4 class="mb-3">Students List</h4>
+							<div class="d-flex align-items-center flex-wrap">
+								<div class="input-icon-start mb-3 me-2 position-relative">
+									<span class="icon-addon">
+										<i class="ti ti-calendar"></i>
+									</span>
+									<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+									value="Academic Year : {{ current_academic_year.name|default:'2024 / 2025' }}">
+								</div>
+								<div class="dropdown mb-3">
+									<a href="javascript:void(0);"
+										class="btn btn-outline-light bg-white dropdown-toggle"
+										data-bs-toggle="dropdown"><i
+											class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z </a>
+									<ul class="dropdown-menu p-3">
+										<li>
+											<a href="javascript:void(0);" class="dropdown-item rounded-1">
+												Ascending
+											</a>
+										</li>
+										<li>
+											<a href="javascript:void(0);" class="dropdown-item rounded-1">
+												Descending
+											</a>
+										</li>
+										<li>
+											<a href="javascript:void(0);" class="dropdown-item rounded-1">
+												Recently Viewed
+											</a>
+										</li>
+										<li>
+											<a href="javascript:void(0);" class="dropdown-item rounded-1">
+												Recently Added
+											</a>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<div class="card-body p-0 py-3">
+
+							<!-- Student List -->
+							<div class="custom-datatable-filter table-responsive">
+								<table class="table datatable">
+									<thead class="thead-light">
+										<tr>
+											<th class="no-sort">
+												<div class="form-check form-check-md">
+													<input class="form-check-input" type="checkbox"
+														id="select-all">
+												</div>
+											</th>
+											<th>Admission No</th>
+											<th>Roll No</th>
+											<th>Name</th>
+											<th>Class </th>
+											<th>Section</th>
+											<th>Exam Result</th>
+											<th class="no-sort">Action</th>
+										</tr>
+									</thead>
+									<tbody>
+										{% for student in students %}
+										<tr>
+											<td>
+												<div class="form-check form-check-md">
+													<input class="form-check-input student-checkbox" type="checkbox" value="{{ student.pk }}">
+												</div>
+											</td>
+											<td><a href="{% url 'people:student-details' student.pk %}"
+													class="link-primary">{{ student.admission_no }}</a></td>
+											<td>{{ student.roll_no }}</td>
+											<td>
+												<div class="d-flex align-items-center">
+													<a href="{% url 'people:student-details' student.pk %}" class="avatar avatar-md">
+														{% if student.profile_image %}
+														<img src="{{ student.profile_image.url }}"
+															class="img-fluid rounded-circle" alt="img">
+														{% else %}
+														<img src="{% static 'assets/img/students/student-01.jpg' %}"
+															class="img-fluid rounded-circle" alt="img">
+														{% endif %}
+													</a>
+													<div class="ms-2">
+														<p class="text-dark mb-0"><a
+																href="{% url 'people:student-details' student.pk %}">{{ student.name }}</a></p>
+													</div>
+												</div>
+											</td>
+											<td>{{ student.school_class.name }}</td>
+											<td>{{ student.section.name }}</td>
+											<td>
+														{% if student.result_status == "pass" %}
+												<span class="badge badge-soft-success d-inline-flex align-items-center"><i
+														class="ti ti-circle-filled fs-5 me-1"></i>Pass</span>
+												{% elif student.result_status == "fail" %}
+												<span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+														class="ti ti-circle-filled fs-5 me-1"></i>Fail</span>
+												{% else %}
+												<span class="badge badge-soft-secondary d-inline-flex align-items-center"><i
+														class="ti ti-circle-filled fs-5 me-1"></i>Not Graded</span>
+												{% endif %}
+											</td>
+											<td>
+												<div class="table-select mb-0">
+													<select class="select student-promote-action" data-pk="{{ student.pk }}">
+														<option value="">Select</option>
+														<option value="promote" {% if student.promotion_action == "promote" %}selected{% endif %}>Promote to {{ to_class }}</option>
+														<option value="nopromotion" {% if student.promotion_action == "nopromotion" %}selected{% endif %}>No Promotion</option>
+													</select>
+												</div>
+											</td>
+										</tr>
+										{% empty %}
+										<tr>
+											<td colspan="8" class="text-center">No students found for the selected class/section</td>
+										</tr>
+										{% endfor %}
+									</tbody>
+								</table>
+							</div>
+							<!-- /Student List -->
+						</div>
+					</div>
+					<!-- /Students List -->
+					<div class="promoted-year text-center">
+						<p>Selected Students will be promoted to {{ to_session_name|default:"2025 - 2026" }} Academic Session</p>
+						<a href="#" class="btn btn-primary" data-bs-toggle="modal"
+							data-bs-target="#student_promote">Promote Students</a>
+					</div>
+					<div class="toast-container success-msg-toast position-fixed">
+						<div id="topright-Toast" class="toast" role="alert" aria-live="assertive"
+							aria-atomic="true">
+							<div class="toast-header">
+								<p class="me-auto"><span><i
+											class="ti ti-square-check-filled text-success"></i></span>Successfully
+									Promoted</p>
+								<a href="#" class="toast-close" data-bs-dismiss="toast"
+									aria-label="Close"><span><i class="ti ti-x"></i></span>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<div class="modal fade" id="student_promote">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" action="{% url 'people:student-promotion' %}">
+				{% csrf_token %}
+				<input type="hidden" name="promote_students" value="1">
+				<input type="hidden" name="from_class" value="{{ from_class }}">
+				<input type="hidden" name="from_section" value="{{ from_section }}">
+				<input type="hidden" name="to_class" value="{{ to_class }}">
+				<input type="hidden" name="to_section" value="{{ to_section }}">
+				<input type="hidden" name="to_session" value="{{ to_session }}">
+				<input type="hidden" name="promotion_data" id="promotion_data" value="">
+				<div class="modal-body text-center">
+					<h4>Confirm Promotion</h4>
+					<p>Are you sure you want to promote all <strong id="selected-count">0</strong> selected students to the next academic session?</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger" id="toprightToastBtn">Promote</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+	var selectAll = document.getElementById('select-all');
+	if (selectAll) {
+		selectAll.addEventListener('change', function() {
+			document.querySelectorAll('.student-checkbox').forEach(function(cb) {
+				cb.checked = selectAll.checked;
+			});
+			updateSelectedCount();
+		});
+	}
+
+	document.querySelectorAll('.student-checkbox').forEach(function(cb) {
+		cb.addEventListener('change', function() {
+			updateSelectedCount();
+		});
+	});
+
+	document.querySelectorAll('.student-promote-action').forEach(function(sel) {
+		sel.addEventListener('change', function() {
+			var pk = this.dataset.pk;
+			var checkbox = document.querySelector('.student-checkbox[value="' + pk + '"]');
+			if (this.value === 'promote' && checkbox) {
+				checkbox.checked = true;
+			} else if (this.value === 'nopromotion' && checkbox) {
+				checkbox.checked = false;
+			}
+			updateSelectedCount();
+		});
+	});
+
+	function updateSelectedCount() {
+		var count = document.querySelectorAll('.student-checkbox:checked').length;
+		var el = document.getElementById('selected-count');
+		if (el) el.textContent = count;
+
+		var data = [];
+		document.querySelectorAll('.student-checkbox:checked').forEach(function(cb) {
+			data.push(cb.value);
+		});
+		var hidden = document.getElementById('promotion_data');
+		if (hidden) hidden.value = JSON.stringify(data);
+	}
+
+	var promoteBtn = document.querySelector('[data-bs-target="#student_promote"]');
+	if (promoteBtn) {
+		promoteBtn.addEventListener('click', function(e) {
+			updateSelectedCount();
+			var count = document.querySelectorAll('.student-checkbox:checked').length;
+			if (count === 0) {
+				e.preventDefault();
+				alert('Please select at least one student to promote.');
+			}
+		});
+	}
+});
+
+function getPromotionStudentsData() {
+    var headers = ["Admission No", "Roll No", "Name", "Class", "Section", "Exam Result"];
+    var rows = [];
+    document.querySelectorAll('.datatable tbody tr').forEach(function(row) {
+        if (row.querySelector('td')) {
+            var cells = row.querySelectorAll('td');
+            if (cells.length >= 7) {
+                var admissionNo = cells[1] ? cells[1].textContent.trim() : '';
+                var rollNo = cells[2] ? cells[2].textContent.trim() : '';
+                var name = cells[3] ? cells[3].textContent.trim() : '';
+                var cls = cells[4] ? cells[4].textContent.trim() : '';
+                var section = cells[5] ? cells[5].textContent.trim() : '';
+                var examResult = cells[6] ? cells[6].textContent.trim() : '';
+                rows.push([admissionNo, rollNo, name, cls, section, examResult]);
+            }
+        }
+    });
+    return {
+        headers: headers,
+        rows: rows,
+        reportTitle: "Student Promotion Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportPromotionStudentsExcel() {
+    var data = getPromotionStudentsData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "student_promotion_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printPromotionStudents() {
+    var data = getPromotionStudentsData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    var html = '<html><head><title>' + data.reportTitle + '</title>' +
+    '<style>' +
+    '@page{size:A4 landscape;margin:15mm;}' +
+    'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+    'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+    '.header-container{text-align:center;margin-bottom:40px;}' +
+    '.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+    '.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+    '.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+    '.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+    'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+    'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+    'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+    'tr:nth-child(even){background-color:#f8fafc;}' +
+    '.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+    '@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}' +
+    '</style></head><body>' +
+    '<div class="header-container">' +
+    '<div class="logo-section">' +
+    '<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+    '<span class="logo-text">PreSkool</span>' +
+    '</div>' +
+    '<div class="report-title">' + data.reportTitle + '</div>' +
+    '<div class="report-meta">' + data.schoolName + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+    '</div>' +
+    '<table><thead><tr>';
+    data.headers.forEach(function(h) { html += '<th>' + h + '</th>'; });
+    html += '</tr></thead><tbody>';
+    data.rows.forEach(function(row) {
+        html += '<tr>';
+        row.forEach(function(val) { html += '<td>' + val + '</td>'; });
+        html += '</tr>';
+    });
+    html += '</tbody></table>' +
+    '<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+    '<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+    '</body></html>';
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+function exportPromotionStudentsPDF() {
+    printPromotionStudents();
+}
+</script>
+{% endblock extra_js %}

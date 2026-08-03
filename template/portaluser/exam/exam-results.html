@@ -1,0 +1,441 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+
+        {% if messages %}
+        <div class="messages-container mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Exam Result</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="javascript:void(0);">Academic</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Exam Result</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="pe-1 mb-2">
+                    <a href="{% url 'exam:exam-results-list' %}" class="btn btn-outline-light bg-white btn-icon me-1"
+                        data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+                        data-bs-original-title="Refresh"><i class="ti ti-refresh"></i></a>
+                </div>
+                <div class="pe-1 mb-2">
+                    <button type="button" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+                        data-bs-placement="top" aria-label="Print" data-bs-original-title="Print" id="btn-print"><i
+                            class="ti ti-printer"></i></button>
+                </div>
+                <div class="dropdown me-2 mb-2">
+                    <a href="javascript:void(0);"
+                        class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+                        data-bs-toggle="dropdown"><i class="ti ti-file-export me-2"></i>Export</a>
+                    <ul class="dropdown-menu dropdown-menu-end p-3">
+                        <li><a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-pdf"><i
+                                    class="ti ti-file-type-pdf me-1"></i>Export as PDF</a></li>
+                        <li><a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-excel"><i
+                                    class="ti ti-file-type-xls me-1"></i>Export as Excel</a></li>
+                    </ul>
+                </div>
+                <div class="mb-2">
+                    <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add_result"><i
+                            class="ti ti-square-rounded-plus-filled me-2"></i>Add Result</a>
+                </div>
+                <div class="mb-2 ms-1">
+                    <a href="javascript:void(0);" class="btn btn-danger d-none" id="bulk-delete-btn"
+                        onclick="bulkDeleteSelected();"><i class="ti ti-trash me-2"></i>Delete Selected</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                <h4 class="mb-3">Exam Results</h4>
+                <div class="d-flex align-items-center flex-wrap">
+                    <div class="input-icon-start mb-3 me-2 position-relative">
+                        <span class="icon-addon">
+                            <i class="ti ti-calendar"></i>
+                        </span>
+                        <input type="text" class="form-control date-range bookingrange" placeholder="Select"
+                            value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+                    </div>
+                    <div class="dropdown mb-3 me-2">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+                                class="ti ti-filter me-2"></i>Filter</a>
+                        <div class="dropdown-menu drop-width">
+                            <form method="get" action="{% url 'exam:exam-results-list' %}">
+                                <div class="d-flex align-items-center border-bottom p-3">
+                                    <h4>Filter</h4>
+                                </div>
+                                <div class="p-3 border-bottom pb-0">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Class</label>
+                                                <select class="select" name="filter_class">
+                                                    <option value="">Select</option>
+                                                    {% for cname in class_names %}
+                                                    <option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Section</label>
+                                                <select class="select" name="filter_section">
+                                                    <option value="">Select</option>
+                                                    {% for sname in section_names %}
+                                                    <option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Exam</label>
+                                                <select class="select" name="filter_exam">
+                                                    <option value="">Select</option>
+                                                    {% for exam in exams %}
+                                                    <option value="{{ exam.pk }}" {% if filter_exam == exam.pk|stringformat:"d" %}selected{% endif %}>{{ exam.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-3 d-flex align-items-center justify-content-end">
+                                    <a href="{% url 'exam:exam-results-list' %}" class="btn btn-light me-3">Reset</a>
+                                    <button type="submit" class="btn btn-primary">Apply</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="dropdown mb-3">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z</a>
+                        <ul class="dropdown-menu p-3">
+                            <li><a href="{% url 'exam:exam-results-list' %}?sort=asc"
+                                    class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">Ascending</a>
+                            </li>
+                            <li><a href="{% url 'exam:exam-results-list' %}?sort=desc"
+                                    class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">Descending</a>
+                            </li>
+                            <li><a href="{% url 'exam:exam-results-list' %}?sort=recent"
+                                    class="dropdown-item rounded-1 {% if sort == 'recent' %}active{% endif %}">Recently
+                                    Viewed</a></li>
+                            <li><a href="{% url 'exam:exam-results-list' %}?sort=recent_added"
+                                    class="dropdown-item rounded-1 {% if sort == 'recent_added' %}active{% endif %}">Recently
+                                    Added</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0 py-3">
+                <div class="custom-datatable-filter table-responsive">
+                    <table class="table datatable" id="results-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th class="no-sort">
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" id="select-all">
+                                    </div>
+                                </th>
+                                <th>Admission No</th>
+                                <th>Student Name</th>
+                                {% for subj in subjects_list %}
+                                <th>{{ subj }}</th>
+                                {% endfor %}
+                                <th>Total</th>
+                                <th>Percent(%)</th>
+                                <th>Grade</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in results %}
+                            <tr data-result-pks="{{ row.result_pks }}">
+                                <td>
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" name="selected_items"
+                                            value="{{ row.result_pks }}">
+                                    </div>
+                                </td>
+                                <td><a href="{% url 'exam:student-result' row.student.pk %}"
+                                    class="link-primary">{{ row.student.admission_no }}</a></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if row.student.profile_image %}
+                                        <a href="{% url 'exam:student-result' row.student.pk %}"
+                                            class="avatar avatar-md"><img src="{{ row.student.profile_image.url }}"
+                                                class="img-fluid rounded-circle" alt="img"></a>
+                                        {% else %}
+                                        <a href="{% url 'exam:student-result' row.student.pk %}"
+                                            class="avatar avatar-md"><span
+                                                class="d-inline-flex align-items-center justify-content-center w-100 h-100 bg-primary rounded-circle text-white">{{ row.student.name|first }}</span></a>
+                                        {% endif %}
+                                        <div class="ms-2">
+                                            <p class="text-dark mb-0"><a
+                                                    href="{% url 'exam:student-result' row.student.pk %}">{{ row.student.name }}</a></p>
+                                            <span class="fs-12">Roll No : {{ row.student.roll_no|default:"-" }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                {% for marks in row.subject_marks_list %}
+                                <td>
+                                    {% if marks is not None %}
+                                    <span class="attendance-range">{{ marks }}</span>
+                                    {% else %}
+                                    <span>-</span>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                                <td><span class="attendance-range">{{ row.total_obtained }}</span></td>
+                                <td><span class="attendance-range">{{ row.percentage }}</span></td>
+                                <td><span class="attendance-range">{% if row.grade %}{{ row.grade.name }}{% else %}-{% endif %}</span></td>
+                                <td>
+                                    {% if row.is_pass %}
+                                    <span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                            class="ti ti-circle-filled fs-5 me-1"></i>Pass</span>
+                                    {% else %}
+                                    <span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                            class="ti ti-circle-filled fs-5 me-1"></i>Fail</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td class="text-center text-muted py-4">No exam results found.</td>
+                                <td></td>
+                                <td></td>
+                                {% for subj in subjects_list %}<td></td>{% endfor %}
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <form method="post" id="bulk-delete-form" action="{% url 'exam:exam-results-list' %}"
+                    style="display:none;">
+                    {% csrf_token %}
+                    <input type="hidden" name="bulk_delete" value="1">
+                    <div id="bulk-delete-items"></div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<div class="modal fade" id="add_result">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Exam Result</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close"><i
+                        class="ti ti-x"></i></button>
+            </div>
+            <form method="post" action="{% url 'exam:exam-results-list' %}">
+                {% csrf_token %}
+                <input type="hidden" name="add_result" value="1">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Student</label>
+                                <select class="select form-select" name="student" required>
+                                    <option value="">Select</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.pk }}">{{ student.name }} ({{ student.admission_no }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Exam</label>
+                                <select class="select form-select" name="exam" required>
+                                    <option value="">Select</option>
+                                    {% for exam in exams %}
+                                    <option value="{{ exam.pk }}">{{ exam.name }} ({{ exam.exam_id }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <!-- One marks field PER SUBJECT -->
+                        {% for subj in subjects_list %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">{{ subj }} Marks Obtained</label>
+                                <input type="number" class="form-control" name="marks_{{ subj }}"
+                                    placeholder="Enter marks for {{ subj }}" min="0" step="0.01">
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Grade</label>
+                                <select class="select form-select" name="grade">
+                                    <option value="">Select</option>
+                                    {% for grade in grades %}
+                                    <option value="{{ grade.pk }}">{{ grade.name }} ({{ grade.min_marks }}-{{ grade.max_marks }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Remarks</label>
+                                <input type="text" class="form-control" name="remarks" placeholder="Enter Remarks">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Add Result</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="delete-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="delete-result-form">
+                {% csrf_token %}
+                <div class="modal-body text-center">
+                    <span class="delete-icon"><i class="ti ti-trash-x"></i></span>
+                    <h4>Confirm Deletion</h4>
+                    <p>You want to delete results for <strong id="delete-result-name"></strong>, this can't be undone
+                        once you delete.</p>
+                    <div class="d-flex justify-content-center">
+                        <a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+    function bulkDeleteSelected() {
+        var checked = document.querySelectorAll('table.datatable tbody input[type="checkbox"]:checked');
+        if (checked.length === 0) { alert("Please select at least one item to delete."); return; }
+        if (!confirm("Are you sure you want to delete " + checked.length + " selected student result(s)?")) return;
+        var container = document.getElementById('bulk-delete-items');
+        container.innerHTML = '';
+        checked.forEach(function (cb) {
+            var pks = cb.value.split(',');
+            pks.forEach(function (pk) {
+                if (!pk) return;
+                var input = document.createElement('input');
+                input.type = 'hidden'; input.name = 'selected_items'; input.value = pk;
+                container.appendChild(input);
+            });
+        });
+        document.getElementById('bulk-delete-form').submit();
+    }
+
+    function toggleBulkDeleteBtn() {
+        var checked = document.querySelectorAll('table.datatable tbody input[type="checkbox"]:checked');
+        var btn = document.getElementById('bulk-delete-btn');
+        if (checked.length > 0) btn.classList.remove('d-none');
+        else btn.classList.add('d-none');
+    }
+
+    function buildExportUrl(baseUrl) {
+        var params = new URLSearchParams(window.location.search);
+        var url = baseUrl + '?';
+        if (params.get('filter_class')) url += 'filter_class=' + encodeURIComponent(params.get('filter_class')) + '&';
+        if (params.get('filter_section')) url += 'filter_section=' + encodeURIComponent(params.get('filter_section')) + '&';
+        if (params.get('filter_exam')) url += 'filter_exam=' + encodeURIComponent(params.get('filter_exam')) + '&';
+        if (params.get('sort')) url += 'sort=' + encodeURIComponent(params.get('sort')) + '&';
+        return url;
+    }
+
+    function printOrExportPDF() {
+        var url = buildExportUrl('{% url "exam:exam-results-export-pdf" %}');
+        window.open(url, '_blank');
+    }
+
+    function exportToExcel() {
+        var url = buildExportUrl('{% url "exam:exam-results-export-excel" %}');
+        window.location.href = url;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var btnPrint = document.getElementById('btn-print');
+        if (btnPrint) {
+            btnPrint.addEventListener('click', function (e) {
+                e.preventDefault();
+                printOrExportPDF();
+            });
+        }
+        var exportPdfEl = document.getElementById('export-pdf');
+        if (exportPdfEl) {
+            exportPdfEl.addEventListener('click', function (e) {
+                e.preventDefault();
+                printOrExportPDF();
+            });
+        }
+        var exportExcelEl = document.getElementById('export-excel');
+        if (exportExcelEl) {
+            exportExcelEl.addEventListener('click', function (e) {
+                e.preventDefault();
+                exportToExcel();
+            });
+        }
+
+        var selectAllEl = document.getElementById('select-all');
+        if (selectAllEl) {
+            selectAllEl.addEventListener('change', function () {
+                document.querySelectorAll('table.datatable tbody input[type="checkbox"]').forEach(function (cb) { cb.checked = selectAllEl.checked; });
+                toggleBulkDeleteBtn();
+            });
+        }
+        document.querySelectorAll('table.datatable tbody input[type="checkbox"]').forEach(function (cb) {
+            cb.addEventListener('change', toggleBulkDeleteBtn);
+        });
+
+        document.querySelectorAll('.modal').forEach(function (modal) {
+            modal.addEventListener('shown.bs.modal', function () {
+                $(this).find('.select').each(function () {
+                    if (!$(this).data('select2')) {
+                        $(this).select2({ dropdownParent: $(this).closest('.modal'), width: '100%' });
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock extra_js %}

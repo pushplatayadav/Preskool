@@ -1,0 +1,655 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/plugins/bootstrap-tagsinput/bootstrap-tagsinput.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content content-two">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="mb-1">Add Teacher</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="{% url 'people:teacher-list' %}">Teachers</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Add Teacher</li>
+					</ol>
+				</nav>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="row">
+
+			<div class="col-md-12">
+
+				<form method="post" enctype="multipart/form-data" action="{% url 'people:add-teacher' %}">
+					{% csrf_token %}
+
+					<!-- Personal Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-info-square-rounded fs-16"></i>
+								</span>
+								<h4 class="text-dark">Personal Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-md-12">
+									<div class="d-flex align-items-center flex-wrap row-gap-3 mb-3">
+										<div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+											<i class="ti ti-photo-plus fs-16"></i>
+										</div>
+										<div class="profile-upload">
+											<div class="profile-uploader d-flex align-items-center">
+												<div class="drag-upload-btn mb-3">
+													Upload
+													<input type="file" name="profile_image" class="form-control image-sign" accept="image/*">
+												</div>
+												<a href="javascript:void(0);" class="btn btn-primary mb-3">Remove</a>
+											</div>
+											<p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="row row-cols-xxl-5 row-cols-md-6">
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Teacher ID</label>
+										<input type="text" name="teacher_id" class="form-control" value="{{ next_teacher_id }}" readonly>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">First Name <span class="text-danger">*</span></label>
+										<input type="text" name="first_name" class="form-control" required>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Last Name</label>
+										<input type="text" name="last_name" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Class</label>
+										<select class="select" name="school_class">
+											<option>Select</option>
+											{% for cname in class_names %}
+											<option value="{{ cname }}">{{ cname }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Subject</label>
+										<select class="select" name="subject">
+											<option value="">Select</option>
+											{% for subject in subjects %}
+											<option value="{{ subject.pk }}">{{ subject.name }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Gender</label>
+										<select class="select" name="gender">
+											<option>Select</option>
+											<option value="male">Male</option>
+											<option value="female">Female</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Phone Number</label>
+										<input type="text" name="phone" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Primary Contact Number</label>
+										<input type="text" name="primary_contact_number" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Email Address</label>
+										<input type="email" name="email" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Blood Group</label>
+										<select class="select" name="blood_group">
+											<option>Select</option>
+											<option value="A+">A+</option>
+											<option value="A-">A-</option>
+											<option value="B+">B+</option>
+											<option value="B-">B-</option>
+											<option value="AB+">AB+</option>
+											<option value="AB-">AB-</option>
+											<option value="O+">O+</option>
+											<option value="O-">O-</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Date of Joining</label>
+										<div class="input-icon position-relative">
+											<span class="input-icon-addon">
+												<i class="ti ti-calendar"></i>
+											</span>
+											<input type="text" name="date_of_join" class="form-control datetimepicker">
+										</div>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Father's Name</label>
+										<input type="text" name="father_name" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Mother's Name</label>
+										<input type="text" name="mother_name" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Date of Birth</label>
+										<div class="input-icon position-relative">
+											<span class="input-icon-addon">
+												<i class="ti ti-calendar"></i>
+											</span>
+											<input type="text" name="date_of_birth" class="form-control datetimepicker">
+										</div>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Marital Status</label>
+										<select class="select" name="marital_status">
+											<option>Select</option>
+											<option value="single">Single</option>
+											<option value="married">Married</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Language Known</label>
+										<input class="input-tags form-control" type="text" data-role="tagsinput" name="languages_known" value="English, Spanish">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Qualification</label>
+										<input type="text" name="qualification" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Work Experience</label>
+										<input type="text" name="work_experience" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Previous School if Any</label>
+										<input type="text" name="previous_school" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Previous School Address</label>
+										<input type="text" name="previous_school_address" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Previous School Phone No</label>
+										<input type="text" name="previous_school_phone" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Address</label>
+										<input type="text" name="address" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Permanent Address</label>
+										<input type="text" name="permanent_address" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">PAN Number / ID Number</label>
+										<input type="text" name="pan_number" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl-3 col-xl-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Status</label>
+										<select class="select" name="status">
+											<option>Select</option>
+											<option value="active">Active</option>
+											<option value="inactive">Inactive</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-xxl-12 col-xl-12">
+									<div class="mb-3">
+										<label class="form-label">Notes</label>
+										<textarea class="form-control" name="notes" placeholder="Other Information" rows="4"></textarea>
+									</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+					<!-- /Personal Information -->
+
+					<!-- Payroll -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-user-shield fs-16"></i>
+								</span>
+								<h4 class="text-dark">Payroll</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">EPF No</label>
+										<input type="text" name="epf_no" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Basic Salary</label>
+										<input type="text" name="basic_salary" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Contract Type</label>
+										<select class="select" name="contract_type">
+											<option>Select</option>
+											<option value="permanent">Permanent</option>
+											<option value="temporary">Temporary</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Work Shift</label>
+										<select class="select" name="work_shift">
+											<option>Select</option>
+											<option value="morning">Morning</option>
+											<option value="afternoon">Afternoon</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Work Location</label>
+										<input type="text" name="work_location" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Date of Leaving</label>
+										<div class="input-icon position-relative">
+											<span class="input-icon-addon">
+												<i class="ti ti-calendar"></i>
+											</span>
+											<input type="text" name="date_of_leaving" class="form-control datetimepicker">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Payroll -->
+
+					<!-- Leaves -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-users fs-16"></i>
+								</span>
+								<h4 class="text-dark">Leaves</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Medical Leaves</label>
+										<input type="text" name="medical_leaves" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Casual Leaves</label>
+										<input type="text" name="casual_leaves" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Maternity Leaves</label>
+										<input type="text" name="maternity_leaves" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-3 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Sick Leaves</label>
+										<input type="text" name="sick_leaves" class="form-control">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Leaves -->
+
+					<!-- Bank Details -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-map fs-16"></i>
+								</span>
+								<h4 class="text-dark">Bank Account Detail</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Account Name</label>
+										<input type="text" name="account_name" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Account Number</label>
+										<input type="text" name="account_number" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Bank Name</label>
+										<input type="text" name="bank_name" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">IFSC Code</label>
+										<input type="text" name="ifsc_code" class="form-control">
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Branch Name</label>
+										<input type="text" name="branch_name" class="form-control">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Bank Details -->
+
+					<!-- Transport Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-bus-stop fs-16"></i>
+								</span>
+								<h4 class="text-dark">Transport Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Route</label>
+										<select class="select" name="route">
+											<option>Select</option>
+											<option>Newyork</option>
+											<option>Denver</option>
+											<option>Chicago</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle Number</label>
+										<select class="select" name="vehicle_number">
+											<option>Select</option>
+											<option>AM 54548</option>
+											<option>AM 64528</option>
+											<option>AM 123548</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Pickup Point</label>
+										<select class="select" name="pickup_point">
+											<option>Select</option>
+											<option>Cincinatti</option>
+											<option>Illinois</option>
+											<option>Morgan</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Transport Information -->
+
+					<!-- Hostel Information -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-building-fortress fs-16"></i>
+								</span>
+								<h4 class="text-dark">Hostel Information</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Hostel</label>
+										<select class="select" name="hostel">
+											<option>Select</option>
+											<option>Phoenix Residence</option>
+											<option>Tranquil Haven</option>
+											<option>Radiant Towers</option>
+											<option>Nova Nest</option>
+										</select>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Room No</label>
+										<select class="select" name="room_no">
+											<option>Select</option>
+											<option>20</option>
+											<option>22</option>
+											<option>24</option>
+											<option>26</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Hostel Information -->
+
+					<!-- Social Media Links -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-building fs-16"></i>
+								</span>
+								<h4 class="text-dark">Social Media Links</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row rows-cols-xxl-5">
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Facebook</label>
+										<input type="text" name="facebook" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Instagram</label>
+										<input type="text" name="instagram" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Linked In</label>
+										<input type="text" name="linkedin" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Youtube</label>
+										<input type="text" name="youtube" class="form-control">
+									</div>
+								</div>
+								<div class="col-xxl col-xl-3 col-lg-4 col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Twitter URL</label>
+										<input type="text" name="twitter" class="form-control">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Social Media Links -->
+
+					<!-- Documents -->
+					<div class="card">
+						<div class="card-header bg-light">
+							<div class="d-flex align-items-center">
+								<span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+									<i class="ti ti-file fs-16"></i>
+								</span>
+								<h4 class="text-dark">Documents</h4>
+							</div>
+						</div>
+						<div class="card-body pb-1">
+							<div class="row">
+								<div class="col-lg-6">
+									<div class="mb-2">
+										<div class="mb-3">
+											<label class="form-label">Upload Resume</label>
+											<p>Upload image size of 4MB, Accepted Format PDF</p>
+										</div>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+												<i class="ti ti-file-upload me-1"></i>Change
+												<input type="file" name="resume" class="form-control image_sign" accept=".pdf">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-6">
+									<div class="mb-2">
+										<div class="mb-3">
+											<label class="form-label">Upload Joining Letter</label>
+											<p>Upload image size of 4MB, Accepted Format PDF</p>
+										</div>
+										<div class="d-flex align-items-center flex-wrap">
+											<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+												<i class="ti ti-file-upload me-1"></i>Upload Document
+												<input type="file" name="joining_letter" class="form-control image_sign" accept=".pdf">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Documents -->
+
+					<div class="text-end">
+						<a href="{% url 'people:teacher-list' %}" class="btn btn-light me-3">Cancel</a>
+						<button type="submit" class="btn btn-primary">Add Teacher</button>
+					</div>
+
+				</form>
+
+			</div>
+
+		</div>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/plugins/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+<script>
+	$(document).ready(function() {
+		$('.datetimepicker').datetimepicker({
+			format: 'DD/MM/YYYY',
+			icons: {
+				up: "ti ti-chevron-up",
+				down: "ti ti-chevron-down",
+				next: "ti ti-chevron-right",
+				previous: "ti ti-chevron-left"
+			}
+		});
+
+		$('.input-tags').tagsinput({
+			tagClass: 'badge badge-primary'
+		});
+	});
+</script>
+{% endblock extra_js %}

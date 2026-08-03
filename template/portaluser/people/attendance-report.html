@@ -1,0 +1,528 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+{% load people_extras %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<style>
+.attendance-types { display: flex; align-items: center; flex-wrap: wrap; padding: 15px 0; }
+.attendance-type-list { list-style: none; display: flex; flex-wrap: wrap; gap: 20px; margin: 0; padding: 0; }
+.attendance-type-list li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.attendance-icon { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+.attendance-range { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+.bg-pending { background-color: #e67e00; }
+.day-num { font-weight: 600; }
+.no-sort { white-space: nowrap; }
+.drop-width { min-width: 400px; }
+@media print { .no-print { display: none !important; } }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Attendance Report</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Report</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Attendance
+							Report</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'people:attendance-report' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print" id="btn-print" onclick="printReport();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-pdf"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-excel"><i class="ti ti-file-type-xls me-1"></i>Export as Excel</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Filter Section -->
+		<div class="filter-wrapper">
+			<!-- List Tab -->
+			<div class="list-tab">
+				<ul>
+					<li>
+						<a href="{% url 'people:attendance-report' %}" class="active">Attendance Report</a>
+					</li>
+					<li>
+						<a href="{% url 'people:student-attendance' %}">Students Attendance Type</a>
+					</li>
+					<li>
+						<a href="{% url 'people:student-attendance' %}">Daily Attendance</a>
+					</li>
+					<li>
+						<a href="{% url 'people:student-attendance' %}">Student Day Wise</a>
+					</li>
+					<li>
+						<a href="{% url 'people:teacher-attendance' %}">Teacher Day Wise</a>
+					</li>
+					<li>
+						<a href="{% url 'people:teacher-attendance' %}">Teacher Report</a>
+					</li>
+					<li>
+						<a href="{% url 'people:staff-attendance' %}">Staff Day Wise</a>
+					</li>
+					<li>
+						<a href="{% url 'people:staff-attendance' %}">Staff Report</a>
+					</li>
+				</ul>
+			</div>
+			<!-- /List Tab -->
+		</div>
+		<!-- /Filter Section -->
+
+		<div class="attendance-types page-header justify-content-end">
+			<ul class="attendance-type-list">
+				<li>
+					<span class="attendance-icon bg-success"><i class="ti ti-checks"></i></span>
+					Present
+				</li>
+				<li>
+					<span class="attendance-icon bg-danger"><i class="ti ti-x"></i></span>
+					Absent
+				</li>
+				<li>
+					<span class="attendance-icon bg-pending"><i class="ti ti-clock-x"></i></span>
+					Late
+				</li>
+				<li>
+					<span class="attendance-icon bg-dark"><i class="ti ti-calendar-event"></i></span>
+					Halfday
+				</li>
+				<li>
+					<span class="attendance-icon bg-info"><i class="ti ti-clock-up"></i></span>
+					Holiday
+				</li>
+			</ul>
+		</div>
+
+		<!-- Attendance List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Attendance Report</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+						value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'people:attendance-report' %}">
+								<input type="hidden" name="filter_month" value="{{ filter_month }}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Class</label>
+												<select class="select" name="filter_class">
+													<option value="">Select</option>
+													{% for cname in class_names %}
+													<option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Section</label>
+												<select class="select" name="filter_section">
+													<option value="">Select</option>
+													{% for sname in section_names %}
+													<option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-3">
+												<label class="form-label">Name</label>
+												<select class="select" name="filter_name">
+													<option value="">Select</option>
+													{% for student in students %}
+													<option value="{{ student.name }}" {% if filter_name == student.name %}selected{% endif %}>{{ student.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Gender</label>
+												<select class="select" name="filter_gender">
+													<option value="">Select</option>
+													<option value="male" {% if filter_gender == 'male' %}selected{% endif %}>Male</option>
+													<option value="female" {% if filter_gender == 'female' %}selected{% endif %}>Female</option>
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Status</label>
+												<select class="select" name="filter_status">
+													<option value="">Select</option>
+													<option value="active" {% if filter_status == 'active' %}selected{% endif %}>Active</option>
+													<option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'people:attendance-report' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort != 'desc' %}active{% endif %}" data-sort="asc">Ascending</a>
+							</li>
+							<li>
+								<a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'desc' %}active{% endif %}" data-sort="desc">Descending</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+
+				<!-- Student List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table" id="attendance-report-table">
+						<thead class="thead-light">
+							<tr>
+								<th>Student / Date</th>
+								<th>%</th>
+								<th class="no-sort">P</th>
+								<th class="no-sort">L</th>
+								<th class="no-sort">A</th>
+								<th class="no-sort">H</th>
+								<th class="no-sort">F</th>
+								{% for day in days_info %}
+								<th class="no-sort">
+									<div class="text-center"><span class="day-num d-block">{{ day.day_num }}</span><span>{{ day.day_short }}</span></div>
+								</th>
+								{% endfor %}
+							</tr>
+						</thead>
+						<tbody>
+							{% for student in students %}
+							<tr>
+								<td>
+									<div class="d-flex align-items-center">
+										<a href="{% url 'people:student-details' student.pk %}" class="avatar avatar-md">
+											<img src="{% if student.profile_image %}{{ student.profile_image.url }}{% else %}{% static 'assets/img/students/student-01.jpg' %}{% endif %}"
+											class="img-fluid rounded-circle" alt="img">
+										</a>
+										<div class="ms-2">
+											<p class="text-dark mb-0"><a href="{% url 'people:student-details' student.pk %}">{{ student.name }}</a></p>
+										</div>
+									</div>
+								</td>
+								{% with stats=student_stats|get_item:student.pk %}
+								<td>
+									{% if stats.percentage >= 90 %}
+									<span class="badge badge-soft-success">{{ stats.percentage }}</span>
+									{% elif stats.percentage >= 50 %}
+									<span class="badge badge-soft-info">{{ stats.percentage }}</span>
+									{% else %}
+									<span class="badge badge-soft-danger">{{ stats.percentage }}</span>
+									{% endif %}
+								</td>
+								<td>{{ stats.present }}</td>
+								<td>{{ stats.late }}</td>
+								<td>{{ stats.absent }}</td>
+								<td>{{ stats.holiday }}</td>
+								<td>{{ stats.half_day }}</td>
+								{% for day in days_info %}
+								<td>
+									{% with status=attendance_matrix|get_item:student.pk|get_item:day.date %}
+									{% if status == 'present' %}
+									<span class="attendance-range bg-success"></span>
+									{% elif status == 'late' %}
+									<span class="attendance-range bg-pending"></span>
+									{% elif status == 'absent' %}
+									<span class="attendance-range bg-danger"></span>
+									{% elif status == 'half_day' %}
+									<span class="attendance-range bg-dark"></span>
+									{% elif status == 'holiday' %}
+									<span class="attendance-range bg-info"></span>
+									{% else %}
+									<span class="attendance-range" style="background:#e9ecef"></span>
+									{% endif %}
+									{% endwith %}
+								</td>
+								{% endfor %}
+								{% endwith %}
+							</tr>
+							{% empty %}
+							<tr>
+								<td colspan="{{ days_info|length|add:'7' }}" class="text-center text-muted py-4">
+									{% if filter_class or filter_section or filter_name %}
+									No students found for the selected filters.
+									{% else %}
+									No active students found. Please add students first.
+									{% endif %}
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Student List -->
+			</div>
+		</div>
+		<!-- /Attendance List -->
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+if ($('#attendance-report-table').length > 0) {
+	if ($.fn.DataTable.isDataTable('#attendance-report-table')) {
+		$('#attendance-report-table').DataTable().destroy();
+	}
+	$('#attendance-report-table').DataTable({
+		"bFilter": true,
+		"ordering": true,
+		"info": true,
+		"lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+		"pageLength": 25,
+		"language": {
+			search: ' ',
+			sLengthMenu: 'Row Per Page _MENU_ Entries',
+			searchPlaceholder: "Search",
+			info: "_START_ - _END_ of _TOTAL_ entries",
+			paginate: {
+				next: ' Next',
+				previous: 'Prev '
+			}
+		}
+	});
+}
+</script>
+<script>
+function getReportData() {
+	var headers = ["Student Name", "%", "P", "L", "A", "H", "F"];
+	var dayLabels = [];
+	{% for day in days_info %}
+	dayLabels.push("{{ day.day_num }}");
+	{% endfor %}
+	headers = headers.concat(dayLabels);
+	var data = [];
+	var rows = [];
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('#attendance-report-table')) {
+		var table = $('#attendance-report-table').DataTable();
+		table.rows({ search: 'applied' }).every(function() {
+			rows.push(this.node());
+		});
+	} else {
+		rows = document.querySelectorAll("#attendance-report-table tbody tr");
+	}
+	rows.forEach(function(tr) {
+		if (!tr.parentNode) return;
+		var cols = tr.querySelectorAll("td");
+		if (cols.length < 7) return;
+		var row = [];
+		var nameLink = cols[0].querySelector(".text-dark a");
+		row.push(nameLink ? nameLink.innerText.trim() : cols[0].innerText.trim());
+		for (var i = 1; i < cols.length; i++) {
+			var span = cols[i].querySelector("span");
+			row.push(span ? (span.innerText.trim() || span.className) : cols[i].innerText.trim());
+		}
+		data.push(row);
+	});
+	return {
+		headers: headers,
+		rows: data,
+		reportTitle: "Attendance Report",
+		schoolName: "{{ school_name|default:'Global International' }}",
+		month: "{{ filter_month }}"
+	};
+}
+
+function printReport() {
+	var data = getReportData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = window.open("", "_blank");
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+	var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+	var parts = data.month.split("-");
+	var monthLabel = monthNames[parseInt(parts[1]) - 1] + " " + parts[0];
+	var html = `
+	<html>
+	<head>
+		<title>` + data.reportTitle + `</title>
+		<style>
+			@page { size: A4 landscape; margin: 20mm; }
+			body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 40px; color: #333; background-color: #fff; position: relative; min-height: 100%; }
+			body::before { content: "PRESKOOL"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 100px; font-weight: 900; color: rgba(79, 70, 229, 0.04); z-index: -1; pointer-events: none; white-space: nowrap; letter-spacing: 15px; }
+			.header-container { text-align: center; margin-bottom: 40px; }
+			.logo-section { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; }
+			.logo-text { font-size: 32px; font-weight: 700; color: #1e3a8a; letter-spacing: -0.5px; }
+			.report-title { font-size: 26px; font-weight: 800; color: #4f46e5; margin: 5px 0; }
+			.report-meta { font-size: 13px; color: #64748b; margin-top: 8px; }
+			table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; background: transparent; }
+			th, td { border: 1px solid #e2e8f0; padding: 12px 16px; text-align: center; }
+			th { background-color: #f0f3ff; color: #4f46e5; font-weight: 600; }
+			tr:nth-child(even) { background-color: #f8fafc; }
+			.attendance-range { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+			.bg-success { background-color: #28a745; }
+			.bg-danger { background-color: #dc3545; }
+			.bg-pending { background-color: #e67e00; }
+			.bg-dark { background-color: #343a40; }
+			.bg-info { background-color: #17a2b8; }
+			.footer { margin-top: 60px; text-align: center; font-size: 12px; color: #94a3b8; }
+			.text-left { text-align: left; }
+			@media print { @page { size: A4 landscape; margin: 20mm; } body { padding: 0; margin: 0; width: 297mm; } }
+		</style>
+	</head>
+	<body>
+		<div class="header-container">
+			<div class="logo-section">
+				<img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+				<span class="logo-text">PreSkool</span>
+			</div>
+			<div class="report-title">` + data.reportTitle + `</div>
+			<div class="report-meta">` + data.schoolName + ` | Month: ` + monthLabel + ` | Generated on: ` + new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'short', year: 'numeric'}) + `</div>
+		</div>
+		<table>
+			<thead><tr>`;
+	data.headers.forEach(function(h) {
+		html += `<th>` + h + `</th>`;
+	});
+	html += `</tr></thead><tbody>`;
+	data.rows.forEach(function(row) {
+		html += `<tr>`;
+		row.forEach(function(cell, idx) {
+			var cls = idx === 0 ? ' class="text-left"' : '';
+			if (cell && (cell.indexOf('bg-') !== -1 || cell.indexOf('badge') !== -1)) {
+				var colorMatch = cell.match(/bg-\w+/);
+				if (colorMatch) {
+					html += `<td${cls}><span class="attendance-range ` + colorMatch[0] + `"></span></td>`;
+					return;
+				}
+				var badgeMatch = cell.match(/badge-soft-\w+/);
+				if (badgeMatch) {
+					var numMatch = row[idx] ? row[idx] : cell;
+					html += `<td${cls}>` + numMatch + `</td>`;
+					return;
+				}
+			}
+			html += `<td${cls}>` + (cell || '-') + `</td>`;
+		});
+		html += `</tr>`;
+	});
+	html += `</tbody></table>
+		<div class="footer">&copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.</div>
+		<script>window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); };<` + `/script>
+	</body></html>`;
+	printWindow.document.write(html);
+	printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	var monthInput = document.getElementById('filter-month');
+	if (monthInput) {
+		monthInput.addEventListener('change', function() {
+			var url = new URL(window.location.href);
+			url.searchParams.set('filter_month', this.value);
+			window.location.href = url.toString();
+		});
+	}
+
+	var sortOptions = document.querySelectorAll('.sort-option');
+	sortOptions.forEach(function(el) {
+		el.addEventListener('click', function(e) {
+			e.preventDefault();
+			var sortVal = this.getAttribute('data-sort');
+			var url = new URL(window.location.href);
+			url.searchParams.set('sort', sortVal);
+			window.location.href = url.toString();
+		});
+	});
+
+	var exportPdfBtn = document.getElementById('export-pdf');
+	if (exportPdfBtn) {
+		exportPdfBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var url = "{% url 'people:attendance-report-export-pdf' %}?" + window.location.search.substring(1);
+			window.open(url, '_blank');
+		});
+	}
+
+	var exportExcelBtn = document.getElementById('export-excel');
+	if (exportExcelBtn) {
+		exportExcelBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var url = "{% url 'people:attendance-report-export-excel' %}?" + window.location.search.substring(1);
+			window.location.href = url;
+		});
+	}
+});
+</script>
+{% endblock extra_js %}

@@ -1,0 +1,793 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Fees Collection</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Fees Collection</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Fees Type</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'fees:fees-type-list' %}" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+						data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+						data-bs-original-title="Print" onclick="printOrExportPDF();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1"
+								onclick="printOrExportPDF();"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1"
+								onclick="exportToExcel();"><i class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+						data-bs-target="#add_fees_Type"><i class="ti ti-square-rounded-plus-filled me-2"></i>Add Fees
+						Type</a>
+				</div>
+				<div class="mb-2 ms-1">
+					<a href="javascript:void(0);" class="btn btn-danger d-none" id="bulk-delete-btn"
+						onclick="bulkDeleteSelected();"><i class="ti ti-trash me-2"></i>Delete Selected</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Fees Type List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Fees Collection</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+							value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'fees:fees-type-list' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">ID</label>
+												<select class="select" name="filter_id">
+													<option value="">Select</option>
+													{% for opt in id_options %}
+													<option value="{{ opt }}"
+														{% if filter_id == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Name</label>
+												<select class="select" name="filter_name">
+													<option value="">Select Name</option>
+													{% for opt in name_options %}
+													<option value="{{ opt }}"
+														{% if filter_name == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Fees Group</label>
+												<select class="select" name="filter_group">
+													<option value="">Select Fees Group</option>
+													{% for group in group_options %}
+													<option value="{{ group.id }}"
+														{% if filter_group == group.id|stringformat:"s" %}selected{% endif %}>{{ group.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Fees Type</label>
+												<select class="select" name="filter_type">
+													<option value="">Select Fees Type</option>
+													{% for opt in type_options %}
+													<option value="{{ opt }}"
+														{% if filter_type == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-0">
+												<label class="form-label">Status</label>
+												<select class="select" name="filter_status">
+													<option value="">Select</option>
+													<option value="active"
+														{% if filter_status == "active" %}selected{% endif %}>Active</option>
+													<option value="inactive"
+														{% if filter_status == "inactive" %}selected{% endif %}>Inactive</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'fees:fees-type-list' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'fees:fees-type-list' %}?sort=asc{% if filter_id %}&filter_id={{ filter_id }}{% endif %}{% if filter_name %}&filter_name={{ filter_name }}{% endif %}{% if filter_group %}&filter_group={{ filter_group }}{% endif %}{% if filter_type %}&filter_type={{ filter_type }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+									Ascending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:fees-type-list' %}?sort=desc{% if filter_id %}&filter_id={{ filter_id }}{% endif %}{% if filter_name %}&filter_name={{ filter_name }}{% endif %}{% if filter_group %}&filter_group={{ filter_group }}{% endif %}{% if filter_type %}&filter_type={{ filter_type }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+									Descending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:fees-type-list' %}?sort=recent{% if filter_id %}&filter_id={{ filter_id }}{% endif %}{% if filter_name %}&filter_name={{ filter_name }}{% endif %}{% if filter_group %}&filter_group={{ filter_group }}{% endif %}{% if filter_type %}&filter_type={{ filter_type }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recent' %}active{% endif %}">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:fees-type-list' %}?sort=recent_added{% if filter_id %}&filter_id={{ filter_id }}{% endif %}{% if filter_name %}&filter_name={{ filter_name }}{% endif %}{% if filter_group %}&filter_group={{ filter_group }}{% endif %}{% if filter_type %}&filter_type={{ filter_type }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recent_added' %}active{% endif %}">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+
+				<!-- Fees Type Table -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>ID</th>
+								<th>Fees Type</th>
+								<th>Fees Code</th>
+								<th>Fees Group</th>
+								<th>Description</th>
+								<th>Status</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for ft in fees_types %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" name="selected_items"
+											value="{{ ft.pk }}">
+									</div>
+								</td>
+								<td><a href="javascript:void(0);" class="link-primary">{{ ft.code|default:"-" }}</a></td>
+								<td>{{ ft.name }}</td>
+								<td>{{ ft.fees_code }}</td>
+								<td>{{ ft.fees_group.name|default:"-" }}</td>
+								<td>{{ ft.description|default:"-" }}</td>
+								<td>
+									{% if ft.is_active %}
+									<span class="badge badge-soft-success d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>Active</span>
+									{% else %}
+									<span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>Inactive</span>
+									{% endif %}
+								</td>
+								<td>
+									<div class="d-flex align-items-center">
+										<div class="dropdown">
+											<a href="#"
+												class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+												data-bs-toggle="dropdown" aria-expanded="false">
+												<i class="ti ti-dots-vertical fs-14"></i>
+											</a>
+											<ul class="dropdown-menu dropdown-menu-right p-3">
+												<li>
+													<a class="dropdown-item rounded-1 edit-fees-type-btn" href="#"
+														data-bs-toggle="modal" data-bs-target="#edit_fees_Type"
+														data-pk="{{ ft.pk }}"
+														data-code="{{ ft.code|default:'' }}"
+														data-name="{{ ft.name }}"
+														data-group="{{ ft.fees_group_id|default:'' }}"
+														data-description="{{ ft.description }}"
+														data-status="{% if ft.is_active %}active{% else %}inactive{% endif %}"><i
+															class="ti ti-edit-circle me-2"></i>Edit</a>
+												</li>
+												<li>
+													<a class="dropdown-item rounded-1 delete-fees-type-btn" href="#"
+														data-bs-toggle="modal" data-bs-target="#delete-modal"
+														data-pk="{{ ft.pk }}"
+														data-name="{{ ft.name }}"><i
+															class="ti ti-trash-x me-2"></i>Delete</a>
+												</li>
+											</ul>
+										</div>
+									</div>
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td colspan="8" class="text-center text-muted py-4">No fees types found. Click "Add
+									Fees Type" to create one.</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Fees Type Table -->
+
+				<form method="post" id="bulk-delete-form" action="{% url 'fees:fees-type-list' %}" style="display:none;">
+					{% csrf_token %}
+					<input type="hidden" name="bulk_delete" value="1">
+					<div id="bulk-delete-items"></div>
+				</form>
+			</div>
+		</div>
+		<!-- /Fees Type List -->
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Fees Type -->
+<div class="modal fade" id="add_fees_Type">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add Fees Type</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'fees:fees-type-list' %}" id="add-fees-type-form">
+				{% csrf_token %}
+				<input type="hidden" name="add_fees_type" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Name <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="name" placeholder="Enter Name" required>
+							</div>
+							<div class="mb-3">
+								<div class="d-flex justify-content-between">
+									<label class="form-label">Fees Group</label>
+									<a href="javascript:void(0);" class="text-primary open-new-group-modal"><span><i
+												class="ti ti-square-rounded-plus-filled"></i></span> Add New</a>
+								</div>
+								<select class="select" name="fees_group">
+									<option value="">Select</option>
+									{% for group in fees_groups %}
+									<option value="{{ group.pk }}">{{ group.name }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Description</label>
+							<textarea class="form-control" rows="4" name="description" placeholder="Enter Description"></textarea>
+						</div>
+						<div class="d-flex align-items-center justify-content-between">
+							<div class="status-title">
+								<h5>Status</h5>
+								<p>Change the Status by toggle </p>
+							</div>
+							<div class="form-check form-switch">
+								<input class="form-check-input" type="checkbox" role="switch" name="is_active"
+									id="switch-sm" checked>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add Fees Type</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Fees Type -->
+
+<!-- Edit Fees Type -->
+<div class="modal fade" id="edit_fees_Type">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Edit Fees Type</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" id="edit-fees-type-form">
+				{% csrf_token %}
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Name <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="name" id="edit_name"
+									placeholder="Enter Name" required>
+							</div>
+							<div class="mb-3">
+								<div class="d-flex justify-content-between">
+									<label class="form-label">Fees Group</label>
+									<a href="javascript:void(0);" class="text-primary open-new-group-modal"><span><i
+												class="ti ti-square-rounded-plus-filled"></i></span> Add New</a>
+								</div>
+								<select class="select" name="fees_group" id="edit_fees_group">
+									<option value="">Select</option>
+									{% for group in fees_groups %}
+									<option value="{{ group.pk }}">{{ group.name }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Description</label>
+							<textarea class="form-control" rows="4" name="description" id="edit_description"
+								placeholder="Add Comment"></textarea>
+						</div>
+						<div class="d-flex align-items-center justify-content-between">
+							<div class="status-title">
+								<h5>Status</h5>
+								<p>Change the Status by toggle </p>
+							</div>
+							<div class="form-check form-switch">
+								<input class="form-check-input" type="checkbox" role="switch" name="is_active"
+									id="edit_is_active" checked>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit Fees Type -->
+
+<!-- Add New Fees Group -->
+<div class="modal fade" id="add_new_fees_group">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add New Fees Group</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'fees:fees-type-list' %}" id="add-new-fees-group-form">
+				{% csrf_token %}
+				<input type="hidden" name="add_new_fees_group" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Name <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="name" placeholder="Enter Name" required>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Description</label>
+							<textarea class="form-control" rows="4" name="description"
+								placeholder="Add Comment"></textarea>
+						</div>
+						<div class="d-flex align-items-center justify-content-between">
+							<div class="status-title">
+								<h5>Status</h5>
+								<p>Change the Status by toggle </p>
+							</div>
+							<div class="form-check form-switch">
+								<input class="form-check-input" type="checkbox" role="switch" name="is_active"
+									id="switch-sm3" checked>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add Fees Group</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add New Fees Group -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" id="delete-fees-type-form">
+				{% csrf_token %}
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete <strong id="delete-fees-type-name"></strong>, this cant be undone once you
+						delete.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+function getRowCheckboxes() {
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+		var nodes = $('.datatable').DataTable().rows({ search: 'applied' }).nodes();
+		var $nodes = (nodes && nodes.to$) ? nodes.to$() : $(nodes);
+		return $nodes.find('input[type="checkbox"][name="selected_items"]');
+	}
+	return $('table.datatable tbody input[type="checkbox"][name="selected_items"]');
+}
+
+function bulkDeleteSelected() {
+	var checked = getRowCheckboxes().filter(':checked');
+	if (checked.length === 0) {
+		alert("Please select at least one item to delete.");
+		return;
+	}
+	if (!confirm("Are you sure you want to delete " + checked.length + " selected item(s)?")) {
+		return;
+	}
+	var container = document.getElementById('bulk-delete-items');
+	container.innerHTML = '';
+	checked.each(function() {
+		var input = document.createElement('input');
+		input.type = 'hidden';
+		input.name = 'selected_items';
+		input.value = this.value;
+		container.appendChild(input);
+	});
+	document.getElementById('bulk-delete-form').submit();
+}
+
+function toggleBulkDeleteBtn() {
+	var checked = getRowCheckboxes().filter(':checked');
+	var btn = document.getElementById('bulk-delete-btn');
+	if (checked.length > 0) {
+		btn.classList.remove('d-none');
+	} else {
+		btn.classList.add('d-none');
+	}
+}
+
+function escapeHtml(value) {
+	var div = document.createElement("div");
+	div.textContent = value == null ? "" : String(value);
+	return div.innerHTML;
+}
+
+function getFeesTypeData() {
+	var headers = ["ID", "Fees Type", "Fees Code", "Fees Group", "Description", "Status"];
+	var data = [];
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+		var table = $('.datatable').DataTable();
+		table.rows({ search: 'applied' }).every(function() {
+			var rowData = this.data();
+			var row = [];
+			for (var i = 1; i < rowData.length - 1; i++) {
+				var cellHtml = rowData[i];
+				var tempDiv = document.createElement("div");
+				tempDiv.innerHTML = cellHtml;
+				var text = tempDiv.textContent || tempDiv.innerText || "";
+				row.push(text.trim());
+			}
+			data.push(row);
+		});
+	} else {
+		var rows = document.querySelectorAll("table.datatable tbody tr");
+		rows.forEach(function(tr) {
+			var cols = tr.querySelectorAll("td");
+			if (cols.length > 1) {
+				var row = [];
+				for (var j = 1; j < cols.length - 1; j++) {
+					row.push(cols[j].innerText.trim());
+				}
+				data.push(row);
+			}
+		});
+	}
+	return {
+		headers: headers,
+		rows: data,
+		reportTitle: "Fees Type Report",
+		schoolName: "{{ school_name|default:'Global International' }}"
+	};
+}
+
+function exportToExcel() {
+	var data = getFeesTypeData();
+	if (data.rows.length === 0) {
+		alert("No data available to export.");
+		return;
+	}
+	var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+		'<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fees Type</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>' +
+		'<body><table border="1"><thead><tr>';
+	data.headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+	html += '</tr></thead><tbody>';
+	data.rows.forEach(function(row) {
+		html += '<tr>';
+		row.forEach(function(val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+		html += '</tr>';
+	});
+	html += '</tbody></table></body></html>';
+	var blob = new Blob(["\uFEFF" + html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+	var downloadLink = document.createElement("a");
+	downloadLink.download = "fees_types_" + new Date().toISOString().slice(0, 10) + ".xls";
+	downloadLink.href = window.URL.createObjectURL(blob);
+	downloadLink.style.display = "none";
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+	var data = getFeesTypeData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = window.open("", "_blank");
+	if (!printWindow) {
+		alert("Popup blocked. Please allow pop-ups for this site to print the report.");
+		return;
+	}
+
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+	var html = '<html><head><title>' + escapeHtml(data.reportTitle) + '</title>' +
+	'<style>' +
+	'@page{size:A4 portrait;margin:20mm;}' +
+	'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+	'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+	'.header-container{text-align:center;margin-bottom:40px;}' +
+	'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+	'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+	'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+	'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+	'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+	'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+	'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+	'tr:nth-child(even){background-color:#f8fafc;}' +
+	'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+	'@media print{@page{size:A4 portrait;margin:20mm;}body{padding:0;margin:0;width:210mm;}}' +
+	'</style></head><body>' +
+	'<div class="header-container">' +
+	'<div class="logo-section">' +
+	'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+	'<span class="logo-text">PreSkool</span>' +
+	'</div>' +
+	'<div class="report-title">' + escapeHtml(data.reportTitle) + '</div>' +
+	'<div class="report-meta">' + escapeHtml(data.schoolName) + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+	'</div>' +
+	'<table><thead><tr>';
+
+	data.headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+	html += '</tr></thead><tbody>';
+	data.rows.forEach(function(row) {
+		html += '<tr>';
+		row.forEach(function(val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+		html += '</tr>';
+	});
+	html += '</tbody></table>' +
+	'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+	'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+	'</body></html>';
+
+	printWindow.document.write(html);
+	printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+	var selectAllEl = document.getElementById('select-all');
+	if (selectAllEl) {
+		selectAllEl.addEventListener('change', function() {
+			var checkboxes = getRowCheckboxes();
+			checkboxes.each(function() {
+				this.checked = selectAllEl.checked;
+			});
+			toggleBulkDeleteBtn();
+		});
+	}
+
+	$(document).on('change', 'table.datatable tbody input[type="checkbox"][name="selected_items"]', toggleBulkDeleteBtn);
+
+	document.querySelectorAll('.edit-fees-type-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var pk = this.dataset.pk;
+			var name = this.dataset.name;
+			var group = this.dataset.group || '';
+			var description = this.dataset.description || '';
+			var status = this.dataset.status || 'active';
+
+			document.getElementById('edit-fees-type-form').action = '{% url "fees:fees-type-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+
+			document.getElementById('edit_name').value = name;
+			var groupSelect = document.getElementById('edit_fees_group');
+			groupSelect.value = group ? String(group) : '';
+			if (window.jQuery && $.fn.select2 && $(groupSelect).data('select2')) {
+				$(groupSelect).trigger('change');
+			}
+			document.getElementById('edit_description').value = description;
+			document.getElementById('edit_is_active').checked = (status === 'active');
+		});
+	});
+
+	document.querySelectorAll('.delete-fees-type-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var pk = this.dataset.pk;
+			document.getElementById('delete-fees-type-form').action = '{% url "fees:fees-type-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+			document.getElementById('delete-fees-type-name').textContent = this.dataset.name;
+		});
+	});
+
+	document.querySelectorAll('.open-new-group-modal').forEach(function(link) {
+		link.addEventListener('click', function(e) {
+			e.preventDefault();
+			var addTypeModal = document.getElementById('add_fees_Type');
+			var editTypeModal = document.getElementById('edit_fees_Type');
+			var groupModalEl = document.getElementById('add_new_fees_group');
+			groupModalEl.setAttribute('data-source', (editTypeModal && editTypeModal.classList.contains('show')) ? 'edit' : 'add');
+			var groupModal = bootstrap.Modal.getOrCreateInstance(groupModalEl);
+			if (addTypeModal && addTypeModal.classList.contains('show')) {
+				var addModal = bootstrap.Modal.getInstance(addTypeModal);
+				if (addModal) addModal.hide();
+			}
+			if (editTypeModal && editTypeModal.classList.contains('show')) {
+				var editModal = bootstrap.Modal.getInstance(editTypeModal);
+				if (editModal) editModal.hide();
+			}
+			groupModal.show();
+		});
+	});
+
+	var addNewGroupForm = document.getElementById('add-new-fees-group-form');
+	if (addNewGroupForm) {
+		addNewGroupForm.addEventListener('submit', function(e) {
+			e.preventDefault();
+			var form = this;
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', form.getAttribute('action'), true);
+			xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+			xhr.onload = function() {
+				var res = null;
+				try {
+					res = JSON.parse(xhr.responseText);
+				} catch (err) {
+					alert("Unexpected response. Please try again.");
+					return;
+				}
+				if (res.success) {
+					var addSelect = document.querySelector('#add_fees_Type select[name="fees_group"]');
+					var editSelect = document.querySelector('#edit_fees_Type select[name="fees_group"]');
+					[addSelect, editSelect].forEach(function(sel) {
+						if (!sel) return;
+						if (!sel.querySelector('option[value="' + res.id + '"]')) {
+							sel.appendChild(new Option(res.name, res.id));
+						}
+						sel.value = String(res.id);
+						if (window.jQuery && $.fn.select2 && $(sel).data('select2')) {
+							$(sel).trigger('change');
+						}
+					});
+					var groupModalEl = document.getElementById('add_new_fees_group');
+					var groupModal = bootstrap.Modal.getInstance(groupModalEl);
+					if (groupModal) groupModal.hide();
+					var source = groupModalEl.getAttribute('data-source') || 'add';
+					var targetId = (source === 'edit') ? 'edit_fees_Type' : 'add_fees_Type';
+					bootstrap.Modal.getOrCreateInstance(document.getElementById(targetId)).show();
+					form.reset();
+				} else {
+					alert(res.error || "Unable to add fees group.");
+				}
+			};
+			xhr.onerror = function() {
+				alert("Network error. Please try again.");
+			};
+			xhr.send(new FormData(form));
+		});
+	}
+
+});
+</script>
+{% endblock extra_js %}

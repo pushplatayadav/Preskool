@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: #4f46e5; padding: 30px; text-align: center; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
+        .body { padding: 30px; color: #333333; line-height: 1.6; }
+        .body p { margin: 0 0 15px; }
+        .otp-box { background: #f0f0ff; border: 2px dashed #4f46e5; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0; }
+        .otp-code { font-size: 36px; font-weight: bold; color: #4f46e5; letter-spacing: 8px; }
+        .footer { background: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #999999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Email Verification</h1>
+        </div>
+        <div class="body">
+            <p>Hi {{ user.get_full_name|default:user.username }},</p>
+            <p>Thank you for registering with Preskool. Please use the following OTP code to verify your email address:</p>
+            <div class="otp-box">
+                <div class="otp-code">{{ otp_code }}</div>
+            </div>
+            <p>This OTP is valid for {{ expiry_minutes }} minutes. Do not share this code with anyone.</p>
+            <p>If you did not create an account, please ignore this email.</p>
+            <p>Thank you,<br><strong>Preskool Team</strong></p>
+        </div>
+        <div class="footer">
+            &copy; {% now "Y" %} Preskool. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

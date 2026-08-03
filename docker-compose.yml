@@ -1,0 +1,20 @@
+services:
+  web:
+    build: .
+    container_name: preskool-web
+    command: sh -c "python manage.py migrate --noinput &&
+      gunicorn --bind 0.0.0.0:8000 preskool.wsgi:application"
+    volumes:
+      - sqlite_data:/app/db.sqlite3
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  media_data:
+  static_data:

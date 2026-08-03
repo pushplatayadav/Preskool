@@ -1,0 +1,769 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .timetable-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .timetable-grid {
+        display: flex;
+        flex-nowrap;
+        min-width: 100%;
+    }
+    .timetable-day-col {
+        min-width: 200px;
+        flex: 1 1 0;
+        padding-right: 1rem;
+    }
+    .timetable-day-col:last-child {
+        padding-right: 0;
+    }
+    .timetable-day-header {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #1e293b;
+    }
+    .timetable-slot {
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
+        position: relative;
+    }
+    .timetable-slot:last-child {
+        margin-bottom: 0;
+    }
+    .timetable-slot .slot-time {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 6px;
+    }
+    .timetable-slot .slot-time i {
+        margin-right: 4px;
+    }
+    .timetable-slot .slot-subject {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+    .timetable-slot .slot-teacher {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 13px;
+        color: #64748b;
+    }
+    .timetable-slot .slot-teacher .avatar {
+        width: 24px;
+        height: 24px;
+        margin-right: 6px;
+    }
+    .timetable-slot-empty {
+        border: 1px dashed #e2e8f0;
+        border-radius: 10px;
+        padding: 20px 14px;
+        margin-bottom: 14px;
+        text-align: center;
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+    .slot-danger    { background: rgba(239,68,68,0.08);  }
+    .slot-primary   { background: rgba(79,70,229,0.08);  }
+    .slot-success   { background: rgba(16,185,129,0.08); }
+    .slot-warning   { background: rgba(245,158,11,0.08); }
+    .slot-info      { background: rgba(13,202,240,0.08); }
+    .slot-light     { background: rgba(100,116,139,0.08); }
+    .slot-pending   { background: rgba(234,179,8,0.08);  }
+
+    .break-card {
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
+    .break-card .badge {
+        font-size: 11px;
+    }
+    .break-card .break-time {
+        display: flex;
+        align-items: center;
+        color: #334155;
+        font-size: 13px;
+    }
+    .break-card .break-time i {
+        margin-right: 4px;
+    }
+
+    @media print {
+        .no-print { display: none !important; }
+        .timetable-scroll { overflow: visible !important; }
+        .timetable-grid { flex-wrap: wrap; }
+        .timetable-day-col { min-width: 160px; flex: 1 1 30%; page-break-inside: avoid; }
+        .page-wrapper { padding: 0 !important; }
+        .card { border: none !important; box-shadow: none !important; }
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<!-- Page Wrapper -->
+<div class="page-wrapper">
+    <div class="content">
+        <div class="row">
+            <!-- Page Header -->
+            <div class="col-md-12">
+                <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+                    <div class="my-auto mb-2">
+                        <h3 class="page-title mb-1">Student Details</h3>
+                        <nav>
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item">
+                                    <a href="{% url 'home' %}">Dashboard</a>
+                                </li>
+                                <li class="breadcrumb-item">
+                                <a href="{% url 'people:student-list' %}">Student</a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Student Details</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                        <a href="#" class="btn btn-light me-2 mb-2 no-print" data-bs-toggle="modal" data-bs-target="#login_detail"><i class="ti ti-lock me-2"></i>Login Details</a>
+                        <div class="pe-1 mb-2 no-print">
+                            <button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="Print"
+                                onclick="printTimetable();">
+                                <i class="ti ti-printer"></i>
+                            </button>
+                        </div>
+                        <div class="dropdown me-2 mb-2 no-print">
+                            <a href="javascript:void(0);"
+                                class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+                                data-bs-toggle="dropdown">
+                                <i class="ti ti-file-export me-2"></i>Export
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end p-3">
+                                <li>
+                                    <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportTimetablePDF();">
+                                        <i class="ti ti-file-type-pdf me-1"></i>Export as PDF
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportTimetableCSV();">
+                                        <i class="ti ti-file-type-xls me-1"></i>Export as Excel
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /Page Header -->
+        </div>
+
+        <div class="row">
+
+            <!-- Student Information -->
+            <div class="col-xxl-3 col-xl-4 theiaStickySidebar">
+                <div class="card border-white">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center flex-wrap row-gap-3">
+                            <div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+                                {% if student.profile_image %}
+                                <img src="{{ student.profile_image.url }}" class="img-fluid" alt="img">
+                                {% else %}
+                                <img src="{% static 'assets/img/students/student-01.jpg' %}" class="img-fluid" alt="img">
+                                {% endif %}
+                            </div>
+                            <div class="overflow-hidden">
+                                <span class="badge badge-soft-success d-inline-flex align-items-center mb-1"><i class="ti ti-circle-filled fs-5 me-1"></i>{{ student.get_status_display }}</span>
+                                <h5 class="mb-1 text-truncate">{{ student.name }}</h5>
+                                <p class="text-primary">{{ student.admission_no }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="mb-3">Basic Information</h5>
+                        <dl class="row mb-0">
+                            <dt class="col-6 fw-medium text-dark mb-3">Roll No</dt>
+                            <dd class="col-6 mb-3">{{ student.roll_no|default:"-" }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Gender</dt>
+                            <dd class="col-6 mb-3">{{ student.get_gender_display }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Date Of Birth</dt>
+                            <dd class="col-6 mb-3">{% if student.date_of_birth %}{{ student.date_of_birth|date:"d M Y" }}{% else %}-{% endif %}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Blood Group</dt>
+                            <dd class="col-6 mb-3">{{ student.get_blood_group_display|default:"-" }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Religion</dt>
+                            <dd class="col-6 mb-3">{{ student.religion|default:"-" }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Caste</dt>
+                            <dd class="col-6 mb-3">{{ student.caste|default:"-" }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Category</dt>
+                            <dd class="col-6 mb-3">{{ student.category|default:"-" }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Mother tongue</dt>
+                            <dd class="col-6 mb-3">{{ student.mother_tongue|default:"-" }}</dd>
+                            <dt class="col-6 fw-medium text-dark mb-3">Language</dt>
+                            <dd class="col-6 mb-3">
+                                {% if languages %}
+                                {% for lang in languages %}
+                                <span class="badge badge-light text-dark me-2">{{ lang }}</span>
+                                {% endfor %}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </dd>
+                        </dl>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#add_fees_collect" class="btn btn-primary btn-sm w-100 no-print">Add Fees</a>
+                    </div>
+                </div>
+
+                <!-- Primary Contact Info -->
+                <div class="card border-white">
+                    <div class="card-body">
+                        <h5 class="mb-3">Primary Contact Info</h5>
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-phone"></i></span>
+                            <div>
+                                <span class="text-dark fw-medium mb-1">Phone Number</span>
+                                <p>{{ student.primary_contact_number|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-mail"></i></span>
+                            <div>
+                                <span class="text-dark fw-medium mb-1">Email Address</span>
+                                <p>{{ student.email|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Primary Contact Info -->
+
+                <!-- Sibling Information -->
+                {% if siblings %}
+                <div class="card border-white">
+                    <div class="card-body">
+                        <h5 class="mb-3">Sibling Information</h5>
+                        {% for sib in siblings %}
+                        <div class="d-flex align-items-center bg-light-300 rounded p-3 mb-3">
+                            <span class="avatar avatar-lg">
+                                {% if sib.profile_image %}
+                                <img src="{{ sib.profile_image.url }}" class="img-fluid rounded" alt="img">
+                                {% else %}
+                                <img src="{% static 'assets/img/students/student-06.jpg' %}" class="img-fluid rounded" alt="img">
+                                {% endif %}
+                            </span>
+                            <div class="ms-2">
+                                <h5 class="fs-14">{{ sib.name }}</h5>
+                                <p>{{ sib.school_class.name }}, {{ sib.section.name }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                <!-- /Sibling Information -->
+
+                <!-- Transport Information -->
+                <div class="card border-white no-print">
+                    <div class="card-body pb-1">
+                        <ul class="nav nav-tabs nav-tabs-bottom mb-3">
+                            <li class="nav-item"><a class="nav-link active" href="#hostel" data-bs-toggle="tab">Hostel</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#transport" data-bs-toggle="tab">Transportation</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="hostel">
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-building-fortress fs-16"></i></span>
+                                    <div>
+                                        <h6 class="fs-14 mb-1">{% if student.hostel %}{{ student.hostel }}{% else %}-{% endif %}</h6>
+                                        <p class="text-primary">Room No : {% if student.room_no %}{{ student.room_no }}{% else %}-{% endif %}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="transport">
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-bus fs-16"></i></span>
+                                    <div>
+                                        <span class="fs-12 mb-1">Route</span>
+                                        <p class="text-dark">{{ student.route|default:"-" }}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <div class="mb-3">
+                                            <span class="fs-12 mb-1">Bus Number</span>
+                                            <p class="text-dark">{{ student.vehicle_number|default:"-" }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="mb-3">
+                                            <span class="fs-12 mb-1">Pickup Point</span>
+                                            <p class="text-dark">{{ student.pickup_point|default:"-" }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Transport Information -->
+
+            </div>
+            <!-- /Student Information -->
+
+            <div class="col-xxl-9 col-xl-8">
+                <div class="row">
+                    <div class="col-md-12">
+
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs nav-tabs-bottom mb-4">
+                            <li>
+                                <a href="{% url 'people:student-details' student.pk %}" class="nav-link"><i class="ti ti-school me-2"></i>Student Details</a>
+                            </li>
+                            <li>
+                                <a href="{% url 'academics:student-time-table' student.pk %}" class="nav-link active"><i class="ti ti-table-options me-2"></i>Time Table</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-report-money me-2"></i>Fees</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-bookmark-edit me-2"></i>Exam & Results</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-books me-2"></i>Library</a>
+                            </li>
+                        </ul>
+                        <!-- /Tabs -->
+
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                                <h4 class="mb-3">Weekly Time Table - {{ student.school_class.name }} {{ student.section.name }}</h4>
+                                <div class="d-flex align-items-center flex-wrap">
+                                    <div class="pe-1 mb-2 no-print">
+                                        <a href="{% url 'academics:student-time-table' pk=student.pk %}" class="btn btn-outline-light bg-white btn-icon me-1"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh">
+                                            <i class="ti ti-refresh"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body pb-0">
+                                <!-- Timetable Grid -->
+                                <div class="timetable-scroll" id="timetable-container">
+                                    {% if timetable_grid %}
+                                    <div class="timetable-grid">
+                                        {% for day in timetable_grid %}
+                                        <div class="timetable-day-col">
+                                            <div class="timetable-day-header">{{ day.name }}</div>
+                                            {% for entry in day.entries %}
+                                                {% if entry %}
+                                                <div class="timetable-slot {% cycle 'slot-danger' 'slot-primary' 'slot-success' 'slot-warning' 'slot-info' 'slot-light' 'slot-pending' %}">
+                                                    <p class="slot-time d-flex align-items-center text-nowrap mb-1">
+                                                        <i class="ti ti-clock"></i>{{ entry.start_time|time:"h:i A" }} - {{ entry.end_time|time:"h:i A" }}
+                                                    </p>
+                                                    <p class="slot-subject">Subject : {{ entry.subject.name }}</p>
+                                                    <div class="slot-teacher">
+                                                        {% if entry.teacher %}
+                                                        <span class="avatar avatar-sm">
+                                                            {% if entry.teacher.profile_image %}
+                                                            <img src="{{ entry.teacher.profile_image.url }}" alt="Img">
+                                                            {% else %}
+                                                            <img src="{% static 'assets/img/teachers/teacher-07.jpg' %}" alt="Img">
+                                                            {% endif %}
+                                                        </span>
+                                                        {{ entry.teacher.get_full_name|default:entry.teacher.username }}
+                                                        {% else %}
+                                                        <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% else %}
+                                                <div class="timetable-slot-empty">-</div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="ti ti-calendar-off text-muted" style="font-size: 48px;"></i>
+                                        <h5 class="text-muted mt-3">No Time Table Found</h5>
+                                        <p class="text-muted">No class routines are assigned for {{ student.school_class.name }} - {{ student.section.name }} yet.</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <!-- /Timetable Grid -->
+                            </div>
+
+                            {% if timetable_grid %}
+                            <div class="card-footer border-0 pb-0 no-print" id="breaks-section">
+                                <div class="row">
+                                    <div class="col-lg-4 col-xxl-4 col-xl-4 d-flex">
+                                        <div class="card flex-fill">
+                                            <div class="card-body">
+                                                <span class="bg-primary badge badge-sm mb-2">Morning Break</span>
+                                                <p class="text-dark"><i class="ti ti-clock me-1"></i>10:30 to 10:45 AM</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 col-xxl-3 d-flex">
+                                        <div class="card flex-fill">
+                                            <div class="card-body">
+                                                <span class="bg-warning badge badge-sm mb-2">Lunch</span>
+                                                <p class="text-dark"><i class="ti ti-clock me-1"></i>12:15 to 01:30 PM</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 col-xxl-3 d-flex">
+                                        <div class="card flex-fill">
+                                            <div class="card-body">
+                                                <span class="bg-info badge badge-sm mb-2">Evening Break</span>
+                                                <p class="text-dark"><i class="ti ti-clock me-1"></i>03:30 PM to 03:45 PM</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Login Details -->
+<div class="modal fade" id="login_detail">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Login Details</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="student-detail-info">
+                    <span class="student-img">
+                        {% if student.profile_image %}
+                        <img src="{{ student.profile_image.url }}" alt="Img">
+                        {% else %}
+                        <img src="{% static 'assets/img/students/student-01.jpg' %}" alt="Img">
+                        {% endif %}
+                    </span>
+                    <div class="name-info">
+                        <h6>{{ student.name }} <span>{{ student.school_class.name }}, {{ student.section.name }}</span></h6>
+                    </div>
+                </div>
+                <div class="table-responsive custom-table no-datatable_length">
+                    <table class="table datanew">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>User Type</th>
+                                <th>User Name</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Parent</td>
+                                <td>parent{{ student.pk }}</td>
+                                <td>parent@{{ student.pk }}</td>
+                            </tr>
+                            <tr>
+                                <td>Student</td>
+                                <td>student{{ student.pk }}</td>
+                                <td>stdt@{{ student.pk }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Login Details -->
+
+<!-- Add Fees Collect -->
+<div class="modal fade" id="add_fees_collect">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="modal-title">Collect Fees</h4>
+                    <span class="badge badge-sm bg-primary ms-2">{{ student.admission_no }}</span>
+                </div>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <form action="{% url 'people:student-list' %}">
+                <div class="modal-body">
+                    <div class="bg-light-300 p-3 pb-0 rounded mb-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="d-flex align-items-center mb-3">
+                                    <a href="{% url 'people:student-details' student.pk %}" class="avatar avatar-md me-2">
+                                        {% if student.profile_image %}
+                                        <img src="{{ student.profile_image.url }}" alt="img">
+                                        {% else %}
+                                        <img src="{% static 'assets/img/students/student-01.jpg' %}" alt="img">
+                                        {% endif %}
+                                    </a>
+                                    <a href="{% url 'people:student-details' student.pk %}" class="d-flex flex-column"><span class="text-dark">{{ student.name }}</span>{{ student.school_class.name }}, {{ student.section.name }}</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="mb-3">
+                                    <span class="fs-12 mb-1">Total Outstanding</span>
+                                    <p class="text-dark">2000</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="mb-3">
+                                    <span class="fs-12 mb-1">Last Date</span>
+                                    <p class="text-dark">25 May 2024</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="mb-3">
+                                    <span class="badge badge-soft-danger"><i class="ti ti-circle-filled me-2"></i>Unpaid</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Fees Group</label>
+                                <select class="select">
+                                    <option>Select</option>
+                                    <option>Class 1 General</option>
+                                    <option>Monthly Fees</option>
+                                    <option>Admission-Fees</option>
+                                    <option>Class 1- I Installment</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Fees Type</label>
+                                <select class="select">
+                                    <option>Select</option>
+                                    <option>Tuition Fees</option>
+                                    <option>Monthly Fees</option>
+                                    <option>Admission Fees</option>
+                                    <option>Bus Fees</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Amount</label>
+                                <input type="text" class="form-control" placeholder="Enter Amount">
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Collection Date</label>
+                                <div class="date-pic">
+                                    <input type="text" class="form-control datetimepicker" placeholder="Select">
+                                    <span class="cal-icon"><i class="ti ti-calendar"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Payment Type</label>
+                                <select class="select">
+                                    <option>Select</option>
+                                    <option>Paytm</option>
+                                    <option>Cash On Delivery</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Payment Reference No</label>
+                                <input type="text" class="form-control" placeholder="Enter Payment Reference No">
+                            </div>
+                        </div>
+                        <div class="col-lg-12">
+                            <div class="modal-satus-toggle d-flex align-items-center justify-content-between mb-3">
+                                <div class="status-title">
+                                    <h5>Status</h5>
+                                    <p>Change the Status by toggle</p>
+                                </div>
+                                <div class="status-toggle modal-status">
+                                    <input type="checkbox" id="user1" class="check">
+                                    <label for="user1" class="checktoggle"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-12">
+                            <div class="mb-0">
+                                <label class="form-label">Notes</label>
+                                <textarea rows="4" class="form-control" placeholder="Add Notes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Pay Fees</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Add Fees Collect -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script>
+function buildExportData() {
+    var headers = ['Day', 'Time', 'Subject', 'Teacher', 'Room'];
+    var rows = [];
+    var columns = document.querySelectorAll('.timetable-day-col');
+
+    columns.forEach(function(col) {
+        var dayEl = col.querySelector('.timetable-day-header');
+        var dayName = dayEl ? dayEl.textContent.trim() : '-';
+
+        var slots = col.querySelectorAll('.timetable-slot');
+        var emptySlots = col.querySelectorAll('.timetable-slot-empty');
+
+        slots.forEach(function(slot) {
+            var timeEl = slot.querySelector('.slot-time');
+            var subjectEl = slot.querySelector('.slot-subject');
+            var teacherEl = slot.querySelector('.slot-teacher');
+            var time = timeEl ? timeEl.textContent.replace(/\s+/g, ' ').trim() : '-';
+            var subject = subjectEl ? subjectEl.textContent.replace('Subject : ', '').trim() : '-';
+            var teacher = teacherEl ? teacherEl.textContent.replace(/\s+/g, ' ').trim() : '-';
+            rows.push([dayName, time, subject, teacher, '-']);
+        });
+
+        emptySlots.forEach(function() {
+            rows.push([dayName, '-', '-', '-', '-']);
+        });
+    });
+
+    return {
+        headers: headers,
+        rows: rows,
+        title: 'Student Time Table',
+        schoolName: '{{ school_name|default:"Global International" }}',
+        studentName: '{{ student.name|escapejs }}',
+        className: '{{ student.school_class.name|escapejs }} - {{ student.section.name|escapejs }}'
+    };
+}
+
+function getPrintHTML(data) {
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    var schoolEsc = data.schoolName.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var studentEsc = data.studentName.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var classEsc = data.className.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var titleEsc = data.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    var tableRows = data.rows.map(function(row) {
+        return '<tr>' + row.map(function(v) {
+            return '<td>' + v.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</td>';
+        }).join('') + '</tr>';
+    }).join('');
+
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + titleEsc + ' - ' + studentEsc + '</title>' +
+        '<style>' +
+        '@page{size:A4 landscape;margin:15mm;}' +
+        'body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:30px;color:#333;background:#fff;}' +
+        '.header-container{text-align:center;margin-bottom:30px;}' +
+        '.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px;}' +
+        '.logo-text{font-size:28px;font-weight:700;color:#1e3a8a;}' +
+        '.report-title{font-size:22px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+        '.report-meta{font-size:12px;color:#64748b;margin-top:6px;}' +
+        '.student-info{font-size:13px;color:#334155;margin-top:8px;}' +
+        'table{width:100%;border-collapse:collapse;margin-top:15px;font-size:12px;}' +
+        'th,td{border:1px solid #e2e8f0;padding:10px 14px;text-align:left;}' +
+        'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;white-space:nowrap;}' +
+        'tr:nth-child(even){background-color:#f8fafc;}' +
+        'td:first-child{font-weight:600;color:#1e293b;white-space:nowrap;}' +
+        '.footer{margin-top:40px;text-align:center;font-size:11px;color:#94a3b8;}' +
+        '@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}' +
+        '</style></head><body>' +
+        '<div class="header-container">' +
+        '<div class="logo-section"><img src="' + logoUrl + '" alt="Logo" style="width:40px;height:40px;vertical-align:middle;">' +
+        '<span class="logo-text">PreSkool</span></div>' +
+        '<div class="report-title">' + titleEsc + '</div>' +
+        '<div class="report-meta">' + schoolEsc + ' | Generated on: ' + new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '</div>' +
+        '<div class="student-info"><strong>Student:</strong> ' + studentEsc + ' &nbsp;|&nbsp; <strong>Class:</strong> ' + classEsc + '</div>' +
+        '</div>' +
+        '<table><thead><tr>' + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        tableRows +
+        '</tbody></table>' +
+        '<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+        '</body></html>';
+}
+
+function exportTimetableCSV() {
+    var data = buildExportData();
+    if (data.rows.length === 0) {
+        alert('No data available to export.');
+        return;
+    }
+    var csv = [];
+    csv.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(','));
+    data.rows.forEach(function(row) {
+        csv.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(','));
+    });
+    var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.download = 'student_time_table_' + data.studentName.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.csv';
+    link.href = window.URL.createObjectURL(blob);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportTimetablePDF() {
+    var data = buildExportData();
+    if (data.rows.length === 0) {
+        alert('No data available to export.');
+        return;
+    }
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(getPrintHTML(data));
+    printWindow.document.close();
+    printWindow.focus();
+}
+
+function printTimetable() {
+    var data = buildExportData();
+    if (data.rows.length === 0) {
+        alert('No data available to print.');
+        return;
+    }
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(getPrintHTML(data));
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(function() { printWindow.print(); }, 600);
+}
+</script>
+{% endblock extra_js %}

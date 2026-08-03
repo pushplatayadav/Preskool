@@ -1,0 +1,135 @@
+{% extends 'accounts/auth_base.html' %}
+
+{% block title %}Verify Email - {{ school_name }}{% endblock %}
+
+{% block form_action %}{% url 'accounts:verify-otp' %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .otp-input-group {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin: 20px 0;
+    }
+    .otp-input-group input {
+        width: 50px;
+        height: 55px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+    .otp-input-group input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .otp-single-input {
+        width: 100%;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        letter-spacing: 12px;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+    .otp-single-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .resend-link {
+        color: #4f46e5;
+        text-decoration: none;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .resend-link:hover {
+        text-decoration: underline;
+    }
+    .resend-disabled {
+        color: #999;
+        cursor: not-allowed;
+    }
+    .timer-text {
+        font-size: 14px;
+        color: #666;
+    }
+    .email-icon {
+        font-size: 48px;
+        color: #4f46e5;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block card_content %}
+<div class="mb-4 text-center">
+    <div class="email-icon">
+        <i class="ti ti-mail-opened"></i>
+    </div>
+    <h2 class="mb-2">Verify Your Email</h2>
+    <p class="mb-0">We've sent a 6-digit OTP to</p>
+    <p class="fw-bold text-dark">{{ email }}</p>
+</div>
+
+<form method="POST" action="{% url 'accounts:verify-otp' %}">
+    {% csrf_token %}
+    <div class="mb-3">
+        <input type="text" name="otp_code" class="otp-single-input form-control"
+            placeholder="------" maxlength="6" pattern="[0-9]{6}"
+            inputmode="numeric" autocomplete="one-time-code" autofocus required>
+    </div>
+
+    <div class="mb-3 text-center">
+        <p class="timer-text" id="timer-text">OTP expires in <span id="countdown">5:00</span></p>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary w-100">Verify OTP</button>
+    </div>
+</form>
+
+<div class="text-center">
+    <p class="mb-0">
+        Didn't receive the code?
+        <a href="{% url 'accounts:resend-otp' %}" class="resend-link" id="resend-link">Resend OTP</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var totalSeconds = 300;
+    var countdownEl = document.getElementById('countdown');
+    var resendLink = document.getElementById('resend-link');
+    var timerText = document.getElementById('timer-text');
+
+    function updateTimer() {
+        var minutes = Math.floor(totalSeconds / 60);
+        var seconds = totalSeconds % 60;
+        countdownEl.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+
+        if (totalSeconds <= 0) {
+            timerText.innerHTML = 'OTP has expired. <a href="{% url "accounts:resend-otp" %}" class="resend-link">Resend OTP</a>';
+            resendLink.style.display = 'none';
+            return;
+        }
+        totalSeconds--;
+        setTimeout(updateTimer, 1000);
+    }
+    updateTimer();
+
+    var otpInput = document.querySelector('.otp-single-input');
+    otpInput.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+})();
+</script>
+{% endblock %}

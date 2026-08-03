@@ -1,0 +1,478 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<style>
+    .att-cell {
+        cursor: default;
+    }
+    .att-cell-clickable {
+        cursor: pointer;
+    }
+    .att-cell-clickable:hover {
+        transform: scale(1.25);
+        transition: transform 0.15s ease;
+    }
+    #save-status {
+        min-width: 90px;
+        text-align: center;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+
+        {% if messages %}
+        <div class="messages-container mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Header -->
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Exam Attendance</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="javascript:void(0);">Report</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Exam Attendance</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="pe-1 mb-2">
+                    <a href="{% url 'exam:exam-attendance-list' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+                        <i class="ti ti-refresh"></i>
+                    </a>
+                </div>
+                <div class="pe-1 mb-2">
+                    <button type="button" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print" id="btn-print">
+                        <i class="ti ti-printer"></i>
+                    </button>
+                </div>
+                <div class="dropdown me-2 mb-2">
+                    <a href="javascript:void(0);" class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center" data-bs-toggle="dropdown">
+                        <i class="ti ti-file-export me-2"></i>Export
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end p-3">
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-pdf"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-excel"><i class="ti ti-file-type-xls me-1"></i>Export as Excel</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- /Page Header -->
+
+        <div class="attendance-types page-header justify-content-end">
+            <ul class="attendance-type-list">
+                <li>
+                    <span class="attendance-icon bg-success"><i class="ti ti-checks"></i></span>
+                    Present
+                </li>
+                <li>
+                    <span class="attendance-icon bg-danger"><i class="ti ti-x"></i></span>
+                    Absent
+                </li>
+                <li>
+                    <span class="attendance-icon bg-pending"><i class="ti ti-clock-x"></i></span>
+                    Late
+                </li>
+            </ul>
+        </div>
+
+        <!-- Attendance List -->
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                <h4 class="mb-3">Exam Attendance</h4>
+                <div class="d-flex align-items-center flex-wrap">
+                    <div class="input-icon-start mb-3 me-2 position-relative">
+                        <span class="icon-addon">
+                            <i class="ti ti-calendar"></i>
+                        </span>
+                        <input type="text" class="form-control date-range bookingrange" placeholder="Select"
+                            value="{% if current_academic_year %}Academic Year : {{ current_academic_year.name }}{% else %}Select{% endif %}" readonly>
+                    </div>
+                    <div class="dropdown mb-3 me-2">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ti ti-filter me-2"></i>Filter</a>
+                        <div class="dropdown-menu drop-width">
+                            <form method="get" action="{% url 'exam:exam-attendance-list' %}" id="filter-form">
+                                <div class="d-flex align-items-center border-bottom p-3">
+                                    <h4>Filter</h4>
+                                </div>
+                                <div class="p-3 border-bottom pb-0">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Class</label>
+                                                <select class="select" name="filter_class" id="filter-class">
+                                                    <option value="">Select</option>
+                                                    {% for cname in class_names %}
+                                                    <option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Section</label>
+                                                <select class="select" name="filter_section" id="filter-section">
+                                                    <option value="">Select</option>
+                                                    {% for sname in section_names %}
+                                                    <option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Exam Type</label>
+                                                <select class="select" name="filter_exam_type" id="filter-exam-type">
+                                                    <option value="">Select</option>
+                                                    {% for et in exam_types %}
+                                                    <option value="{{ et }}" {% if filter_exam_type == et %}selected{% endif %}>{{ et }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-3 d-flex align-items-center justify-content-end">
+                                    <a href="{% url 'exam:exam-attendance-list' %}" class="btn btn-light me-3">Reset</a>
+                                    <button type="submit" class="btn btn-primary">Apply</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="dropdown mb-3">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+                        </a>
+                        <ul class="dropdown-menu p-3">
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort != 'desc' and sort != 'recent' and sort != 'recent_added' %}active{% endif %}" data-sort="asc">Ascending (A-Z)</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'desc' %}active{% endif %}" data-sort="desc">Descending (Z-A)</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'recent' %}active{% endif %}" data-sort="recent">Recently Viewed</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'recent_added' %}active{% endif %}" data-sort="recent_added">Recently Added</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0 py-3">
+
+                <!-- Student List -->
+                <div class="custom-datatable-filter table-responsive">
+                    <table class="table datatable" id="attendance-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th class="no-sort">
+                                    <label class="checkboxs"><input type="checkbox" id="select-all"><span class="checkmarks"></span></label>
+                                </th>
+                                <th>ID</th>
+                                <th>Student Name</th>
+                                {% for subj in matrix_subjects %}
+                                <th>{{ subj }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in matrix_students %}
+                            <tr data-sid="{{ student.pk }}">
+                                <td>
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox">
+                                    </div>
+                                </td>
+                                <td><a href="{% url 'exam:student-result' student.pk %}" class="link-primary">{{ student.admission_no }}</a></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if student.profile_image %}
+                                        <a href="javascript:void(0);" class="avatar avatar-md"><img src="{{ student.profile_image.url }}" class="img-fluid rounded-circle" alt="img"></a>
+                                        {% else %}
+                                        <a href="javascript:void(0);" class="avatar avatar-md"><span class="d-inline-flex align-items-center justify-content-center w-100 h-100 bg-primary rounded-circle text-white">{{ student.name|first }}</span></a>
+                                        {% endif %}
+                                        <div class="ms-2">
+                                            <p class="text-dark mb-0">{{ student.name }}</p>
+                                            <span class="fs-12">Roll No : {{ student.roll_no|default:"-" }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                {% for subj in matrix_subjects %}
+                                <td><span class="attendance-range att-cell" data-sid="{{ student.pk }}" data-subj="{{ subj }}"></span></td>
+                                {% endfor %}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                {% for col in total_cols_list %}
+                                <td class="text-center text-muted py-4">
+                                    {% if forloop.first %}
+                                    {% if filter_class and filter_section %}
+                                    No students or exams found for the selected filters.
+                                    {% else %}
+                                    Please select a Class, Section and Exam Type from the filter to view exam attendance.
+                                    {% endif %}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- /Student List -->
+
+                {% if matrix_students %}
+                <div class="card-footer border-0 pt-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center flex-wrap gap-3" id="att-counts">
+                        <span class="d-flex align-items-center"><span class="attendance-range bg-success me-2 d-inline-block"></span>Present : <strong class="ms-1" id="count-present">0</strong></span>
+                        <span class="d-flex align-items-center"><span class="attendance-range bg-danger me-2 d-inline-block"></span>Absent : <strong class="ms-1" id="count-absent">0</strong></span>
+                        <span class="d-flex align-items-center"><span class="attendance-range bg-pending me-2 d-inline-block"></span>Late : <strong class="ms-1" id="count-late">0</strong></span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted fs-12 me-3">Click a coloured cell to change the status.</span>
+                        <span class="badge bg-soft-success text-success fs-12 d-none" id="save-status">Saved</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <!-- /Attendance List -->
+
+    </div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="delete-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="delete-attendance-form">
+                {% csrf_token %}
+                <div class="modal-body text-center">
+                    <span class="delete-icon"><i class="ti ti-trash-x"></i></span>
+                    <h4>Confirm Deletion</h4>
+                    <p>You want to delete attendance for <strong id="delete-attendance-name"></strong>, this can't be undone once you delete.</p>
+                    <div class="d-flex justify-content-center">
+                        <a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Attendance data + subject -> exam mapping from Django
+    var attData = {{ matrix_data_json|safe }};
+    var subjectExamMap = {{ subject_exam_map_json|safe }};
+    var interactive = Object.keys(subjectExamMap).length > 0;
+
+    var statusClasses = {
+        'present': 'bg-success',
+        'absent': 'bg-danger',
+        'late': 'bg-pending',
+        'excused': 'bg-info'
+    };
+    var cycleOrder = ['present', 'absent', 'late'];
+
+    function getStatus(sid, subj) {
+        var key = sid + '_' + subj;
+        return attData[key] || 'present';
+    }
+
+    function applyStatus(cell, status) {
+        cell.className = 'attendance-range att-cell';
+        if (statusClasses[status]) {
+            cell.classList.add(statusClasses[status]);
+        } else {
+            cell.classList.add('bg-success');
+            status = 'present';
+        }
+        if (interactive) cell.classList.add('att-cell-clickable');
+        cell.setAttribute('data-status', status);
+    }
+
+    // Render attendance cells
+    document.querySelectorAll('#attendance-table tbody tr[data-sid]').forEach(function(row) {
+        var sid = row.getAttribute('data-sid');
+        row.querySelectorAll('.att-cell').forEach(function(cell) {
+            applyStatus(cell, getStatus(sid, cell.getAttribute('data-subj')));
+        });
+    });
+
+    function updateCounts() {
+        var counts = { present: 0, absent: 0, late: 0 };
+        document.querySelectorAll('#attendance-table tbody tr[data-sid]').forEach(function(row) {
+            row.querySelectorAll('.att-cell').forEach(function(cell) {
+                var status = cell.getAttribute('data-status') || 'present';
+                if (counts[status] !== undefined) counts[status]++;
+            });
+        });
+        var presentEl = document.getElementById('count-present');
+        var absentEl = document.getElementById('count-absent');
+        var lateEl = document.getElementById('count-late');
+        if (presentEl) presentEl.textContent = counts.present;
+        if (absentEl) absentEl.textContent = counts.absent;
+        if (lateEl) lateEl.textContent = counts.late;
+    }
+    updateCounts();
+
+    function showSaveStatus(text, cls) {
+        var el = document.getElementById('save-status');
+        if (!el) return;
+        el.textContent = text;
+        el.className = 'badge fs-12 ' + cls;
+        el.classList.remove('d-none');
+        window.clearTimeout(showSaveStatus._t);
+        showSaveStatus._t = window.setTimeout(function() {
+            el.classList.add('d-none');
+        }, 2500);
+    }
+
+    // Click a cell to cycle Present -> Absent -> Late and save via AJAX
+    // (delegated on tbody so it keeps working after DataTable re-renders)
+    var attendanceTbody = document.querySelector('#attendance-table tbody');
+    if (attendanceTbody) {
+        attendanceTbody.addEventListener('click', function(e) {
+            var cell = e.target.closest ? e.target.closest('.att-cell') : null;
+            if (!cell || !interactive) return;
+            var row = cell.closest('tr[data-sid]');
+            if (!row) return;
+            var sid = row.getAttribute('data-sid');
+            var subj = cell.getAttribute('data-subj');
+            var examId = subjectExamMap[subj];
+            if (!examId) return;
+            var cur = cell.getAttribute('data-status') || getStatus(sid, subj);
+            var idx = cycleOrder.indexOf(cur);
+            var next = idx !== -1 ? cycleOrder[(idx + 1) % cycleOrder.length] : 'present';
+            applyStatus(cell, next);
+            updateCounts();
+            showSaveStatus('Saving...', 'bg-soft-warning text-warning');
+
+            fetch('{% url "exam:exam-attendance-save-ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'student_id=' + encodeURIComponent(sid) +
+                      '&exam_id=' + encodeURIComponent(examId) +
+                      '&status=' + encodeURIComponent(next),
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    showSaveStatus('Saved', 'bg-soft-success text-success');
+                } else {
+                    showSaveStatus('Error', 'bg-soft-danger text-danger');
+                }
+            })
+            .catch(function() {
+                showSaveStatus('Failed', 'bg-soft-danger text-danger');
+            });
+        });
+    }
+
+    // Print button - opens print-friendly page in new tab
+    function buildExportUrl(baseUrl) {
+        var params = new URLSearchParams(window.location.search);
+        var url = baseUrl + '?';
+        if (params.get('filter_class')) url += 'filter_class=' + encodeURIComponent(params.get('filter_class')) + '&';
+        if (params.get('filter_section')) url += 'filter_section=' + encodeURIComponent(params.get('filter_section')) + '&';
+        if (params.get('filter_exam_type')) url += 'filter_exam_type=' + encodeURIComponent(params.get('filter_exam_type')) + '&';
+        if (params.get('filter_exam')) url += 'filter_exam=' + encodeURIComponent(params.get('filter_exam')) + '&';
+        if (params.get('filter_status')) url += 'filter_status=' + encodeURIComponent(params.get('filter_status')) + '&';
+        if (params.get('sort')) url += 'sort=' + encodeURIComponent(params.get('sort')) + '&';
+        return url;
+    }
+
+    var btnPrint = document.getElementById('btn-print');
+    if (btnPrint) {
+        btnPrint.addEventListener('click', function(e) {
+            window.open(buildExportUrl('{% url "exam:exam-attendance-export-pdf" %}'), '_blank');
+        });
+    }
+
+    document.getElementById('export-pdf').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.open(buildExportUrl('{% url "exam:exam-attendance-export-pdf" %}'), '_blank');
+    });
+
+    document.getElementById('export-excel').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location.href = buildExportUrl('{% url "exam:exam-attendance-export-excel" %}');
+    });
+
+    // Sort options
+    document.querySelectorAll('.sort-option').forEach(function(opt) {
+        opt.addEventListener('click', function(e) {
+            e.preventDefault();
+            var sortVal = this.getAttribute('data-sort');
+            var url = new URL(window.location.href);
+            url.searchParams.set('sort', sortVal);
+            window.location.href = url.toString();
+        });
+    });
+
+    // Select all checkbox
+    var selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            var checkboxes = document.querySelectorAll('#attendance-table tbody .form-check-input');
+            checkboxes.forEach(function(cb) {
+                cb.checked = selectAll.checked;
+            });
+        });
+    }
+
+    // Delete modal handler
+    document.querySelectorAll('.delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var pk = this.dataset.pk;
+            document.getElementById('delete-attendance-form').action = '{% url "exam:exam-attendance-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('delete-attendance-name').textContent = this.dataset.name;
+        });
+    });
+
+    // Select2 initialization for modals
+    document.querySelectorAll('.modal').forEach(function(modal) {
+        modal.addEventListener('shown.bs.modal', function() {
+            $(this).find('.select').each(function() {
+                if (!$(this).data('select2')) {
+                    $(this).select2({ dropdownParent: $(this).closest('.modal'), width: '100%' });
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock extra_js %}

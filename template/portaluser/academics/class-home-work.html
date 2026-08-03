@@ -1,0 +1,721 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<link rel="stylesheet" href="{% static 'assets/plugins/daterangepicker/daterangepicker.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+
+        <!-- Page Header -->
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Class Work</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'home' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="javascript:void(0);">Academic </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Class Work</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="pe-1 mb-2">
+                    <a href="{% url 'academics:homework-list' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+                        data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+                        <i class="ti ti-refresh"></i>
+                    </a>
+                </div>
+                <div class="pe-1 mb-2">
+                    <button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+                        data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+                        data-bs-original-title="Print" onclick="printOrExportPDF();">
+                        <i class="ti ti-printer"></i>
+                    </button>
+                </div>
+                <div class="dropdown me-2 mb-2">
+                    <a href="javascript:void(0);"
+                        class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+                        data-bs-toggle="dropdown">
+                        <i class="ti ti-file-export me-2"></i>Export
+                    </a>
+                    <ul class="dropdown-menu  dropdown-menu-end p-3">
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="printOrExportPDF();"><i
+                                    class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportToExcel();"><i
+                                    class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mb-2">
+                    <a href="#" class="btn btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#add_home_work"><i class="ti ti-square-rounded-plus-filled me-2"></i>Add
+                        Home Work</a>
+                </div>
+            </div>
+        </div>
+        <!-- /Page Header -->
+
+        <!-- Class Home Work -->
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                <h4 class="mb-3">Class Home Work</h4>
+                <div class="d-flex align-items-center flex-wrap">
+                    <div class="input-icon-start mb-3 me-2 position-relative">
+                        <span class="icon-addon">
+                            <i class="ti ti-calendar"></i>
+                        </span>
+                        <input type="text" class="form-control date-range bookingrange" placeholder="Select"
+                            value="{% if current_academic_year %}Academic Year : {{ current_academic_year.name }}{% else %}Select{% endif %}">
+                    </div>
+                    <div class="dropdown mb-3 me-2">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+                                class="ti ti-filter me-2"></i>Filter</a>
+                        <div class="dropdown-menu drop-width">
+                            <form method="get" action="{% url 'academics:homework-list' %}">
+                                <div class="d-flex align-items-center border-bottom p-3">
+                                    <h4>Filter</h4>
+                                </div>
+                                <div class="p-3 border-bottom pb-0">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Subject</label>
+                                                <select class="select" name="filter_subject">
+                                                    <option value="">Select</option>
+                                                    {% for sname in subject_names %}
+                                                    <option value="{{ sname }}" {% if filter_subject == sname %}selected{% endif %}>{{ sname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Class</label>
+                                                <select class="select" name="filter_class">
+                                                    <option value="">Select</option>
+                                                    {% for cname in class_names %}
+                                                    <option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Section</label>
+                                                <select class="select" name="filter_section">
+                                                    <option value="">Select</option>
+                                                    {% for sname in section_names %}
+                                                    <option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Date</label>
+                                                <input type="date" class="form-control" name="filter_date" value="{{ filter_date }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-3 d-flex align-items-center justify-content-end">
+                                    <a href="{% url 'academics:homework-list' %}" class="btn btn-light me-3">Reset</a>
+                                    <button type="submit" class="btn btn-primary">Apply</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="dropdown mb-3">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+                        </a>
+                        <ul class="dropdown-menu p-3">
+                            <li>
+                                <a href="{% url 'academics:homework-list' %}?sort=asc{% if filter_class %}&filter_class={{ filter_class }}{% endif %}{% if filter_section %}&filter_section={{ filter_section }}{% endif %}{% if filter_subject %}&filter_subject={{ filter_subject }}{% endif %}{% if filter_date %}&filter_date={{ filter_date }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+                                    Ascending
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'academics:homework-list' %}?sort=desc{% if filter_class %}&filter_class={{ filter_class }}{% endif %}{% if filter_section %}&filter_section={{ filter_section }}{% endif %}{% if filter_subject %}&filter_subject={{ filter_subject }}{% endif %}{% if filter_date %}&filter_date={{ filter_date }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+                                    Descending
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0 py-3">
+
+                <!-- Class Home Work List -->
+                <div class="custom-datatable-filter table-responsive">
+                    <table class="table datatable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th class="no-sort">
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" id="select-all">
+                                    </div>
+                                </th>
+                                <th>ID</th>
+                                <th>Class</th>
+                                <th>Section</th>
+                                <th>Subject</th>
+                                <th>Homework Date</th>
+                                <th>Submission Date</th>
+                                <th>Created By</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for hw in homeworks %}
+                            <tr>
+                                <td>
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" name="selected_items" value="{{ hw.pk }}">
+                                    </div>
+                                </td>
+                                <td><a href="#" class="link-primary">{{ hw.homework_id }}</a></td>
+                                <td>{{ hw.school_class.name }}</td>
+                                <td>{{ hw.section.name }}</td>
+                                <td>{{ hw.subject.name }}</td>
+                                <td>{{ hw.homework_date|date:"d M Y" }}</td>
+                                <td>{{ hw.submission_date|date:"d M Y" }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <a href="#" class="avatar avatar-md">
+                                            {% if hw.created_by %}
+                                            <img src="{% static 'assets/img/students/student-01.jpg' %}" class="img-fluid rounded-circle" alt="img">
+                                            {% else %}
+                                            <img src="{% static 'assets/img/students/student-01.jpg' %}" class="img-fluid rounded-circle" alt="img">
+                                            {% endif %}
+                                        </a>
+                                        <div class="ms-2">
+                                            <p class="text-dark mb-0"><a href="#">{{ hw.created_by|default:"-" }}</a></p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="dropdown">
+                                            <a href="#"
+                                                class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="ti ti-dots-vertical fs-14"></i>
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-right p-3">
+
+                                                <li>
+                                                    <a class="dropdown-item rounded-1 edit-homework-btn" href="#"
+                                                        data-bs-toggle="modal" data-bs-target="#edit_home_work"
+                                                        data-pk="{{ hw.pk }}"
+                                                        data-class-name="{{ hw.school_class.name }}"
+                                                        data-class-pk="{{ hw.school_class.pk }}"
+                                                        data-section="{{ hw.section.name }}"
+                                                        data-section-pk="{{ hw.section.pk }}"
+                                                        data-subject="{{ hw.subject.name }}"
+                                                        data-subject-pk="{{ hw.subject.pk }}"
+                                                        data-homework-date="{{ hw.homework_date|date:'Y-m-d' }}"
+                                                        data-submission-date="{{ hw.submission_date|date:'Y-m-d' }}"
+                                                        data-attachments="{% if hw.attachments %}{{ hw.attachments.url }}{% endif %}"
+                                                        data-description="{{ hw.description }}"
+                                                        data-status="{{ hw.status }}"><i
+                                                            class="ti ti-edit-circle me-2"></i>Edit</a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item rounded-1 delete-homework-btn" href="#"
+                                                        data-bs-toggle="modal" data-bs-target="#delete-modal"
+                                                        data-pk="{{ hw.pk }}"
+                                                        data-name="{{ hw.homework_id }}"><i
+                                                            class="ti ti-trash-x me-2"></i>Delete</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- /Class Home Work List -->
+            </div>
+        </div>
+        <!-- /Class Home Work -->
+
+    </div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Home Work -->
+<div class="modal fade" id="add_home_work">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Home Work</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+                    aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'academics:homework-list' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="add_homework" value="1">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Class</label>
+                                <select class="form-select" name="school_class" required>
+                                    <option value="">Select</option>
+                                    {% for sc in school_classes %}
+                                    <option value="{{ sc.pk }}">{{ sc }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Section</label>
+                                        <select class="select" name="section" required>
+                                            <option value="">Select</option>
+                                            {% for sec in sections %}
+                                            <option value="{{ sec.pk }}">{{ sec }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Subject</label>
+                                        <select class="select" name="subject" required>
+                                            <option value="">Select</option>
+                                            {% for sub in subjects %}
+                                            <option value="{{ sub.pk }}">{{ sub }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Homework Date</label>
+                                        <input type="date" class="form-control" name="homework_date" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Submission Date</label>
+                                        <input type="date" class="form-control" name="submission_date" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Attachments</label>
+                                <input type="file" class="form-control" name="attachments">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="4" placeholder="Add Description"></textarea>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="status-title">
+                                    <h5>Status</h5>
+                                    <p>Change the Status by toggle </p>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="status" value="active" checked
+                                        onchange="this.value = this.checked ? 'active' : 'inactive';">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Add Homework</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Add Home Work -->
+
+<!-- Edit Home Work -->
+<div class="modal fade" id="edit_home_work">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Home Work</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+                    aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <form method="post" id="edit-homework-form" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Class</label>
+                                <select class="form-select" name="school_class" id="edit_class" required>
+                                    <option value="">Select</option>
+                                    {% for sc in school_classes %}
+                                    <option value="{{ sc.pk }}">{{ sc }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Section</label>
+                                        <select class="select" name="section" id="edit_section" required>
+                                            <option value="">Select</option>
+                                            {% for sec in sections %}
+                                            <option value="{{ sec.pk }}">{{ sec }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Subject</label>
+                                        <select class="select" name="subject" id="edit_subject" required>
+                                            <option value="">Select</option>
+                                            {% for sub in subjects %}
+                                            <option value="{{ sub.pk }}">{{ sub }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Homework Date</label>
+                                        <input type="date" class="form-control" name="homework_date" id="edit_homework_date" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Submission Date</label>
+                                        <input type="date" class="form-control" name="submission_date" id="edit_submission_date" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Attachments</label>
+                                <input type="file" class="form-control" name="attachments" id="edit_attachments">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" id="edit_description" rows="4" placeholder="Add Description"></textarea>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="status-title">
+                                    <h5>Status</h5>
+                                    <p>Change the Status by toggle </p>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="status" id="edit_status"
+                                        onchange="this.value = this.checked ? 'active' : 'inactive';">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Edit Home Work -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="delete-homework-form">
+                {% csrf_token %}
+                <div class="modal-body text-center">
+                    <span class="delete-icon">
+                        <i class="ti ti-trash-x"></i>
+                    </span>
+                    <h4>Confirm Deletion</h4>
+                    <p>You want to delete all the marked items, this cant be undone once you delete.</p>
+                    <div class="d-flex justify-content-center">
+                        <a href="javascript:void(0);" class="btn btn-light me-3"
+                            data-bs-dismiss="modal">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+// Global helper functions for Print and Export
+function getHomeworkData() {
+    var headers = ["ID", "Class", "Section", "Subject", "Homework Date", "Submission Date", "Created By"];
+    var data = [];
+    if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+        var table = $('.datatable').DataTable();
+        table.rows({ search: 'applied' }).every(function() {
+            var rowData = this.data();
+            var row = [];
+            for (var i = 1; i < rowData.length - 1; i++) {
+                var cellHtml = rowData[i];
+                var tempDiv = document.createElement("div");
+                tempDiv.innerHTML = cellHtml;
+                var text = tempDiv.textContent || tempDiv.innerText || "";
+                row.push(text.trim());
+            }
+            data.push(row);
+        });
+    } else {
+        var rows = document.querySelectorAll("table.datatable tbody tr");
+        rows.forEach(function(tr) {
+            var cols = tr.querySelectorAll("td");
+            if (cols.length > 1) {
+                var row = [];
+                for (var j = 1; j < cols.length - 1; j++) {
+                    row.push(cols[j].innerText.trim());
+                }
+                data.push(row);
+            }
+        });
+    }
+    return { 
+        headers: headers, 
+        rows: data,
+        reportTitle: "Class Homework Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportToExcel() {
+    var data = getHomeworkData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "class_homework_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+    var data = getHomeworkData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    
+    var html = `
+    <html>
+    <head>
+        <title>` + data.reportTitle + `</title>
+        <style>
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 13px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 12px 16px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 210mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">` + data.reportTitle + `</div>
+            <div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    ` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+                </tr>
+            </thead>
+            <tbody>
+                ` + data.rows.map(function(row) {
+                    return '<tr>' + row.map(function(val) { return '<td>' + val + '</td>'; }).join("") + '</tr>';
+                }).join("") + `
+            </tbody>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <\/script>
+    </body>
+    </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Edit homework modal - populate from data attributes
+    document.querySelectorAll('.edit-homework-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var pk = this.dataset.pk;
+            document.getElementById('edit-homework-form').action = '{% url "academics:homework-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+
+            document.getElementById('edit_class').value = this.dataset.classPk || '';
+            document.getElementById('edit_section').value = this.dataset.sectionPk || '';
+            document.getElementById('edit_subject').value = this.dataset.subjectPk || '';
+
+            document.getElementById('edit_homework_date').value = this.dataset.homeworkDate || '';
+            document.getElementById('edit_submission_date').value = this.dataset.submissionDate || '';
+            document.getElementById('edit_description').value = this.dataset.description || '';
+
+            var statusVal = this.dataset.status;
+            document.getElementById('edit_status').checked = statusVal === 'active';
+            document.getElementById('edit_status').value = statusVal;
+        });
+    });
+
+    // Delete homework modal - populate from data attributes
+    document.querySelectorAll('.delete-homework-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var pk = this.dataset.pk;
+            document.getElementById('delete-homework-form').action = '{% url "academics:homework-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+        });
+    });
+
+});
+</script>
+{% endblock extra_js %}

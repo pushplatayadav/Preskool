@@ -1,0 +1,540 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+		<div class="row">
+
+			{% if messages %}
+			<div class="col-md-12">
+				{% for message in messages %}
+				<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+					{{ message }}
+					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+				</div>
+				{% endfor %}
+			</div>
+			{% endif %}
+
+			<!-- Page Header -->
+			<div class="col-md-12">
+				<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+					<div class="my-auto mb-2">
+						<h3 class="page-title mb-1">Teacher Details</h3>
+						 <nav>
+							   <ol class="breadcrumb mb-0">
+									<li class="breadcrumb-item">
+										<a href="{% url 'home' %}">Dashboard</a>
+								  	</li>
+								  	<li class="breadcrumb-item">
+										<a href="{% url 'people:teacher-list' %}">Teachers</a>
+								  	</li>
+								  	<li class="breadcrumb-item active" aria-current="page">Teacher Details</li>
+								</ol>
+						  </nav>
+					</div>
+					<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">			
+						<a href="#" class="btn btn-light me-2 mb-2" data-bs-toggle="modal" data-bs-target="#login_detail"><i class="ti ti-lock me-2"></i>Login Details</a>					
+						<a href="{% url 'people:edit-teacher' teacher.pk %}" class="btn btn-primary d-flex align-items-center mb-2"><i class="ti ti-edit-circle me-2"></i>Edit Teacher</a> 
+					</div>
+				</div>
+			</div>
+			<!-- /Page Header -->
+
+			<!-- Teacher Information -->
+			<div class="col-xxl-3 col-xl-4 theiaStickySidebar">
+				<div class="card border-white">
+					<div class="card-header">
+						<div class="d-flex align-items-center flex-wrap row-gap-3">                                                
+							<div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+								{% if teacher.profile_image %}
+								<img src="{{ teacher.profile_image.url }}" class="img-fluid" alt="img">
+								{% else %}
+								<img src="{% static 'assets/img/teachers/teacher-01.jpg' %}" class="img-fluid" alt="img">
+								{% endif %}
+							</div>                                              
+							<div>
+								{% if teacher.status == "active" %}
+								<span class="badge badge-soft-success d-inline-flex align-items-center mb-1"><i class="ti ti-circle-filled fs-5 me-1"></i>Active</span>
+								{% else %}
+								<span class="badge badge-soft-danger d-inline-flex align-items-center mb-1"><i class="ti ti-circle-filled fs-5 me-1"></i>Inactive</span>
+								{% endif %}
+								<h5 class="mb-1 text-truncate">{{ teacher.name }}</h5>
+								<p class="text-primary mb-1">{{ teacher.teacher_id }}</p>
+								<p>Joined : {{ teacher.date_of_join|date:"d M y"|default:"-" }}</p>
+							</div>
+						</div>
+					</div>
+					<div class="card-body">
+						<h5 class="mb-3">Basic Information</h5>
+						<dl class="row mb-0"> 
+							<dt class="col-6 fw-medium text-dark mb-3">Class</dt> 
+							<dd class="col-6 mb-3">{{ teacher.school_class.name|default:"-" }}</dd> 
+							<dt class="col-6 fw-medium text-dark mb-3">Subject</dt> 
+							<dd class="col-6 mb-3">{{ teacher.subject.name|default:"-" }}</dd> 
+							<dt class="col-6 fw-medium text-dark mb-3">Gender</dt> 
+							<dd class="col-6 mb-3">{{ teacher.get_gender_display }}</dd> 
+							<dt class="col-6 fw-medium text-dark mb-3">Blood Group</dt> 
+							<dd class="col-6 mb-3">{{ teacher.get_blood_group_display|default:"-" }}</dd> 
+							<dt class="col-6 fw-medium text-dark mb-3">Date Of Birth</dt> 
+							<dd class="col-6 mb-3">{{ teacher.date_of_birth|date:"d M Y"|default:"-" }}</dd> 
+							<dt class="col-6 fw-medium text-dark mb-3">Language Known</dt> 
+							<dd class="col-6 mb-3">{{ teacher.languages_known|default:"-" }}</dd> 
+							{% if languages %}
+							<dt class="col-6 fw-medium text-dark mb-0">Language</dt> 
+							<dd class="col-6 mb-0">
+								{% for lang in languages %}
+								<span class="badge badge-light text-dark me-2">{{ lang }}</span>
+								{% endfor %}
+							</dd> 
+							{% endif %}
+						</dl>								
+					</div>
+				</div>
+				<div class="card border-white">
+					<div class="card-body">
+						<h5 class="mb-3">Primary Contact Info</h5>
+						<div class="d-flex align-items-center mb-3">
+							<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-phone"></i></span>
+							<div>
+								<span class="text-dark fw-medium mb-1">Phone Number</span>
+								<p>{{ teacher.phone|default:"-" }}</p>
+							</div>
+						</div>
+						<div class="d-flex align-items-center">
+							<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-mail"></i></span>
+							<div>
+								<span class="text-dark fw-medium mb-1">Email Address</span>
+								<p>{{ teacher.email|default:"-" }}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+				{% if teacher.pan_number %}
+				<div class="card border-white">
+					<div class="card-body pb-1">
+						<h5 class="mb-3">PAN Number / ID Number</h5>
+						<div class="d-flex align-items-center justify-content-between">
+							<div class="d-flex align-items-center mb-3">
+								<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-id"></i></span>
+								<div>										
+									<p class="text-dark">{{ teacher.pan_number }}</p>
+								</div>
+							</div>	
+							<a class="btn btn-primary btn-icon btn-sm mb-3">
+								<i class="ti ti-copy"></i>
+							</a>				
+						</div>		
+					</div>
+				</div>
+				{% endif %}
+				<div class="card border-white">
+					<div class="card-body pb-1">
+						<ul class="nav nav-tabs nav-tabs-bottom mb-3">
+							<li class="nav-item"><a class="nav-link active" href="#hostel" data-bs-toggle="tab">Hostel</a></li>
+							<li class="nav-item"><a class="nav-link" href="#transport" data-bs-toggle="tab">Transportation</a></li>
+						</ul>
+						<div class="tab-content">
+							<div class="tab-pane fade show active" id="hostel">
+								<div class="d-flex align-items-center mb-3">
+									<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-building-fortress fs-16"></i></span>
+									<div>
+										<h6 class="mb-1">{{ teacher.hostel|default:"Not Assigned" }}</h6>
+										{% if teacher.room_no %}
+										<p class="text-primary">Room No : {{ teacher.room_no }}</p>
+										{% endif %}
+									</div>
+								</div>
+							</div>
+							<div class="tab-pane fade" id="transport">
+								<div class="d-flex align-items-center mb-3">
+									<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-bus fs-16"></i></span>
+									<div>
+										<span class="fs-12 mb-1">Route</span>
+										<p class="text-dark">{{ teacher.route|default:"-" }}</p>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-6">
+										<div class="mb-3">
+											<span class="fs-12 mb-1">Bus Number</span>
+											<p class="text-dark">{{ teacher.vehicle_number|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-sm-6">
+										<div class="mb-3">
+											<span class="fs-12 mb-1">Pickup Point</span>
+											<p class="text-dark">{{ teacher.pickup_point|default:"-" }}</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /Teacher Information -->
+
+			<div class="col-xxl-9 col-xl-8">
+				<div class="row">
+					<div class="col-md-12">
+
+						<!-- List -->
+						<ul class="nav nav-tabs nav-tabs-bottom mb-4">
+							<li>
+								<a href="{% url 'people:teacher-details' teacher.pk %}" class="nav-link active"><i class="ti ti-school me-2"></i>Teacher Details</a>
+							</li>
+							<li>
+								<a href="routine-teachers.html" class="nav-link"><i class="ti ti-table-options me-2"></i>Routine</a>
+							</li>
+							<li>
+								<a href="teacher-leaves.html" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a>
+							</li>
+							<li>
+								<a href="teacher-salary.html" class="nav-link"><i class="ti ti-report-money me-2"></i>Salary</a>
+							</li>
+							<li>
+								<a href="teacher-library.html" class="nav-link"><i class="ti ti-bookmark-edit me-2"></i>Library</a>
+							</li>
+						</ul>
+						<!-- /List -->
+
+						<!-- Profile Details -->
+						<div class="card">
+							<div class="card-header">
+								<h5>Profile Details</h5>
+							</div>
+							<div class="card-body">
+								<div class="border rounded p-3 pb-0">									
+									<div class="row">									
+										
+										<div class="col-sm-6 col-lg-4">
+											<div class="mb-3">
+												<p class="text-dark fw-medium mb-1">Father's Name</p>
+												<p>{{ teacher.father_name|default:"-" }}</p>
+											</div>
+										</div>
+										<div class="col-sm-6 col-lg-4">
+											<div class="mb-3">
+												<p class="text-dark fw-medium mb-1">Mother Name</p>
+												<p>{{ teacher.mother_name|default:"-" }}</p>
+											</div>
+										</div>
+										<div class="col-sm-6 col-lg-4">
+											<div class="mb-3">
+												<p class="text-dark fw-medium mb-1">DOB</p>
+												<p>{{ teacher.date_of_birth|date:"d M Y"|default:"-" }}</p>
+											</div>
+										</div>
+										<div class="col-sm-6 col-lg-4">
+											<div class="mb-3">
+												<p class="text-dark fw-medium mb-1">Marital Status</p>
+												<p>{{ teacher.get_marital_status_display|default:"-" }}</p>
+											</div>
+										</div>
+										<div class="col-sm-6 col-lg-4">
+											<div class="mb-3">
+												<p class="text-dark fw-medium mb-1">Qualification</p>
+												<p>{{ teacher.qualification|default:"-" }}</p>
+											</div>
+										</div>
+										<div class="col-sm-6 col-lg-4">
+											<div class="mb-3">
+												<p class="text-dark fw-medium mb-1">Experience</p>
+												<p>{{ teacher.experience|default:"-" }}</p>
+											</div>
+										</div>
+										
+									</div>
+								</div>
+								
+							</div>
+						</div>
+						<!-- /Profile Details -->
+
+					</div>
+
+					<!-- Documents -->
+					{% if teacher.resume or teacher.joining_letter %}
+					<div class="col-xxl-6 d-flex">
+						<div class="card flex-fill">
+							<div class="card-header">
+								<h5>Documents</h5>
+							</div>
+							<div class="card-body">
+								{% if teacher.resume %}
+								<div class="bg-light-300 border rounded d-flex align-items-center justify-content-between mb-3 p-2">
+									<div class="d-flex align-items-center overflow-hidden">
+										<span class="avatar avatar-md bg-white rounded flex-shrink-0 text-default"><i class="ti ti-pdf fs-15"></i></span>
+										<div class="ms-2">
+											<p class="text-truncate fw-medium text-dark">{{ teacher.resume.name }}</p>
+										</div>
+									</div>
+									<a href="{{ teacher.resume.url }}" class="btn btn-dark btn-icon btn-sm"><i class="ti ti-download"></i></a>
+								</div>
+								{% endif %}
+								{% if teacher.joining_letter %}
+								<div class="bg-light-300 border rounded d-flex align-items-center justify-content-between p-2">
+									<div class="d-flex align-items-center overflow-hidden">
+										<span class="avatar avatar-md bg-white rounded flex-shrink-0 text-default"><i class="ti ti-pdf fs-15"></i></span>
+										<div class="ms-2">
+											<p class="text-truncate fw-medium text-dark">{{ teacher.joining_letter.name }}</p>
+										</div>
+									</div>
+									<a href="{{ teacher.joining_letter.url }}" class="btn btn-dark btn-icon btn-sm"><i class="ti ti-download"></i></a>
+								</div>
+								{% endif %}
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					<!-- /Documents -->
+
+					<!-- Address -->
+					<div class="col-xxl-6 d-flex">
+						<div class="card flex-fill">
+							<div class="card-header">
+								<h5>Address</h5>
+							</div>
+							<div class="card-body">
+								<div class="d-flex align-items-center mb-3">
+									<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-map-pin-up"></i></span>
+									<div>
+										<p class="text-dark fw-medium mb-1">Current Address</p>
+										<p>{{ teacher.address|default:"-"|linebreaks }}</p>
+									</div>
+								</div>
+								<div class="d-flex align-items-center">
+									<span class="avatar avatar-md bg-light-300 rounded me-2 flex-shrink-0 text-default"><i class="ti ti-map-pins"></i></span>
+									<div>
+										<p class="text-dark fw-medium mb-1">Permanent Address</p>
+										<p>{{ teacher.permanent_address|default:"-"|linebreaks }}</p>
+									</div>
+								</div>
+							</div>
+						</div>								
+					</div>
+					<!-- /Address -->
+
+					<!-- Previous School Details -->
+					<div class="col-xxl-12">
+						<div class="card">
+							<div class="card-header">
+								<h5>Previous School Details</h5>
+							</div>
+							<div class="card-body pb-1">
+								<div class="row">
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Previous School Name</p>
+											<p>{{ teacher.previous_school|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">School Address</p>
+											<p>{{ teacher.previous_school_address|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Phone Number</p>
+											<p>{{ teacher.previous_school_phone|default:"-" }}</p>
+										</div>
+									</div>
+									
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Previous School Details -->
+
+					<!-- Bank Details -->
+					<div class="col-xxl-6 d-flex">
+						<div class="card flex-fill">
+							<div class="card-header">
+								<h5>Bank Details</h5>
+							</div>
+							<div class="card-body pb-1">
+								<div class="row">
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Bank Name</p>
+											<p>{{ teacher.bank_name|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Branch</p>
+											<p>{{ teacher.branch_name|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">IFSC</p>
+											<p>{{ teacher.ifsc_code|default:"-" }}</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /Bank Details -->
+
+					<!-- Work Details -->
+					<div class="col-xxl-6 d-flex">
+						<div class="card flex-fill">
+							<div class="card-header">
+								<h5>Work Details</h5>
+							</div>
+							<div class="card-body pb-1">
+								<div class="row">
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Contract Type</p>
+											<p>{{ teacher.get_contract_type_display|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Shift</p>
+											<p>{{ teacher.get_work_shift_display|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Work Location</p>
+											<p>{{ teacher.work_location|default:"-" }}</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>								
+					</div>
+					<!-- /Work Details -->
+
+					<!-- Social Media -->
+					<div class="col-xxl-12 d-flex">
+						<div class="card flex-fill">
+							<div class="card-header">
+								<h5>Social Media</h5>
+							</div>
+							<div class="card-body pb-1">
+								<div class="row row-cols-xxl-5 row-cols-xl-3">
+									<div class="col">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Facebook</p>
+											<p>{{ teacher.facebook|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Twitter</p>
+											<p>{{ teacher.twitter|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Linkedin</p>
+											<p>{{ teacher.linkedin|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Youtube</p>
+											<p>{{ teacher.youtube|default:"-" }}</p>
+										</div>
+									</div>
+									<div class="col">
+										<div class="mb-3">
+											<p class="mb-1 text-dark fw-medium">Instagram</p>
+											<p>{{ teacher.instagram|default:"-" }}</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>								
+					</div>
+					<!-- /Social Media -->
+
+					<!-- Other Info -->
+					{% if teacher.notes %}
+					<div class="col-xxl-12">
+						<div class="card">
+							<div class="card-header">
+								<h5>Other Info</h5>
+							</div>
+							<div class="card-body">
+								<p>{{ teacher.notes|linebreaks }}</p>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					<!-- /Other Info -->
+
+				</div>
+			</div>
+
+		</div>
+	</div>
+</div>
+
+{% endblock content %}
+
+{% block modals %}
+<!-- Login Details Modal -->
+<div class="modal fade" id="login_detail">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Login Details</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>		
+			<div class="modal-body">		
+				<div class="student-detail-info">
+					<span class="student-img">
+						{% if teacher.profile_image %}
+						<img src="{{ teacher.profile_image.url }}" alt="img">
+						{% else %}
+						<img src="{% static 'assets/img/teachers/teacher-01.jpg' %}" alt="img">
+						{% endif %}
+					</span>
+					<div class="name-info">
+						<h6>{{ teacher.name }} <span>{{ teacher.school_class.name|default:"" }}</span></h6>
+					</div>
+				</div>
+				<div class="table-responsive custom-table no-datatable_length">
+					<table class="table datanew">
+						<thead class="thead-light">
+							<tr>
+								<th>User Type</th>
+								<th>User Name</th>
+								<th>Password</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Teacher</td>
+								<td>{{ teacher.teacher_id|lower }}</td>
+								<td>teacher@{{ teacher.teacher_id|lower }}</td>
+							</tr>
+							<tr>
+								<td>Parent</td>
+								<td>parent{{ teacher.teacher_id|lower }}</td>
+								<td>parent@{{ teacher.teacher_id|lower }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>			
+			<div class="modal-footer">
+				<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Login Details -->
+{% endblock modals %}

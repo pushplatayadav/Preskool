@@ -1,0 +1,191 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+	<meta name="description" content="{{ school_name }} - School Management System">
+	<meta name="keywords" content="admin, school, {{ school_name }}, education, bootstrap">
+	<meta name="author" content="{{ school_name }}">
+	<meta name="robots" content="noindex, nofollow">
+	<title>{% block title %}{{ school_name }}{% endblock %}</title>
+
+	<!-- Favicon -->
+	<link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/img/favicon.png' %}">
+
+	<!-- Theme Script js -->
+	<script src="{% static 'assets/js/theme-script.js' %}"></script>
+
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="{% static 'assets/css/bootstrap.min.css' %}">
+
+	<!-- Feather CSS -->
+	<link rel="stylesheet" href="{% static 'assets/plugins/icons/feather/feather.css' %}">
+
+	<!-- Tabler Icon CSS -->
+	<link rel="stylesheet" href="{% static 'assets/plugins/tabler-icons/tabler-icons.css' %}">
+
+	<!-- Fontawesome CSS -->
+	<link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/fontawesome.min.css' %}">
+	<link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/all.min.css' %}">
+
+	<!-- Select2 CSS -->
+	<link rel="stylesheet" href="{% static 'assets/plugins/select2/css/select2.min.css' %}">
+
+	<!-- Main CSS -->
+	<link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+
+	<style>
+		.auth-bg {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+		}
+		.auth-card {
+			border: none;
+			border-radius: 12px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+		}
+		.auth-logo img {
+			max-height: 60px;
+		}
+		.btn-primary {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			border: none;
+			border-radius: 8px;
+			padding: 10px 24px;
+			font-weight: 500;
+			transition: all 0.3s ease;
+		}
+		.btn-primary:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		}
+		.login-or {
+			position: relative;
+			text-align: center;
+			margin: 20px 0;
+		}
+		.login-or::before,
+		.login-or::after {
+			content: '';
+			position: absolute;
+			top: 50%;
+			width: 45%;
+			height: 1px;
+			background: #e0e0e0;
+		}
+		.login-or::before { left: 0; }
+		.login-or::after { right: 0; }
+		.span-or {
+			background: #fff;
+			padding: 0 12px;
+			color: #888;
+			font-size: 14px;
+			position: relative;
+			z-index: 1;
+		}
+		.social-btn {
+			border-radius: 8px;
+			padding: 10px;
+			transition: all 0.3s ease;
+		}
+		.social-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		}
+		.pass-group {
+			position: relative;
+		}
+		.toggle-password {
+			position: absolute;
+			right: 12px;
+			top: 50%;
+			transform: translateY(-50%);
+			cursor: pointer;
+			z-index: 2;
+		}
+		.alert {
+			border-radius: 8px;
+			border: none;
+		}
+	</style>
+
+	{% block extra_css %}{% endblock %}
+</head>
+
+<body class="account-page">
+
+	<!-- Main Wrapper -->
+	<div class="main-wrapper">
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-md-5 mx-auto">
+					{% block form_wrapper_open %}<form method="post" action="{% block form_action %}{% endblock %}">{% endblock %}
+						{% csrf_token %}
+						<div class="d-flex flex-column justify-content-between vh-100">
+						<!-- Messages -->
+							{% if messages %}
+							<div class="px-3">
+								{% for message in messages %}
+								<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+									{{ message }}
+									<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+										<span><i class="ti ti-x"></i></span>
+									</button>
+								</div>
+								{% endfor %}
+							</div>
+							{% endif %}
+
+							<!-- Card -->
+							<div class="card">
+								<div class="card-body p-4">
+									{% block card_content %}{% endblock %}
+								</div>
+							</div>
+
+							<!-- Footer -->
+							<div class="p-4 text-center">
+								<p class="mb-0">&copy; {% now "Y" %} {{ school_name }}. All rights reserved.</p>
+							</div>
+						</div>
+					</form>
+						</div>
+					</div>
+					{% block form_wrapper_close %}</form>{% endblock %}
+				</div>
+	</div>
+	<!-- /Main Wrapper -->
+
+	<!-- jQuery -->
+	<script src="{% static 'assets/js/jquery-3.7.1.min.js' %}"></script>
+
+	<!-- Bootstrap Core JS -->
+	<script src="{% static 'assets/js/bootstrap.bundle.min.js' %}"></script>
+
+	<!-- Feather Icon JS -->
+	<script src="{% static 'assets/js/feather.min.js' %}"></script>
+
+	<!-- Select2 JS -->
+	<script src="{% static 'assets/plugins/select2/js/select2.min.js' %}"></script>
+
+	<!-- Custom JS -->
+	<script src="{% static 'assets/js/script.js' %}"></script>
+
+	<script>
+		// Initialize feather icons
+		feather.replace();
+
+		// Initialize select2
+		$(document).ready(function() {
+			if ($('.select2').length > 0) {
+				$(".select2").select2();
+			}
+		});
+	</script>
+
+	{% block extra_js %}{% endblock %}
+</body>
+
+</html>

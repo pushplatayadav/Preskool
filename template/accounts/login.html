@@ -1,0 +1,95 @@
+{% extends 'accounts/auth_base.html' %}
+{% load static %}
+
+{% block title %}Login - {{ school_name }}{% endblock %}
+
+{% block form_action %}{% url 'accounts:login' %}{% endblock %}
+
+{% block card_content %}
+<div class="mb-4 text-center">
+	<h2 class="mb-2">Welcome Back</h2>
+	<p class="mb-0">Please enter your credentials to sign in</p>
+</div>
+
+<!-- Social Login Buttons -->
+<div class="mt-4">
+	<div class="d-flex align-items-center justify-content-center flex-wrap">
+		<div class="text-center me-2 flex-fill">
+			<a href="javascript:void(0);"
+				class="bg-primary br-10 p-2 btn btn-primary d-flex align-items-center justify-content-center social-btn">
+				<img class="img-fluid m-1" src="{% static 'assets/img/icons/facebook-logo.svg' %}" alt="Facebook">
+			</a>
+		</div>
+		<div class="text-center me-2 flex-fill">
+			<a href="javascript:void(0);"
+				class="br-10 p-2 btn btn-outline-light d-flex align-items-center justify-content-center social-btn">
+				<img class="img-fluid m-1" src="{% static 'assets/img/icons/google-logo.svg' %}" alt="Google">
+			</a>
+		</div>
+		<div class="text-center flex-fill">
+			<a href="javascript:void(0);"
+				class="bg-dark br-10 p-2 btn btn-dark d-flex align-items-center justify-content-center social-btn">
+				<img class="img-fluid m-1" src="{% static 'assets/img/icons/apple-logo.svg' %}" alt="Apple">
+			</a>
+		</div>
+	</div>
+</div>
+
+<div class="login-or">
+	<span class="span-or">Or</span>
+</div>
+
+<!-- Form Fields -->
+<div class="mb-3">
+	<label class="form-label">Username or Email Address</label>
+	<div class="input-icon mb-3 position-relative">
+		<span class="input-icon-addon">
+			<i class="ti ti-user"></i>
+		</span>
+		<input type="text" name="username" value="{{ form.username.value|default:'' }}"
+			class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+			placeholder="Enter username or email" autofocus>
+		{% if form.username.errors %}
+		<div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+		{% endif %}
+	</div>
+
+	<label class="form-label">Password</label>
+	<div class="pass-group">
+		<input type="password" name="password"
+			class="pass-input form-control {% if form.password.errors %}is-invalid{% endif %}"
+			placeholder="Enter password">
+		<span class="ti toggle-password ti-eye-off"></span>
+		{% if form.password.errors %}
+		<div class="invalid-feedback">{{ form.password.errors.0 }}</div>
+		{% endif %}
+	</div>
+</div>
+
+<!-- Remember Me & Forgot Password -->
+<div class="form-wrap form-wrap-checkbox mb-3">
+	<div class="d-flex align-items-center">
+		<div class="form-check form-check-md mb-0">
+			<input class="form-check-input mt-0" type="checkbox" name="remember_me"
+				id="remember_me" {% if form.remember_me.value %}checked{% endif %}>
+		</div>
+		<label class="ms-1 mb-0" for="remember_me">Remember Me</label>
+	</div>
+	<div class="text-end">
+		<a href="{% url 'accounts:forgot-password' %}" class="link-danger">Forgot Password?</a>
+	</div>
+</div>
+
+<!-- Submit Button -->
+<div class="mb-3">
+	<button type="submit" class="btn btn-primary w-100">Sign In</button>
+</div>
+
+<!-- Register Link -->
+<div class="text-center">
+	<h6 class="fw-normal text-dark mb-0">
+		Don't have an account?
+		<a href="{% url 'accounts:register' %}" class="hover-a">Create Account</a>
+	</h6>
+</div>
+{% endblock %}

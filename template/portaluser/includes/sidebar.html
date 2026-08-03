@@ -1,0 +1,406 @@
+{% load static %}
+<div class="sidebar" id="sidebar">
+			<div class="sidebar-inner slimscroll">
+				<div id="sidebar-menu" class="sidebar-menu">
+					<ul>
+						<li>
+							<a href="javascript:void(0);"
+								class="d-flex align-items-center border bg-white rounded p-2 mb-4">
+								<img src="{% static 'assets/img/icons/global-img.svg' %}" class="avatar avatar-md img-fluid rounded"
+									alt="Profile">
+								<span class="text-dark ms-2 fw-normal">Global International</span>
+							</a>
+						</li>
+					</ul>
+					<ul>
+						<li>
+							<h6 class="submenu-hdr"><span>Main</span></h6>
+							<ul>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="subdrop active"><i
+											class="ti ti-layout-dashboard"></i><span>Dashboard</span><span
+											class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="{% url 'home' %}" class="active">Admin Dashboard</a></li>
+										<li><a href="teacher-dashboard.html">Teacher Dashboard</a></li>
+										<li><a href="student-dashboard.html">Student Dashboard</a></li>
+										<li><a href="parent-dashboard.html">Parent Dashboard</a></li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>Peoples</span></h6>
+							<ul>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:student-grid' or request.resolver_match.view_name == 'people:student-list' or request.resolver_match.view_name == 'people:student-details' or request.resolver_match.view_name == 'people:student-promotion' %}subdrop active{% endif %}"><i class="ti ti-school"></i><span>Students</span><span
+											class="menu-arrow"></span></a>
+									<ul {% if request.resolver_match.view_name == 'people:student-grid' or request.resolver_match.view_name == 'people:student-list' or request.resolver_match.view_name == 'people:student-details' or request.resolver_match.view_name == 'people:student-promotion' %}style="display: block;"{% endif %}>
+										<li><a href="{% url 'people:student-grid' %}" class="{% if request.resolver_match.view_name == 'people:student-grid' %}active{% endif %}">All Students</a></li>
+										<li><a href="{% url 'people:student-list' %}" class="{% if request.resolver_match.view_name == 'people:student-list' %}active{% endif %}">Student List</a></li>
+										<li><a href="{% url 'people:student-details-redirect' %}" class="{% if request.resolver_match.view_name == 'people:student-details' %}active{% endif %}">Student Details</a></li>
+										<li><a href="{% url 'people:student-promotion' %}" class="{% if request.resolver_match.view_name == 'people:student-promotion' %}active{% endif %}">Student Promotion</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:parent-list' %}subdrop active{% endif %}"><i
+											class="ti ti-user-bolt"></i><span>Parents</span><span
+											class="menu-arrow"></span></a>
+									<ul {% if request.resolver_match.view_name == 'people:parent-list' %}style="display: block;"{% endif %}>
+										<li><a href="#">All Parents</a></li>
+										<li><a href="{% url 'people:parent-list' %}" class="{% if request.resolver_match.view_name == 'people:parent-list' %}active{% endif %}">Parent List</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:guardian-list' %}subdrop active{% endif %}"><i
+											class="ti ti-user-shield"></i><span>Guardians</span><span
+											class="menu-arrow"></span></a>
+									<ul {% if request.resolver_match.view_name == 'people:guardian-list' %}style="display: block;"{% endif %}>
+										<li><a href="guardian-grid.html">All Guardians</a></li>
+										<li><a href="{% url 'people:guardian-list' %}" class="{% if request.resolver_match.view_name == 'people:guardian-list' %}active{% endif %}">Guardian List</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:teacher-grid' or request.resolver_match.view_name == 'people:teacher-list' or request.resolver_match.view_name == 'people:teacher-details' %}subdrop active{% endif %}"><i class="ti ti-users"></i><span>Teachers</span><span
+											class="menu-arrow"></span></a>
+									<ul {% if request.resolver_match.view_name == 'people:teacher-grid' or request.resolver_match.view_name == 'people:teacher-list' or request.resolver_match.view_name == 'people:teacher-details' %}style="display: block;"{% endif %}>
+										<li><a href="{% url 'people:teacher-grid' %}" class="{% if request.resolver_match.view_name == 'people:teacher-grid' %}active{% endif %}">All Teachers</a></li>
+										<li><a href="{% url 'people:teacher-list' %}" class="{% if request.resolver_match.view_name == 'people:teacher-list' %}active{% endif %}">Teacher List</a></li>
+										<li><a href="{% url 'people:teacher-details-redirect' %}" class="{% if request.resolver_match.view_name == 'people:teacher-details' %}active{% endif %}">Teacher Details</a></li>
+										<li><a href="routine-teachers.html">Routine</a></li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>Academic</span></h6>
+							<ul>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'academics:class-list' or request.resolver_match.view_name == 'academics:class-add' or request.resolver_match.view_name == 'academics:class-edit' %}subdrop active{% endif %}"><i
+											class="ti ti-school-bell"></i><span>Classes</span><span
+											class="menu-arrow"></span></a>
+									<ul {% if request.resolver_match.view_name == 'academics:class-list' or request.resolver_match.view_name == 'academics:class-add' or request.resolver_match.view_name == 'academics:class-edit' %}style="display: block;"{% endif %}>
+										<li><a href="{% url 'academics:class-list' %}" class="{% if request.resolver_match.view_name == 'academics:class-list' %}active{% endif %}">All Classes</a></li>
+										<li><a href="{% url 'academics:schedule-list' %}">Schedule</a></li>
+									</ul>
+								</li>
+								<li><a href="{% url 'academics:classroom-list' %}" class="{% if request.resolver_match.view_name == 'academics:classroom-list' %}active{% endif %}"><i class="ti ti-building"></i><span>Class Room</span></a>
+								</li>
+								<li><a href="{% url 'academics:classroutine-list' %}" class="{% if request.resolver_match.view_name == 'academics:classroutine-list' %}active{% endif %}"><i class="ti ti-bell-school"></i><span>Class
+											Routine</span></a></li>
+								<li><a href="{% url 'academics:section-list' %}" class="{% if request.resolver_match.view_name == 'academics:section-list' %}active{% endif %}"><i
+											class="ti ti-square-rotated-forbid-2"></i><span>Section</span></a></li>
+								<li><a href="{% url 'academics:subject-list' %}" class="{% if request.resolver_match.view_name == 'academics:subject-list' %}active{% endif %}"><i class="ti ti-book"></i><span>Subject</span></a></li>
+							<li><a href="{% url 'academics:syllabus-list' %}" class="{% if request.resolver_match.view_name == 'academics:syllabus-list' %}active{% endif %}"><i
+										class="ti ti-book-upload"></i><span>Syllabus</span></a></li>
+								<li><a href="{% url 'academics:class-time-table' %}" class="{% if request.resolver_match.view_name == 'academics:class-time-table' %}active{% endif %}"><i class="ti ti-table"></i><span>Time
+											Table</span></a></li>
+								<li><a href="{% url 'academics:homework-list' %}" class="{% if request.resolver_match.view_name == 'academics:homework-list' %}active{% endif %}"><i class="ti ti-license"></i><span>Home
+											Work</span></a></li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><i
+											class="ti ti-hexagonal-prism-plus"></i><span>Examinations</span><span
+											class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="{% url 'exam:exam-list' %}">Exam</a></li>
+										<li><a href="{% url 'exam:exam-schedule-list' %}">Exam Schedule</a></li>
+										<li><a href="{% url 'exam:grade-list' %}">Grade</a></li>
+										<li><a href="{% url 'exam:exam-attendance-list' %}">Exam Attendance</a></li>
+										<li><a href="{% url 'exam:exam-results-list' %}">Exam Results</a></li>
+									</ul>
+								</li>
+								<li><a href="academic-reasons.html"><i
+											class="ti ti-lifebuoy"></i><span>Reasons</span></a></li>
+							</ul>
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>Management</span></h6>
+							<ul>
+							<li class="submenu">
+								<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'fees:fees-group-list' or request.resolver_match.view_name == 'fees:fees-type-list' or request.resolver_match.view_name == 'fees:fees-master-list' or request.resolver_match.view_name == 'fees:fees-assign-list' or request.resolver_match.view_name == 'fees:collect-fees' %}subdrop active{% endif %}"><i class="ti ti-report-money"></i><span>Fees
+										Collection</span><span class="menu-arrow"></span></a>
+								<ul {% if request.resolver_match.view_name == 'fees:fees-group-list' or request.resolver_match.view_name == 'fees:fees-type-list' or request.resolver_match.view_name == 'fees:fees-master-list' or request.resolver_match.view_name == 'fees:fees-assign-list' or request.resolver_match.view_name == 'fees:collect-fees' %}style="display: block;"{% endif %}>
+									<li><a href="{% url 'fees:fees-group-list' %}" class="{% if request.resolver_match.view_name == 'fees:fees-group-list' %}active{% endif %}">Fees Group</a></li>
+									<li><a href="{% url 'fees:fees-type-list' %}" class="{% if request.resolver_match.view_name == 'fees:fees-type-list' %}active{% endif %}">Fees Type</a></li>
+									<li><a href="{% url 'fees:fees-master-list' %}" class="{% if request.resolver_match.view_name == 'fees:fees-master-list' %}active{% endif %}">Fees Master</a></li>
+									<li><a href="{% url 'fees:fees-assign-list' %}" class="{% if request.resolver_match.view_name == 'fees:fees-assign-list' %}active{% endif %}">Fees Assign</a></li>
+									<li><a href="{% url 'fees:collect-fees' %}" class="{% if request.resolver_match.view_name == 'fees:collect-fees' %}active{% endif %}">Collect Fees</a></li>
+								</ul>
+							</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><i
+											class="ti ti-notebook"></i><span>Library</span><span
+											class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="library-members.html">Library Members</a></li>
+										<li><a href="library-books.html">Books</a></li>
+										<li><a href="library-issue-book.html">Issue Book</a></li>
+										<li><a href="library-return.html">Return</a></li>
+									</ul>
+								</li>
+								<li><a href="sports.html"><i class="ti ti-run"></i><span>Sports</span></a></li>
+								<li><a href="players.html"><i class="ti ti-play-football"></i><span>Players</span></a>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><i
+											class="ti ti-building-fortress"></i><span>Hostel</span><span
+											class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="hostel-list.html">Hostel List</a></li>
+										<li><a href="hostel-rooms.html">Hostel Rooms</a></li>
+										<li><a href="hostel-room-type.html">Room Type</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><i class="ti ti-bus"></i><span>Transport</span><span
+											class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="transport-routes.html">Routes</a></li>
+										<li><a href="transport-pickup-points.html">Pickup Points</a></li>
+										<li><a href="transport-vehicle-drivers.html">Vehicle Drivers</a></li>
+										<li><a href="transport-vehicle.html">Vehicle</a></li>
+										<li><a href="transport-assign-vehicle.html">Assign Vehicle</a></li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>HRM</span></h6>
+							<ul>
+								<li><a href="{% url 'people:staff-list' %}" class="{% if request.resolver_match.view_name == 'people:staff-list' or request.resolver_match.view_name == 'people:staff-details' %}active{% endif %}"><i class="ti ti-users-group"></i><span>Staffs</span></a></li>
+								<li><a href="{% url 'hrm:department-list' %}" class="{% if request.resolver_match.view_name == 'hrm:department-list' %}active{% endif %}"><i
+											class="ti ti-layout-distribute-horizontal"></i><span>Departments</span></a>
+								</li>
+								<li><a href="{% url 'hrm:designation-list' %}" class="{% if request.resolver_match.view_name == 'hrm:designation-list' %}active{% endif %}"><i
+											class="ti ti-user-exclamation"></i><span>Designation</span></a></li>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:student-attendance' or request.resolver_match.view_name == 'people:teacher-attendance' or request.resolver_match.view_name == 'people:staff-attendance' %}subdrop active{% endif %}"><i
+											class="ti ti-calendar-share"></i><span>Attendance</span><span
+											class="menu-arrow"></span></a>
+									<ul {% if request.resolver_match.view_name == 'people:student-attendance' or request.resolver_match.view_name == 'people:teacher-attendance' or request.resolver_match.view_name == 'people:staff-attendance' %}style="display: block;"{% endif %}>
+										<li><a href="{% url 'people:student-attendance' %}" class="{% if request.resolver_match.view_name == 'people:student-attendance' %}active{% endif %}">Student Attendance</a></li>
+										<li><a href="{% url 'people:teacher-attendance' %}" class="{% if request.resolver_match.view_name == 'people:teacher-attendance' %}active{% endif %}">Teacher Attendance</a></li>
+										<li><a href="{% url 'people:staff-attendance' %}" class="{% if request.resolver_match.view_name == 'people:staff-attendance' %}active{% endif %}">Staff Attendance</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'hrm:leave-list' or request.resolver_match.view_name == 'hrm:approve-request-list' %}subdrop active{% endif %}"><i
+											class="ti ti-calendar-stats"></i><span>Leaves</span><span
+											class="menu-arrow"></span></a>
+									<ul {% if request.resolver_match.view_name == 'hrm:leave-list' or request.resolver_match.view_name == 'hrm:approve-request-list' %}style="display: block;"{% endif %}>
+										<li><a href="{% url 'hrm:leave-list' %}" class="{% if request.resolver_match.view_name == 'hrm:leave-list' %}active{% endif %}">List of leaves</a></li>
+										<li><a href="{% url 'hrm:approve-request-list' %}" class="{% if request.resolver_match.view_name == 'hrm:approve-request-list' %}active{% endif %}">Approve Request</a></li>
+									</ul>
+								</li>
+								<li><a href="{% url 'hrm:holiday-list' %}" class="{% if request.resolver_match.view_name == 'hrm:holiday-list' %}active{% endif %}"><i class="ti ti-briefcase"></i><span>Holidays</span></a>
+								</li>
+								<li><a href="payroll.html"><i class="ti ti-moneybag"></i><span>Payroll</span></a></li>
+							</ul>
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>Finance & Accounts</span></h6>
+							<ul>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-swipe"></i><span>Accounts</span><span class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="expenses.html">Expenses</a></li>
+										<li><a href="expenses-category.html">Expense Category</a></li>
+										<li><a href="accounts-income.html">Income</a></li>
+										<li><a href="accounts-invoices.html">Invoices</a></li>
+										<li><a href="invoice.html">Invoice View</a></li>
+										<li><a href="accounts-transactions.html">Transactions</a></li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+
+						<li>
+							<h6 class="submenu-hdr"><span>Announcements</span></h6>
+							<ul>
+								<li><a href="notice-board.html"><i class="ti ti-clipboard-data"></i><span>Notice
+											Board</span></a></li>
+								<li><a href="events.html"><i class="ti ti-calendar-question"></i><span>Events</span></a>
+								</li>
+							</ul>
+
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>Reports</span></h6>
+							<ul>
+								<li><a href="{% url 'people:attendance-report' %}" class="{% if request.resolver_match.view_name == 'people:attendance-report' %}active{% endif %}"><i class="ti ti-calendar-due"></i><span>Attendance
+											Report</span></a></li>
+							<li><a href="{% url 'academics:class-report' %}" class="{% if request.resolver_match.view_name == 'academics:class-report' %}active{% endif %}"><i class="ti ti-graph"></i><span>Class
+										Report</span></a>
+								</li>
+								<li><a href="student-report.html"><i class="ti ti-chart-infographic"></i><span>Student
+											Report</span></a></li>
+								<li><a href="grade-report.html"><i class="ti ti-calendar-x"></i><span>Grade
+											Report</span></a></li>
+								<li><a href="leave-report.html"><i class="ti ti-line"></i><span>Leave Report</span></a>
+								</li>
+								<li><a href="fees-report.html"><i class="ti ti-mask"></i><span>Fees Report</span></a>
+								</li>
+							</ul>
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>Content</span></h6>
+							<ul>
+								<li><a href="pages.html"><i class="ti ti-page-break"></i><span>Pages</span></a></li>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-brand-blogger"></i><span>Blog</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="blog.html">All Blogs</a></li>
+										<li><a href="blog-categories.html">Categories</a></li>
+										<li><a href="blog-comments.html">Comments</a></li>
+										<li><a href="blog-tags.html">Tags</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-map-pin-search"></i><span>Location</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="countries.html">Countries</a></li>
+										<li><a href="states.html">States</a></li>
+										<li><a href="cities.html">Cities</a></li>
+									</ul>
+								</li>
+								<li><a href="testimonials.html"><i class="ti ti-quote"></i><span>Testimonials</span></a>
+								</li>
+								<li><a href="faq.html"><i class="ti ti-question-mark"></i><span>FAQ</span></a></li>
+							</ul>
+						</li>
+						<li>
+							<h6 class="submenu-hdr"><span>Support</span></h6>
+							<ul>
+								<li><a href="contact-messages.html"><i class="ti ti-message"></i><span>Contact
+											Messages</span></a></li>
+								<li><a href="tickets.html"><i class="ti ti-ticket"></i><span>Tickets</span></a></li>
+							</ul>
+						</li>
+					<li>
+							<h6 class="submenu-hdr"><span>Settings</span></h6>
+							<ul>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-shield-cog"></i><span>General Settings</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="profile-settings.html">Profile Settings</a></li>
+										<li><a href="security-settings.html">Security Settings</a></li>
+										<li><a href="notifications-settings.html">Notifications Settings</a></li>
+										<li><a href="connected-apps.html">Connected Apps</a></li>
+									</ul>
+								</li>
+
+								<!-- Till -->
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-device-laptop"></i><span>Website Settings</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="company-settings.html">Company Settings</a></li>
+										<li><a href="localization.html">Localization</a></li>
+										<li><a href="prefixes.html">Prefixes</a></li>
+										<li><a href="preferences.html">Preferences</a></li>
+										<li><a href="social-authentication.html">Social Authentication</a></li>
+										<li><a href="language.html">Language</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-apps"></i><span>App Settings</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="invoice-settings.html">Invoice Settings</a></li>
+										<li><a href="custom-fields.html">Custom Fields</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-file-symlink"></i><span>System Settings</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="email-settings.html">Email Settings</a></li>
+										<li><a href="email-templates.html">Email Templates</a></li>
+										<li><a href="sms-settings.html">SMS Settings</a></li>
+										<li><a href="otp-settings.html">OTP</a></li>
+										<li><a href="gdpr-cookies.html">GDPR Cookies</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-zoom-money"></i><span>Financial Settings</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="payment-gateways.html">Payment Gateways </a></li>
+										<li><a href="tax-rates.html">Tax Rates</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-calendar-repeat"></i><span>Academic Settings</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="school-settings.html">School Settings </a></li>
+										<li><a href="religion.html">Religion</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);">
+										<i class="ti ti-flag-cog"></i><span>Other Settings</span><span
+											class="menu-arrow"></span>
+									</a>
+									<ul>
+										<li><a href="storage.html">Storage</a></li>
+										<li><a href="ban-ip-address.html">Ban IP Address</a></li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+
+					<li>
+							<h6 class="submenu-hdr"><span>Help</span></h6>
+							<ul>
+								<li><a href="https://preschool.dreamstechnologies.com/documentation/index.html"><i class="ti ti-file-text"></i><span>Documentation</span></a></li>
+								<li><a href="https://preschool.dreamstechnologies.com/documentation/changelog.html"><i class="ti ti-exchange"></i><span>Changelog</span><span class="badge badge-primary badge-xs text-white fs-10 ms-auto">v1.9.4</span></a></li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><i class="ti ti-menu-2"></i><span>Multi
+											Level</span><span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="javascript:void(0);">Multilevel 1</a></li>
+										<li class="submenu submenu-two"><a href="javascript:void(0);">Multilevel 2<span
+													class="menu-arrow inside-submenu"></span></a>
+											<ul>
+												<li><a href="javascript:void(0);">Multilevel 2.1</a></li>
+												<li class="submenu submenu-two submenu-three"><a
+														href="javascript:void(0);">Multilevel 2.2<span
+															class="menu-arrow inside-submenu inside-submenu-two"></span></a>
+													<ul>
+														<li><a href="javascript:void(0);">Multilevel 2.2.1</a></li>
+														<li><a href="javascript:void(0);">Multilevel 2.2.2</a></li>
+													</ul>
+												</li>
+											</ul>
+										</li>
+										<li><a href="javascript:void(0);">Multilevel 3</a></li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>

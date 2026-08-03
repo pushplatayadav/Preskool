@@ -1,0 +1,774 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Collect Fees</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Management</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Collect Fees
+						</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'fees:collect-fees' %}" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+						data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+						data-bs-original-title="Print" onclick="printOrExportPDF();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1"
+								onclick="printOrExportPDF();"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1"
+								onclick="exportToExcel();"><i class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Fees List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Fees List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+							value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-calendar-due me-2"></i>Year : {% if year_filter %}{{ year_filter }}{% elif current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}</a>
+						<ul class="dropdown-menu p-3">
+							{% for ay in academic_years %}
+							<li>
+								<a href="{% url 'fees:collect-fees' %}?year={{ ay.name }}{% if base_query %}&{{ base_query }}{% endif %}"
+									class="dropdown-item rounded-1 {% if year_filter == ay.name or ay == current_academic_year and not year_filter %}active{% endif %}">
+									Year : {{ ay.name }}
+								</a>
+							</li>
+							{% endfor %}
+						</ul>
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'fees:collect-fees' %}">
+								<input type="hidden" name="year"
+									value="{% if year_filter %}{{ year_filter }}{% elif current_academic_year %}{{ current_academic_year.name }}{% endif %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Admission No</label>
+												<select class="select" name="filter_admission">
+													<option value="">Select</option>
+													{% for opt in admission_options %}
+													<option value="{{ opt }}"
+														{% if filter_admission == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Roll No</label>
+												<select class="select" name="filter_roll">
+													<option value="">Select</option>
+													{% for opt in roll_options %}
+													<option value="{{ opt }}"
+														{% if filter_roll == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-0">
+												<label class="form-label">Student</label>
+												<select class="select" name="filter_student">
+													<option value="">Select</option>
+													{% for opt in student_options %}
+													<option value="{{ opt }}"
+														{% if filter_student == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Class</label>
+												<select class="select" name="filter_class">
+													<option value="">Select</option>
+													{% for opt in class_options %}
+													<option value="{{ opt.pk }}"
+														{% if filter_class == opt.pk|stringformat:"s" %}selected{% endif %}>{{ opt.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Section</label>
+												<select class="select" name="filter_section">
+													<option value="">Select</option>
+													{% for opt in section_options %}
+													<option value="{{ opt.pk }}"
+														{% if filter_section == opt.pk|stringformat:"s" %}selected{% endif %}>{{ opt.school_class.name }} - {{ opt.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Amount</label>
+												<select class="select" name="filter_amount">
+													<option value="">Select</option>
+													{% for opt in amount_options %}
+													<option value="{{ opt|floatformat:0 }}"
+														{% if filter_amount == opt|floatformat:0 %}selected{% endif %}>{{ opt|floatformat:0 }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Last Date</label>
+												<select class="select" name="filter_due_date">
+													<option value="">Select</option>
+													{% for opt in due_date_options %}
+													<option value="{{ opt|date:'Y-m-d' }}"
+														{% if filter_due_date == opt|date:'Y-m-d' %}selected{% endif %}>{{ opt|date:"d M Y" }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'fees:collect-fees' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'fees:collect-fees' %}?sort=asc{% if base_query %}&{{ base_query }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+									Ascending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:collect-fees' %}?sort=desc{% if base_query %}&{{ base_query }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+									Descending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:collect-fees' %}?sort=recently_viewed{% if base_query %}&{{ base_query }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recently_viewed' %}active{% endif %}">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'fees:collect-fees' %}?sort=recent_added{% if base_query %}&{{ base_query }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recent_added' %}active{% endif %}">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+
+				<!-- Student List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table" id="collect-fees-table">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>Adm No</th>
+								<th>Roll No</th>
+								<th>Student</th>
+								<th>Class </th>
+								<th>Section</th>
+								<th>Amount ($)</th>
+								<th>Last Date</th>
+								<th>Status</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for row in rows %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" name="selected_items"
+											value="{{ row.student.pk }}">
+									</div>
+								</td>
+								<td><a href="{% url 'fees:student-fees' row.student.pk %}" class="link-primary">{{ row.student.admission_no }}</a></td>
+								<td>{{ row.student.roll_no|default:"-" }}</td>
+								<td>
+									<div class="d-flex align-items-center">
+										<a href="{% url 'people:student-details' row.student.pk %}" class="avatar avatar-md">
+											{% if row.student.profile_image %}
+											<img src="{{ row.student.profile_image.url }}"
+												class="img-fluid rounded-circle" alt="img">
+											{% else %}
+											<img src="{% static 'assets/img/students/student-01.jpg' %}"
+												class="img-fluid rounded-circle" alt="img">
+											{% endif %}
+										</a>
+										<div class="ms-2">
+											<p class="text-dark mb-0"><a
+													href="{% url 'people:student-details' row.student.pk %}">{{ row.student.name }}</a>
+											</p>
+											<span class="fs-12">{{ row.student.school_class.name }}, {{ row.student.section.name }}</span>
+										</div>
+									</div>
+								</td>
+								<td>{{ row.student.school_class.name }}</td>
+								<td>{{ row.student.section.name }}</td>
+								<td>{{ row.amount|floatformat:0 }}</td>
+								<td>{% if row.last_date %}{{ row.last_date|date:"d M Y" }}{% else %}-{% endif %}</td>
+								<td>
+									{% if row.status == "paid" %}
+									<span class="badge badge-soft-success d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>Paid</span>
+									{% else %}
+									<span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>Unpaid</span>
+									{% endif %}
+								</td>
+								<td>
+									{% if row.status == "paid" %}
+									<a href="{% url 'fees:student-fees' row.student.pk %}" class="btn btn-light">View Details</a>
+									{% else %}
+									<a href="javascript:void(0);" class="btn btn-light" data-bs-toggle="modal"
+										data-bs-target="#add_fees_collect"
+										data-student-pk="{{ row.student.pk }}"
+										data-admission="{{ row.student.admission_no }}"
+										data-name="{{ row.student.name }}"
+										data-class="{{ row.student.school_class.name }}"
+										data-section="{{ row.student.section.name }}"
+										data-amount="{{ row.amount|floatformat:0 }}"
+										data-last-date="{% if row.last_date %}{{ row.last_date|date:'d M Y' }}{% else %}-{% endif %}"
+										data-status="{{ row.status }}"
+										data-detail-url="{% url 'people:student-details' row.student.pk %}"
+										data-fees-url="{% url 'fees:student-fees' row.student.pk %}"
+										{% if row.student.profile_image %}
+										data-image="{{ row.student.profile_image.url }}"
+										{% else %}
+										data-image="{% static 'assets/img/students/student-01.jpg' %}"
+										{% endif %}>Collect Fees</a>
+									{% endif %}
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td class="text-center text-muted py-4">No students found for the selected filters.</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Student List -->
+
+				{% if rows %}
+				<div class="row mx-2 mt-3 g-3">
+					<div class="col-md-6">
+						<div class="d-flex align-items-center bg-light-300 rounded p-3">
+							<span class="avatar avatar-md bg-primary rounded me-2 flex-shrink-0"><i
+									class="ti ti-report-money text-white"></i></span>
+							<div class="flex-grow-1">
+								<span class="fs-12 mb-1">Total Outstanding</span>
+								<p class="text-dark mb-0 fw-semibold">${{ total_outstanding|floatformat:0 }}</p>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="d-flex align-items-center bg-light-300 rounded p-3">
+							<span class="avatar avatar-md bg-success rounded me-2 flex-shrink-0"><i
+									class="ti ti-circle-check text-white"></i></span>
+							<div class="flex-grow-1">
+								<span class="fs-12 mb-1">Total Collected</span>
+								<p class="text-dark mb-0 fw-semibold">${{ total_collected|floatformat:0 }}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+				{% endif %}
+
+			</div>
+		</div>
+		<!-- /Fees List -->
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Fees Collect -->
+<div class="modal fade" id="add_fees_collect">
+	<div class="modal-dialog modal-dialog-centered  modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<div class="d-flex align-items-center">
+					<h4 class="modal-title">Collect Fees</h4>
+					<span class="badge badge-sm bg-primary ms-2" id="cf_admission">AD124556</span>
+				</div>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'fees:collect-fees' %}">
+				{% csrf_token %}
+				<input type="hidden" name="student_id" id="cf_student_id" value="">
+				<div class="modal-body">
+					<div class="bg-light-300 p-3 pb-0 rounded mb-4">
+						<div class="row align-items-center">
+							<div class="col-lg-3 col-md-6">
+								<div class="d-flex align-items-center mb-3">
+									<a href="{% url 'people:student-details' 0 %}" class="avatar avatar-md me-2" id="cf_student_link">
+										<img src="{% static 'assets/img/students/student-01.jpg' %}" id="cf_image" alt="img">
+									</a>
+									<a href="{% url 'people:student-details' 0 %}" class="d-flex flex-column" id="cf_student_link2"><span class="text-dark" id="cf_name">Janet</span><span id="cf_class_section">III, A</span></a>
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-6">
+								<div class="mb-3">
+									<span class="fs-12 mb-1">Total Outstanding</span>
+									<p class="text-dark" id="cf_outstanding">2000</p>
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-6">
+								<div class="mb-3">
+									<span class="fs-12 mb-1">Last Date</span>
+									<p class="text-dark" id="cf_last_date">25 May 2024</p>
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-6">
+								<div class="mb-3" id="cf_status_wrap">
+									<span class="badge badge-soft-danger"><i
+										class="ti ti-circle-filled me-2"></i>Unpaid</span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Fees Group</label>
+								<select class="select" name="fees_group">
+									<option value="">Select</option>
+									{% for group in fees_groups %}
+									<option value="{{ group.pk }}">{{ group.name }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Fees Type</label>
+								<select class="select" name="fees_type">
+									<option value="">Select</option>
+									{% for ftype in fees_types %}
+									<option value="{{ ftype.pk }}">{{ ftype.name }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Amount</label>
+								<input type="text" class="form-control" name="amount" id="cf_amount"
+									placeholder="Enter Amout">
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Collection Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="collection_date"
+										placeholder="Select">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Payment Type</label>
+								<select class="select" name="payment_type">
+									<option value="">Select</option>
+									<option value="paytm">Paytm</option>
+									<option value="cod">Cash On Delivery</option>
+								</select>
+							</div>
+						</div>
+						<div class="col-lg-6">
+							<div class="mb-3">
+								<label class="form-label">Payment Reference No</label>
+								<input type="text" class="form-control" name="reference_no"
+									placeholder="Enter Payment Reference No">
+							</div>
+						</div>
+						<div class="col-lg-12">
+							<div class="d-flex align-items-center justify-content-between">
+								<div class="status-title">
+									<h5>Status</h5>
+									<p>Change the Status by toggle </p>
+								</div>
+								<div class="form-check form-switch">
+									<input class="form-check-input" type="checkbox" role="switch"
+										name="is_paid" id="cf_is_paid" checked>
+								</div>
+							</div>
+						</div>
+						<div class="col-lg-12">
+							<div class="mb-0">
+								<label class="form-label">Notes</label>
+								<textarea rows="4" class="form-control" name="notes" placeholder="Add Notes"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" name="collect_fees" class="btn btn-primary">Pay Fees</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- Add Fees Collect -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+function escapeHtml(value) {
+	var div = document.createElement("div");
+	div.textContent = value == null ? "" : String(value);
+	return div.innerHTML;
+}
+
+function getCollectFeesData() {
+	var headers = ["Adm No", "Roll No", "Student", "Class", "Section", "Amount ($)", "Last Date", "Status"];
+	var data = [];
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('#collect-fees-table')) {
+		var table = $('#collect-fees-table').DataTable();
+		table.rows({ search: 'applied' }).every(function() {
+			var rowData = this.data();
+			var row = [];
+			for (var i = 1; i < rowData.length - 1; i++) {
+				var cellHtml = rowData[i];
+				var tempDiv = document.createElement("div");
+				tempDiv.innerHTML = cellHtml;
+				var text = tempDiv.textContent || tempDiv.innerText || "";
+				row.push(text.trim());
+			}
+			data.push(row);
+		});
+	} else {
+		var rows = document.querySelectorAll('#collect-fees-table tbody tr');
+		rows.forEach(function(tr) {
+			var cols = tr.querySelectorAll("td");
+			if (cols.length > 1) {
+				var row = [];
+				for (var j = 1; j < cols.length - 1; j++) {
+					row.push(cols[j].innerText.trim());
+				}
+				data.push(row);
+			}
+		});
+	}
+	return {
+		headers: headers,
+		rows: data,
+		reportTitle: "Collect Fees Report",
+		schoolName: "{{ school_name|default:'Global International' }}",
+		academicYear: "{% if year_filter %}{{ year_filter }}{% elif current_academic_year %}{{ current_academic_year.name }}{% else %}Academic Year{% endif %}",
+		totalOutstanding: "{{ total_outstanding|floatformat:0 }}",
+		totalCollected: "{{ total_collected|floatformat:0 }}"
+	};
+}
+
+function exportToExcel() {
+	var data = getCollectFeesData();
+	if (data.rows.length === 0) {
+		alert("No data available to export.");
+		return;
+	}
+	var csvContent = [];
+	csvContent.push(data.headers.map(function(h) { return '"' + String(h).replace(/"/g, '""') + '"'; }).join(","));
+	data.rows.forEach(function(row) {
+		csvContent.push(row.map(function(val) { return '"' + String(val).replace(/"/g, '""') + '"'; }).join(","));
+	});
+	csvContent.push("");
+	csvContent.push('"Total Outstanding","' + data.totalOutstanding + '"');
+	csvContent.push('"Total Collected","' + data.totalCollected + '"');
+	var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+	var downloadLink = document.createElement("a");
+	downloadLink.download = "collect_fees_" + new Date().toISOString().slice(0, 10) + ".csv";
+	downloadLink.href = window.URL.createObjectURL(csvBlob);
+	downloadLink.style.display = "none";
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+	var data = getCollectFeesData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = null;
+	try {
+		printWindow = window.open("", "_blank");
+	} catch (e) {
+		printWindow = null;
+	}
+
+	var logoUrl = window.location.origin + "{% static 'assets/img/logo-small.svg' %}";
+
+	var html = '<html><head><title>' + escapeHtml(data.reportTitle) + '</title>' +
+	'<style>' +
+	'@page{size:A4 portrait;margin:20mm;}' +
+	'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+	'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+	'.header-container{text-align:center;margin-bottom:40px;}' +
+	'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+	'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+	'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+	'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+	'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+	'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+	'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+	'tr:nth-child(even){background-color:#f8fafc;}' +
+	'.summary{margin-top:30px;}' +
+	'.summary th,.summary td{border:none;padding:8px 16px;}' +
+	'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+	'@media print{@page{size:A4 portrait;margin:20mm;}body{padding:0;margin:0;width:210mm;}}' +
+	'</style></head><body>' +
+	'<div class="header-container">' +
+	'<div class="logo-section">' +
+	'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+	'<span class="logo-text">PreSkool</span>' +
+	'</div>' +
+	'<div class="report-title">' + escapeHtml(data.reportTitle) + '</div>' +
+	'<div class="report-meta">' + escapeHtml(data.schoolName) + ' | ' + escapeHtml(data.academicYear) + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+	'</div>' +
+	'<table><thead><tr>';
+
+	data.headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+	html += '</tr></thead><tbody>';
+	data.rows.forEach(function(row) {
+		html += '<tr>';
+		row.forEach(function(val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+		html += '</tr>';
+	});
+	html += '</tbody></table>' +
+	'<table class="summary">' +
+	'<tr><th>Total Outstanding</th><td>' + data.totalOutstanding + '</td></tr>' +
+	'<tr><th>Total Collected</th><td>' + data.totalCollected + '</td></tr>' +
+	'</table>' +
+	'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+	'<script>window.onload=function(){window.focus();if(window.top===window.self){window.onafterprint=function(){window.close();};}window.print();};<\/script>' +
+	'</body></html>';
+
+	if (printWindow) {
+		printWindow.document.write(html);
+		printWindow.document.close();
+		return;
+	}
+
+	var iframe = document.getElementById('collect-fees-print-frame');
+	if (!iframe) {
+		iframe = document.createElement('iframe');
+		iframe.id = 'collect-fees-print-frame';
+		iframe.style.position = 'fixed';
+		iframe.style.right = '0';
+		iframe.style.bottom = '0';
+		iframe.style.width = '0';
+		iframe.style.height = '0';
+		iframe.style.border = '0';
+		iframe.style.visibility = 'hidden';
+		document.body.appendChild(iframe);
+	}
+	iframe.srcdoc = html;
+	iframe.onload = function () {
+		try {
+			iframe.contentWindow.focus();
+			iframe.contentWindow.print();
+		} catch (e) {
+			alert("Popup blocked. Please allow pop-ups for this site to print the report.");
+		}
+	};
+}
+
+function populateCollectFeesModal(btn) {
+	var pk = btn.getAttribute('data-student-pk');
+	var admission = btn.getAttribute('data-admission');
+	var name = btn.getAttribute('data-name');
+	var cls = btn.getAttribute('data-class');
+	var section = btn.getAttribute('data-section');
+	var amount = btn.getAttribute('data-amount');
+	var lastDate = btn.getAttribute('data-last-date');
+	var status = btn.getAttribute('data-status');
+	var image = btn.getAttribute('data-image');
+	var detailUrl = btn.getAttribute('data-detail-url');
+	var feesUrl = btn.getAttribute('data-fees-url');
+
+	document.getElementById('cf_student_id').value = pk;
+	document.getElementById('cf_admission').textContent = admission;
+	document.getElementById('cf_name').textContent = name;
+	document.getElementById('cf_class_section').textContent = cls + ', ' + section;
+	document.getElementById('cf_image').src = image;
+	document.getElementById('cf_outstanding').textContent = amount;
+	document.getElementById('cf_last_date').textContent = lastDate;
+	document.getElementById('cf_amount').value = amount;
+
+	var statusWrap = document.getElementById('cf_status_wrap');
+	if (status === 'paid') {
+		statusWrap.innerHTML = '<span class="badge badge-soft-success"><i class="ti ti-circle-filled me-2"></i>Paid</span>';
+	} else {
+		statusWrap.innerHTML = '<span class="badge badge-soft-danger"><i class="ti ti-circle-filled me-2"></i>Unpaid</span>';
+	}
+
+	var link1 = document.getElementById('cf_student_link');
+	var link2 = document.getElementById('cf_student_link2');
+	if (detailUrl) {
+		link1.href = detailUrl;
+		link2.href = detailUrl;
+	}
+}
+
+$(document).ready(function() {
+
+	if ($('#collect-fees-table').length > 0 && $.fn.DataTable && !$.fn.DataTable.isDataTable('#collect-fees-table')) {
+		$('#collect-fees-table').DataTable({
+			"bFilter": true,
+			"ordering": true,
+			"info": true,
+			"pageLength": 10,
+			"columnDefs": [
+				{ "targets": [0, 9], "orderable": false, "searchable": false }
+			],
+			"language": {
+				search: ' ',
+				sLengthMenu: 'Row Per Page _MENU_ Entries',
+				searchPlaceholder: "Search",
+				info: "_START_ - _END_ of _TOTAL_ entries",
+				paginate: {
+					next: ' Next',
+					previous: 'Prev '
+				}
+			}
+		});
+	}
+
+	var selectAllEl = document.getElementById('select-all');
+	if (selectAllEl) {
+		selectAllEl.addEventListener('change', function() {
+			var checkboxes = document.querySelectorAll('#collect-fees-table tbody input[type="checkbox"]');
+			checkboxes.forEach(function(cb) {
+				cb.checked = selectAllEl.checked;
+			});
+		});
+	}
+
+	$(document).on('click', '[data-bs-target="#add_fees_collect"]', function(e) {
+		populateCollectFeesModal(this);
+	});
+
+	$('#add_fees_collect').on('shown.bs.modal', function() {
+		$(this).find('select.select').each(function() {
+			if ($(this).data('select2')) {
+				$(this).select2('destroy');
+			}
+			$(this).select2({ dropdownParent: $(this).closest('.modal'), width: '100%' });
+		});
+	});
+
+});
+</script>
+{% endblock extra_js %}

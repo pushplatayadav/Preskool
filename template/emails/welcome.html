@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: #4f46e5; padding: 30px; text-align: center; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
+        .body { padding: 30px; color: #333333; line-height: 1.6; }
+        .body p { margin: 0 0 15px; }
+        .btn { display: inline-block; background: #4f46e5; color: #ffffff !important; text-decoration: none; padding: 12px 30px; border-radius: 5px; font-weight: bold; margin: 10px 0; }
+        .footer { background: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #999999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Preskool!</h1>
+        </div>
+        <div class="body">
+            <p>Hi {{ user.get_full_name|default:user.username }},</p>
+            <p>Your account has been created successfully. You can now log in to the Preskool portal.</p>
+            <p style="text-align: center;">
+                <a href="{{ protocol }}://{{ domain }}/login/" class="btn">Login Now</a>
+            </p>
+            <p>If you have any questions, feel free to reach out to the admin.</p>
+            <p>Thank you,<br><strong>Preskool Team</strong></p>
+        </div>
+        <div class="footer">
+            &copy; {{ year|default:"2026" }} Preskool. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

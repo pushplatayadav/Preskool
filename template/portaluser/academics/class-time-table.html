@@ -1,0 +1,478 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .timetable-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .timetable-grid {
+        display: flex;
+        flex-nowrap;
+        min-width: 100%;
+    }
+    .timetable-day-col {
+        min-width: 200px;
+        flex: 1 1 0;
+        padding-right: 1rem;
+    }
+    .timetable-day-col:last-child {
+        padding-right: 0;
+    }
+    .timetable-day-header {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #1e293b;
+    }
+    .timetable-slot {
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
+        position: relative;
+    }
+    .timetable-slot:last-child {
+        margin-bottom: 0;
+    }
+    .timetable-slot .slot-time {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 6px;
+    }
+    .timetable-slot .slot-time i {
+        margin-right: 4px;
+    }
+    .timetable-slot .slot-subject {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+    .timetable-slot .slot-teacher {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 13px;
+        color: #64748b;
+    }
+    .timetable-slot .slot-teacher .avatar {
+        width: 24px;
+        height: 24px;
+        margin-right: 6px;
+    }
+    .timetable-slot-empty {
+        border: 1px dashed #e2e8f0;
+        border-radius: 10px;
+        padding: 20px 14px;
+        margin-bottom: 14px;
+        text-align: center;
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+
+    /* Color variants matching template style */
+    .slot-danger    { background: rgba(239,68,68,0.08);  }
+    .slot-primary   { background: rgba(79,70,229,0.08);  }
+    .slot-success   { background: rgba(16,185,129,0.08); }
+    .slot-warning   { background: rgba(245,158,11,0.08); }
+    .slot-info      { background: rgba(13,202,240,0.08); }
+    .slot-light     { background: rgba(100,116,139,0.08); }
+    .slot-pending   { background: rgba(234,179,8,0.08);  }
+
+    .break-card {
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
+    .break-card .badge {
+        font-size: 11px;
+    }
+    .break-card .break-time {
+        display: flex;
+        align-items: center;
+        color: #334155;
+        font-size: 13px;
+    }
+    .break-card .break-time i {
+        margin-right: 4px;
+    }
+
+    @media print {
+        .no-print { display: none !important; }
+        .timetable-scroll { overflow: visible !important; }
+        .timetable-grid { flex-wrap: wrap; }
+        .timetable-day-col { min-width: 160px; flex: 1 1 30%; page-break-inside: avoid; }
+        .page-wrapper { padding: 0 !important; }
+        .card { border: none !important; box-shadow: none !important; }
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+
+        <!-- Page Header -->
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Time Table</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'home' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="javascript:void(0);">Academic</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Time Table</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="pe-1 mb-2 no-print">
+                    <a href="{% url 'academics:class-time-table' %}" class="btn btn-outline-light bg-white btn-icon me-1"
+                        data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh">
+                        <i class="ti ti-refresh"></i>
+                    </a>
+                </div>
+                <div class="pe-1 mb-2 no-print">
+                    <button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+                        data-bs-toggle="tooltip" data-bs-placement="top" title="Print"
+                        onclick="printTimetable();">
+                        <i class="ti ti-printer"></i>
+                    </button>
+                </div>
+                <div class="dropdown me-2 mb-2 no-print">
+                    <a href="javascript:void(0);"
+                        class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+                        data-bs-toggle="dropdown">
+                        <i class="ti ti-file-export me-2"></i>Export
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end p-3">
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportTimetablePDF();">
+                                <i class="ti ti-file-type-pdf me-1"></i>Export as PDF
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportTimetableCSV();">
+                                <i class="ti ti-file-type-xls me-1"></i>Export as Excel
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mb-2 me-2 no-print">
+                    <a href="{% url 'academics:classroutine-list' %}" class="btn btn-primary d-flex align-items-center">
+                        <i class="ti ti-square-rounded-plus me-1"></i>Add Time Table
+                    </a>
+                </div>
+            </div>
+        </div>
+        <!-- /Page Header -->
+
+        <!-- Time Table -->
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                <h4 class="mb-3">Weekly Time Table</h4>
+                <div class="d-flex align-items-center flex-wrap">
+                    <form method="get" action="{% url 'academics:class-time-table' %}" class="d-flex align-items-center flex-wrap" id="filter-form">
+                        <div class="dropdown mb-3 me-2">
+                            <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                <i class="ti ti-filter me-2"></i>Filter
+                            </a>
+                            <div class="dropdown-menu drop-width">
+                                <div class="d-flex align-items-center border-bottom p-3">
+                                    <h4>Filter</h4>
+                                </div>
+                                <div class="p-3 border-bottom pb-0">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Class</label>
+                                                <select class="select" name="filter_class">
+                                                    <option value="">Select</option>
+                                                    {% for cname in class_names %}
+                                                    <option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Section</label>
+                                                <select class="select" name="filter_section">
+                                                    <option value="">Select</option>
+                                                    {% for sname in section_names %}
+                                                    <option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-3 d-flex align-items-center justify-content-end">
+                                    <a href="{% url 'academics:class-time-table' %}" class="btn btn-light me-3">Reset</a>
+                                    <button type="submit" class="btn btn-primary">Apply</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body pb-0">
+
+                <!-- Active Filter Badge -->
+                {% if filter_class or filter_section %}
+                <div class="mb-3 d-flex align-items-center flex-wrap gap-2 no-print">
+                    <span class="text-muted fs-13">Showing:</span>
+                    {% if filter_class %}
+                    <span class="badge badge-primary">{{ filter_class }}</span>
+                    {% endif %}
+                    {% if filter_section %}
+                    <span class="badge badge-info">{{ filter_section }}</span>
+                    {% endif %}
+                    <a href="{% url 'academics:class-time-table' %}" class="text-danger fs-13 ms-2"><i class="ti ti-x"></i> Clear</a>
+                </div>
+                {% endif %}
+
+                <!-- Timetable Grid -->
+                <div class="timetable-scroll" id="timetable-container">
+                    {% if timetable_grid %}
+                    <div class="timetable-grid">
+                        {% for day in timetable_grid %}
+                        <div class="timetable-day-col">
+                            <div class="timetable-day-header">{{ day.name }}</div>
+                            {% for entry in day.entries %}
+                                {% if entry %}
+                                <div class="timetable-slot {% cycle 'slot-danger' 'slot-primary' 'slot-success' 'slot-warning' 'slot-info' 'slot-light' 'slot-pending' %}">
+                                    <p class="slot-time d-flex align-items-center text-nowrap mb-1">
+                                        <i class="ti ti-clock"></i>{{ entry.start_time|time:"h:i A" }} - {{ entry.end_time|time:"h:i A" }}
+                                    </p>
+                                    <p class="slot-subject">Subject : {{ entry.subject.name }}</p>
+                                    <div class="slot-teacher">
+                                        {% if entry.teacher %}
+                                        <span class="avatar avatar-sm">
+                                            {% if entry.teacher.profile_image %}
+                                            <img src="{{ entry.teacher.profile_image.url }}" alt="Img">
+                                            {% else %}
+                                            <img src="{% static 'assets/img/profiles/avatar-01.jpg' %}" alt="Img">
+                                            {% endif %}
+                                        </span>
+                                        {{ entry.teacher.get_full_name|default:entry.teacher.username }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="timetable-slot-empty">-</div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="ti ti-calendar-off text-muted" style="font-size: 48px;"></i>
+                        <h5 class="text-muted mt-3">No Time Table Found</h5>
+                        <p class="text-muted">Add class routines to see the time table here.</p>
+                        <a href="{% url 'academics:classroutine-list' %}" class="btn btn-primary mt-2">
+                            <i class="ti ti-plus me-1"></i> Add Class Routine
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- /Timetable Grid -->
+
+            </div>
+
+            {% if timetable_grid %}
+            <div class="card-footer border-0 pb-0 no-print" id="breaks-section">
+                <div class="row">
+                    <div class="col-lg-4 col-xxl-4 col-xl-4 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-body">
+                                <span class="bg-primary badge badge-sm mb-2">Morning Break</span>
+                                <p class="text-dark"><i class="ti ti-clock me-1"></i>10:30 to 10:45 AM</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-xxl-3 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-body">
+                                <span class="bg-warning badge badge-sm mb-2">Lunch</span>
+                                <p class="text-dark"><i class="ti ti-clock me-1"></i>12:15 to 01:30 PM</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-xxl-3 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-body">
+                                <span class="bg-info badge badge-sm mb-2">Evening Break</span>
+                                <p class="text-dark"><i class="ti ti-clock me-1"></i>03:30 PM to 03:45 PM</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <!-- /Time Table -->
+
+    </div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+function buildExportData() {
+    var headers = ['Day', 'Time', 'Subject', 'Teacher', 'Room'];
+    var rows = [];
+    var columns = document.querySelectorAll('.timetable-day-col');
+    var dayHeaders = [];
+
+    columns.forEach(function(col) {
+        var dayName = col.querySelector('.timetable-day-header');
+        if (dayName) dayHeaders.push(dayName.textContent.trim());
+    });
+
+    var maxSlots = 0;
+    columns.forEach(function(col) {
+        var slots = col.querySelectorAll('.timetable-slot');
+        if (slots.length > maxSlots) maxSlots = slots.length;
+    });
+
+    for (var i = 0; i < maxSlots; i++) {
+        columns.forEach(function(col, colIdx) {
+            var slots = col.querySelectorAll('.timetable-slot');
+            if (slots[i]) {
+                var timeEl = slots[i].querySelector('.slot-time');
+                var subjectEl = slots[i].querySelector('.slot-subject');
+                var teacherEl = slots[i].querySelector('.slot-teacher');
+                var time = timeEl ? timeEl.textContent.trim() : '-';
+                var subject = subjectEl ? subjectEl.textContent.replace('Subject : ', '').trim() : '-';
+                var teacher = teacherEl ? teacherEl.textContent.trim() : '-';
+                rows.push([dayHeaders[colIdx] || '-', time, subject, teacher, '-']);
+            } else {
+                rows.push([dayHeaders[colIdx] || '-', '-', '-', '-', '-']);
+            }
+        });
+    }
+
+    return { headers: headers, rows: rows, title: 'Class Time Table', schoolName: '{{ school_name|default:"Global International" }}' };
+}
+
+function exportTimetableCSV() {
+    var data = buildExportData();
+    if (data.rows.length === 0) {
+        alert('No data available to export.');
+        return;
+    }
+    var csv = [];
+    csv.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(','));
+    data.rows.forEach(function(row) {
+        csv.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(','));
+    });
+    var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.download = 'class_time_table_' + new Date().toISOString().slice(0,10) + '.csv';
+    link.href = window.URL.createObjectURL(blob);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportTimetablePDF() {
+    var data = buildExportData();
+    if (data.rows.length === 0) {
+        alert('No data available to export.');
+        return;
+    }
+
+    var printWindow = window.open('', '_blank');
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+    var html = '<html><head><title>' + data.title + '</title>' +
+        '<style>@page{size:A4 landscape;margin:15mm;}' +
+        'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:30px;color:#333;background:#fff;}' +
+        'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+        '.header-container{text-align:center;margin-bottom:30px;}' +
+        '.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px;}' +
+        '.logo-text{font-size:28px;font-weight:700;color:#1e3a8a;}' +
+        '.report-title{font-size:22px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+        '.report-meta{font-size:12px;color:#64748b;margin-top:6px;}' +
+        'table{width:100%;border-collapse:collapse;margin-top:15px;font-size:12px;}' +
+        'th,td{border:1px solid #e2e8f0;padding:10px 14px;text-align:left;}' +
+        'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+        'tr:nth-child(even){background-color:#f8fafc;}' +
+        '.footer{margin-top:40px;text-align:center;font-size:11px;color:#94a3b8;}' +
+        '@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}</style></head><body>' +
+        '<div class="header-container">' +
+        '<div class="logo-section"><img src="' + logoUrl + '" alt="Logo" style="width:40px;height:40px;vertical-align:middle;">' +
+        '<span class="logo-text">PreSkool</span></div>' +
+        '<div class="report-title">' + data.title + '</div>' +
+        '<div class="report-meta">' + data.schoolName + ' | Generated on: ' + new Date().toLocaleDateString() + '</div></div>' +
+        '<table><thead><tr>' + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        data.rows.map(function(row) { return '<tr>' + row.map(function(v) { return '<td>' + v + '</td>'; }).join('') + '</tr>'; }).join('') +
+        '</tbody></table>' +
+        '<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+        '<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);}<\/script>' +
+        '</body></html>';
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+function printTimetable() {
+    var data = buildExportData();
+    if (data.rows.length === 0) {
+        alert('No data available to print.');
+        return;
+    }
+
+    var printWindow = window.open('', '_blank');
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+    var html = '<html><head><title>' + data.title + '</title>' +
+        '<style>@page{size:A4 landscape;margin:15mm;}' +
+        'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:30px;color:#333;background:#fff;}' +
+        'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+        '.header-container{text-align:center;margin-bottom:30px;}' +
+        '.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px;}' +
+        '.logo-text{font-size:28px;font-weight:700;color:#1e3a8a;}' +
+        '.report-title{font-size:22px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+        '.report-meta{font-size:12px;color:#64748b;margin-top:6px;}' +
+        'table{width:100%;border-collapse:collapse;margin-top:15px;font-size:12px;}' +
+        'th,td{border:1px solid #e2e8f0;padding:10px 14px;text-align:left;}' +
+        'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+        'tr:nth-child(even){background-color:#f8fafc;}' +
+        '.footer{margin-top:40px;text-align:center;font-size:11px;color:#94a3b8;}' +
+        '@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}</style></head><body>' +
+        '<div class="header-container">' +
+        '<div class="logo-section"><img src="' + logoUrl + '" alt="Logo" style="width:40px;height:40px;vertical-align:middle;">' +
+        '<span class="logo-text">PreSkool</span></div>' +
+        '<div class="report-title">' + data.title + '</div>' +
+        '<div class="report-meta">' + data.schoolName + ' | Generated on: ' + new Date().toLocaleDateString() + '</div></div>' +
+        '<table><thead><tr>' + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        data.rows.map(function(row) { return '<tr>' + row.map(function(v) { return '<td>' + v + '</td>'; }).join('') + '</tr>'; }).join('') +
+        '</tbody></table>' +
+        '<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+        '<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);}<\/script>' +
+        '</body></html>';
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+
+</script>
+{% endblock extra_js %}
