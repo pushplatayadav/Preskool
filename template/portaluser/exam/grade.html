@@ -172,7 +172,7 @@
                                             <ul class="dropdown-menu dropdown-menu-right p-3">
                                                 <li>
                                                     <a class="dropdown-item rounded-1 edit-btn" href="#" data-bs-toggle="modal" data-bs-target="#edit_grade"
-                                                        data-pk="{{ grade.pk }}" data-name="{{ grade.name }}"
+                                                        data-pk="{{ grade.pk }}" data-grade-id="{{ grade.grade_id }}" data-name="{{ grade.name }}"
                                                         data-min="{{ grade.min_marks }}" data-max="{{ grade.max_marks }}"
                                                         data-point="{{ grade.grade_point }}" data-desc="{{ grade.description }}"
                                                         data-status="{{ grade.status }}"><i class="ti ti-edit-circle me-2"></i>Edit</a>
@@ -217,6 +217,12 @@
                 <input type="hidden" name="add_grade" value="1">
                 <div class="modal-body">
                     <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Grade ID</label>
+                                <input type="text" class="form-control" name="grade_id" value="{{ next_grade_id }}">
+                            </div>
+                        </div>
                         <div class="col-md-12">
                             <div class="mb-3">
                                 <label class="form-label">Grade</label>
@@ -280,6 +286,12 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Grade ID</label>
+                                <input type="text" class="form-control" name="grade_id" id="edit_grade_id" value="">
+                            </div>
+                        </div>
                         <div class="col-md-12">
                             <div class="mb-3">
                                 <label class="form-label">Grade</label>
@@ -593,6 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             var pk = this.dataset.pk;
             document.getElementById('edit-grade-form').action = '{% url "exam:grade-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_grade_id').value = this.dataset.gradeId || '';
             document.getElementById('edit_name').value = this.dataset.name;
             document.getElementById('edit_min_marks').value = this.dataset.min;
             document.getElementById('edit_max_marks').value = this.dataset.max;

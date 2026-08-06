@@ -186,16 +186,16 @@
 								<a href="{% url 'people:teacher-details' teacher.pk %}" class="nav-link active"><i class="ti ti-school me-2"></i>Teacher Details</a>
 							</li>
 							<li>
-								<a href="routine-teachers.html" class="nav-link"><i class="ti ti-table-options me-2"></i>Routine</a>
+								<a href="{% url 'people:teacher-routine' teacher.pk %}" class="nav-link"><i class="ti ti-table-options me-2"></i>Routine</a>
 							</li>
 							<li>
-								<a href="teacher-leaves.html" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a>
+								<a href="{% url 'hrm:leave-list' %}" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a>
 							</li>
 							<li>
-								<a href="teacher-salary.html" class="nav-link"><i class="ti ti-report-money me-2"></i>Salary</a>
+								<a href="{% url 'hrm:payroll-list' %}" class="nav-link"><i class="ti ti-report-money me-2"></i>Salary</a>
 							</li>
 							<li>
-								<a href="teacher-library.html" class="nav-link"><i class="ti ti-bookmark-edit me-2"></i>Library</a>
+								<a href="{% url 'management:library-issue-book' %}" class="nav-link"><i class="ti ti-bookmark-edit me-2"></i>Library</a>
 							</li>
 						</ul>
 						<!-- /List -->

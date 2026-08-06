@@ -1,0 +1,423 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+@media print {
+    body { background: #fff !important; }
+    .header, .sidebar, .mobile-user-menu, #global-loader { display: none !important; }
+    .page-wrapper { margin: 0 !important; padding: 0 !important; }
+    .page-wrapper .content { padding: 0 !important; background: #fff !important; }
+    .no-print { display: none !important; }
+}
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content content-two">
+
+        {% if messages %}
+        <div class="messages-container mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Header -->
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3 no-print">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Invoice</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'home' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="javascript:void(0);">Finance & Accounts</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'finance:invoices' %}">Invoices</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">View Invoice</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="pe-1 mb-2">
+                    <a href="{% url 'finance:invoices-edit' invoice.pk %}"
+                        class="btn btn-light d-inline-flex align-items-center me-1"><i
+                            class="ti ti-edit me-2"></i>Edit</a>
+                </div>
+                <div class="pe-1 mb-2">
+                    <button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+                        data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+                        data-bs-original-title="Print" onclick="printOrExportPDF();">
+                        <i class="ti ti-printer"></i>
+                    </button>
+                </div>
+                <div class="mb-2">
+                    <a href="{% url 'finance:invoices' %}" class="btn btn-light d-flex align-items-center"><i
+                            class="ti ti-arrow-back me-2"></i>Back to Invoices</a>
+                </div>
+            </div>
+        </div>
+        <!-- /Page Header -->
+
+        <div class="row">
+
+            <div class="col-md-12">
+                <div class="invoice-popup-head d-flex align-items-center justify-content-between mb-4">
+                    <a href="{% url 'home' %}" class="invoice-logo-dark">
+                        <span class="logo-lg">
+                            {% if invoice.company_logo %}
+                            <img src="{{ invoice.company_logo.url }}" alt="Logo" height="42">
+                            {% else %}
+                            <img src="{% static 'assets/img/logo.svg' %}" alt="Logo" height="42">
+                            {% endif %}
+                        </span>
+                    </a>
+                    <a href="{% url 'home' %}" class="invoice-logo-white">
+                        <span class="logo-lg">
+                            {% if invoice.company_logo %}
+                            <img src="{{ invoice.company_logo.url }}" alt="logo" height="42">
+                            {% else %}
+                            <img src="{% static 'assets/img/logo-dark.svg' %}" alt="logo" height="42">
+                            {% endif %}
+                        </span>
+                    </a>
+                    <div class="popup-title">
+                        <h2>{{ school_name }}</h2>
+                        <p>Original For Recipient</p>
+                    </div>
+                </div>
+                <div class="tax-info mb-2">
+                    <div class="mb-4 text-center">
+                        <h1>Tax Invoice</h1>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="tax-invoice-info d-flex align-items-center justify-content-between">
+                                <h5>Student Name :</h5>
+                                <h6>{{ invoice.student_name|default:"-" }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tax-invoice-info d-flex align-items-center justify-content-between">
+                                <h5>Student ID :</h5>
+                                <h6>{{ invoice.student_id|default:"-" }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tax-invoice-info d-flex align-items-center justify-content-between">
+                                <h5>Term :</h5>
+                                <h6>{{ invoice.term|default:"-" }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tax-invoice-info d-flex align-items-center justify-content-between">
+                                <h5>Invoice No :</h5>
+                                <h6>{{ invoice.invoice_number }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tax-invoice-info d-flex align-items-center justify-content-between">
+                                <h5>Invoice Date :</h5>
+                                <h6>{{ invoice.date|date:"d M Y" }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tax-invoice-info d-flex align-items-center justify-content-between">
+                                <h5>Due Date :</h5>
+                                <h6>{% if invoice.due_date %}{{ invoice.due_date|date:"d M Y" }}{% else %}-{% endif %}</h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <h6 class="mb-1">Bill To :</h6>
+                        <p><span class="text-dark">{{ invoice.student_name|default:"-" }}</span> <br>
+                            {{ invoice.bill_to_address|default:"-" }} <br>
+                            {{ invoice.bill_to_email|default:"-" }} <br>
+                            {{ invoice.bill_to_phone|default:"-" }}
+                        </p>
+                    </div>
+                    <div class="invoice-product-table">
+                        <div class="table-responsive invoice-table">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Due Date</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in invoice.items.all %}
+                                    <tr>
+                                        <td>{{ item.description }}</td>
+                                        <td>{% if item.due_date %}{{ item.due_date|date:"d M Y" }}{% else %}-{% endif %}</td>
+                                        <td>{{ item.amount_display }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No line items.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <h5 class="mb-1">Important Note: </h5>
+                                <p class="text-dark mb-0">{{ invoice.notes|default:"-"|safe }}</p>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Total amount ( in words):</h5>
+                                <p class="text-dark fw-medium">USD {{ invoice.payable_in_words }} Only</p>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="total-amount-tax">
+                                <ul>
+                                    <li class="fw-medium text-dark">Subtotal</li>
+                                    <li class="fw-medium text-dark">Discount {{ invoice.discount|floatformat:"-2" }}%</li>
+                                    <li class="fw-medium text-dark">IGST {{ invoice.tax|floatformat:"-2" }}%</li>
+                                </ul>
+                                <ul>
+                                    <li>{{ invoice.subtotal_display }}</li>
+                                    <li>- {{ invoice.discount_amount_display }}</li>
+                                    <li>+ {{ invoice.tax_amount_display }}</li>
+                                </ul>
+                            </div>
+                            <div class="total-amount-tax mb-3">
+                                <ul class="total-amount">
+                                    <li class="text-dark">Amount Payable</li>
+                                </ul>
+                                <ul class="total-amount">
+                                    <li class="text-dark">{{ invoice.payable_amount_display }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payment-info">
+                        <div class="row align-items-center">
+                            <div class="col-lg-6 mb-4 pt-4">
+                                <h5 class="mb-2">Payment Info:</h5>
+                                <p class="mb-1">Payment Method : <span class="fw-medium text-dark">{{ invoice.get_payment_method_display }}</span></p>
+                                <p class="mb-0">Amount : <span class="fw-medium text-dark">{{ invoice.payable_amount_display }}</span></p>
+                            </div>
+                            <div class="col-lg-6 text-end mb-4 pt-4 ">
+                                <h6 class="mb-2">For {{ school_name }}</h6>
+                                {% if invoice.signature %}
+                                <img src="{{ invoice.signature.url }}" alt="Img" style="max-width: 200px; max-height: 80px;">
+                                {% else %}
+                                <img src="{% static 'assets/img/icons/signature.svg' %}" alt="Img">
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-bottom text-center pt-4 pb-4">
+                        <span class="text-dark fw-medium">Terms & Conditions : </span>
+                        <p>{{ invoice.terms|default:"-"|safe }}</p>
+                    </div>
+                    <p class="text-center pt-3">Thanks for your Business</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+function printOrExportPDF() {
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    var schoolName = "{{ school_name|default:'Global International' }}";
+
+    var itemsHtml = "";
+    {% for item in invoice.items.all %}
+        itemsHtml += '<tr><td>{{ item.description }}</td><td>{% if item.due_date %}{{ item.due_date|date:"d M Y" }}{% else %}-{% endif %}</td><td>{{ item.amount_display }}</td></tr>';
+    {% empty %}
+        itemsHtml += '<tr><td colspan="3" style="text-align:center;color:#64748b;">No line items.</td></tr>';
+    {% endfor %}
+
+    var html = `
+    <html>
+    <head>
+        <title>Tax Invoice</title>
+        <style>
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 13px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 12px 16px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .total-row th, .total-row td {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 700;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 210mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">Tax Invoice</div>
+            <div class="report-meta">` + schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+        </div>
+        <table>
+            <tr>
+                <th>Student Name</th><td>{{ invoice.student_name|default:"-" }}</td>
+                <th>Student ID</th><td>{{ invoice.student_id|default:"-" }}</td>
+            </tr>
+            <tr>
+                <th>Term</th><td>{{ invoice.term|default:"-" }}</td>
+                <th>Invoice No</th><td>{{ invoice.invoice_number }}</td>
+            </tr>
+            <tr>
+                <th>Invoice Date</th><td>{{ invoice.date|date:"d M Y" }}</td>
+                <th>Due Date</th><td>{% if invoice.due_date %}{{ invoice.due_date|date:"d M Y" }}{% else %}-{% endif %}</td>
+            </tr>
+        </table>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ` + itemsHtml + `
+            </tbody>
+        </table>
+        <table>
+            <tr>
+                <th>Subtotal</th><td>{{ invoice.subtotal_display }}</td>
+            </tr>
+            <tr>
+                <th>Discount ({{ invoice.discount|floatformat:"-2" }}%)</th><td>- {{ invoice.discount_amount_display }}</td>
+            </tr>
+            <tr>
+                <th>IGST ({{ invoice.tax|floatformat:"-2" }}%)</th><td>+ {{ invoice.tax_amount_display }}</td>
+            </tr>
+            <tr class="total-row">
+                <th>Amount Payable</th><td>{{ invoice.payable_amount_display }}</td>
+            </tr>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <\/script>
+    </body>
+    </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+</script>
+{% endblock extra_js %}

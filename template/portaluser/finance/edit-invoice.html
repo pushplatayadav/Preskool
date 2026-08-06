@@ -1,0 +1,598 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/plugins/select2/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'assets/plugins/summernote/summernote-lite.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content content-two">
+
+        {% if messages %}
+        <div class="messages-container mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Header -->
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Edit Invoice</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'home' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="javascript:void(0);">Finance & Accounts</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'finance:invoices' %}">Invoices</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit Invoice</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="mb-2">
+                    <a href="{% url 'finance:invoices' %}" class="btn btn-light d-flex align-items-center"><i
+                            class="ti ti-arrow-back me-2"></i>Back to Invoices</a>
+                </div>
+            </div>
+        </div>
+        <!-- /Page Header -->
+
+        <div class="row">
+
+            <div class="col-md-12">
+
+                <form action="{% url 'finance:invoices-edit' invoice.pk %}" method="post"
+                    enctype="multipart/form-data" id="invoice-form">
+                    {% csrf_token %}
+
+                    <div class="card">
+                        <div class="card-body pb-0">
+
+                            <!-- Company Logo -->
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+                                            <i class="ti ti-user-check fs-16"></i>
+                                        </span>
+                                        <h4 class="text-dark">Company Logo</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body pb-1">
+                                    <div class="profile-wrap mb-3">
+                                        <div class="frames bg-white">
+                                            {% if invoice.company_logo %}
+                                            <img src="{{ invoice.company_logo.url }}"
+                                                class="img-fluid rounded" id="company_logo_img" alt="Logo">
+                                            {% else %}
+                                            <img src="" class="img-fluid rounded d-none" id="company_logo_img"
+                                                alt="Logo">
+                                            {% endif %}
+                                            {% if invoice.company_logo %}
+                                            <i class="ti ti-photo-plus d-none" id="company_logo_icon"></i>
+                                            {% else %}
+                                            <i class="ti ti-photo-plus" id="company_logo_icon"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="profile-upload">
+                                            <div class="profile-uploader d-flex align-items-center">
+                                                <div class="drag-upload-btn mb-3">
+                                                    Upload
+                                                    <input type="file" name="company_logo"
+                                                        class="form-control image-sign" id="company_logo_input"
+                                                        accept="image/*"
+                                                        onchange="previewCompanyLogo(this);">
+                                                </div>
+                                                <a href="javascript:void(0);" class="btn btn-primary mb-3"
+                                                    onclick="removeCompanyLogo();">Remove</a>
+                                            </div>
+                                            <p class="fs-12">Upload image size 4MB, Format JPG, PNG, SVG</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /Company Logo -->
+
+                            <!-- Customer Information -->
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+                                            <i class="ti ti-user-check fs-16"></i>
+                                        </span>
+                                        <h4 class="text-dark">Customer Information</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body pb-0">
+                                    <div class="info-section">
+                                        <div class="row">
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Customer Name</label>
+                                                    <select class="select" name="customer">
+                                                        <option value="">Select</option>
+                                                        {% for student in students %}
+                                                        <option value="{{ student.pk }}"
+                                                            {% if student.admission_no == invoice.student_id %}selected{% endif %}>{{ student.name }} ({{ student.admission_no }})</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Invoice Number <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" name="invoice_number"
+                                                        value="{{ invoice.invoice_number }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Invoice Date <span
+                                                            class="text-danger">*</span></label>
+                                                    <div class="input-icon position-relative">
+                                                        <span class="input-icon-addon">
+                                                            <i class="ti ti-calendar"></i>
+                                                        </span>
+                                                        <input type="text" name="date"
+                                                            class="form-control datetimepicker"
+                                                            value="{{ invoice.date|date:'d-m-Y' }}"
+                                                            placeholder="dd-mm-yyyy" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Due Date</label>
+                                                    <div class="input-icon position-relative">
+                                                        <span class="input-icon-addon">
+                                                            <i class="ti ti-calendar"></i>
+                                                        </span>
+                                                        <input type="text" name="due_date"
+                                                            class="form-control datetimepicker"
+                                                            value="{{ invoice.due_date|date:'d-m-Y'|default:'' }}"
+                                                            placeholder="dd-mm-yyyy">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Payment Method</label>
+                                                    <select class="select" name="payment_method">
+                                                        <option value="">Select</option>
+                                                        {% for value, label in payment_methods %}
+                                                        <option value="{{ value }}"
+                                                            {% if invoice.payment_method == value %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Status</label>
+                                                    <select class="select" name="status">
+                                                        <option value="">Select</option>
+                                                        {% for value, label in statuses %}
+                                                        <option value="{{ value }}"
+                                                            {% if invoice.status == value %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /Customer Information -->
+
+                            <!-- Product Information -->
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <span class="bg-white avatar avatar-sm me-2 text-gray-7 flex-shrink-0">
+                                            <i class="ti ti-shopping-cart-copy fs-16"></i>
+                                        </span>
+                                        <h4 class="text-dark">Product Information</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body pb-0">
+                                    <div class="info-section">
+                                        <div class="row align-items-end">
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Product Name</label>
+                                                    <select class="select" id="product_select"
+                                                        onchange="onProductChange();">
+                                                        <option value="">Select</option>
+                                                        {% for product in products %}
+                                                        <option value="{{ product.pk }}">{{ product.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Quantity</label>
+                                                    <input type="number" class="form-control" id="product_quantity"
+                                                        min="1" value="1" placeholder="Enter Quantity">
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Unit Price</label>
+                                                    <input type="text" class="form-control" id="product_unit_price"
+                                                        placeholder="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="mb-3">
+                                                    <a href="javascript:void(0);" class="btn btn-primary w-100"
+                                                        onclick="addToBill();"><i
+                                                            class="ti ti-plus me-2"></i>Add to Bill</a>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="invoice-product-table">
+                                                    <div class="table-responsive invoice-table">
+                                                        <table class="table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Product Name</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Unit Price</th>
+                                                                    <th>Discount</th>
+                                                                    <th>Net Amount</th>
+                                                                    <th>Action</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="product-body">
+                                                                {% for item in invoice.items.all %}
+                                                                <tr>
+                                                                    <td>
+                                                                        <span class="product-name">{{ item.description }}</span>
+                                                                        <input type="hidden" name="item_description"
+                                                                            value="{{ item.description }}">
+                                                                    </td>
+                                                                    <td style="min-width: 110px;">
+                                                                        <input type="number"
+                                                                            class="form-control item-quantity"
+                                                                            name="item_quantity" min="1"
+                                                                            value="{{ item.quantity }}"
+                                                                            oninput="recalcAll();">
+                                                                    </td>
+                                                                    <td style="min-width: 130px;">
+                                                                        <input type="text"
+                                                                            class="form-control item-unit-price"
+                                                                            name="item_unit_price"
+                                                                            value="{{ item.unit_price }}"
+                                                                            oninput="recalcAll();">
+                                                                    </td>
+                                                                    <td style="min-width: 110px;">
+                                                                        <input type="text"
+                                                                            class="form-control item-discount"
+                                                                            name="item_discount" placeholder="%"
+                                                                            value="{{ item.discount_percent }}"
+                                                                            oninput="recalcAll();">
+                                                                    </td>
+                                                                        <td class="net-amount">0.00</td>
+                                                                    <td>
+                                                                        <a href="javascript:void(0);"
+                                                                            class="delete-invoice-item"
+                                                                            onclick="askRemoveItem(this);"><i
+                                                                                class="ti ti-trash"></i></a>
+                                                                    </td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /Product Information -->
+
+                            <div class="invoice-info">
+                                <div class="row">
+                                    <div class="col-xxl-9 col-lg-8">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Notes</label>
+                                                    <textarea class="form-control summernote-editor" name="notes"
+                                                        rows="3">{{ invoice.notes|default:'' }}</textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Terms & Conditions</label>
+                                                    <textarea class="form-control summernote-editor" name="terms"
+                                                        rows="3">{{ invoice.terms|default:'' }}</textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xxl-3 col-lg-4">
+                                        <div class="card invoice-amount-details">
+                                            <ul>
+                                                <li>
+                                                    <span>Subtotal</span>
+                                                    <h6 id="invoice_subtotal">00.00</h6>
+                                                </li>
+                                                <li>
+                                                    <span>Discount</span>
+                                                    <div class="d-flex align-items-center justify-content-end flex-grow-1">
+                                                        <input type="number"
+                                                            class="form-control form-control-sm text-end me-2"
+                                                            id="invoice_discount" name="discount" value="{{ invoice.discount }}"
+                                                            min="0" max="100" oninput="recalcAll();">
+                                                        <h6 id="invoice_discount_amount" class="mb-0">00.00</h6>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <span>Tax</span>
+                                                    <div class="d-flex align-items-center justify-content-end flex-grow-1">
+                                                        <input type="number"
+                                                            class="form-control form-control-sm text-end me-2"
+                                                            id="invoice_tax" name="tax" value="{{ invoice.tax }}"
+                                                            min="0" max="100" oninput="recalcAll();">
+                                                        <h6 id="invoice_tax_amount" class="mb-0">00.00</h6>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <h5>Total</h5>
+                                                    <h5 id="invoice_total">00.00</h5>
+                                                </li>
+                                            </ul>
+                                            <div class="mb-3">
+                                                <label class="form-label">Signature Name</label>
+                                                <input type="text" class="form-control" name="signature_name"
+                                                    value="{{ invoice.signature_name|default:'' }}">
+                                            </div>
+                                            <div class="input-block service-upload service-upload-info mb-0">
+                                                <span><i class="ti ti-upload me-2"></i>Upload Signature</span>
+                                                <input type="file" name="signature" id="invoice_signature"
+                                                    accept="image/*" onchange="previewSignature(this);">
+                                                <div id="signature_frames">
+                                                    {% if invoice.signature %}
+                                                    <img src="{{ invoice.signature.url }}" alt="Signature"
+                                                        style="max-width: 100%; max-height: 100px; border-radius: 6px; margin-top: 10px;">
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <a href="{% url 'finance:invoices' %}" class="btn btn-light me-3">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <span class="delete-icon">
+                    <i class="ti ti-trash-x"></i>
+                </span>
+                <h4>Confirm Deletion</h4>
+                <p>You want to delete all the marked items, this cant be undone once you delete.</p>
+                <div class="d-flex justify-content-center">
+                    <a href="javascript:void(0);" class="btn btn-light me-3"
+                        data-bs-dismiss="modal">Cancel</a>
+                    <button type="button" class="btn btn-danger"
+                        onclick="confirmRemoveItem();">Yes, Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/plugins/select2/js/select2.min.js' %}"></script>
+<script src="{% static 'assets/plugins/summernote/summernote-lite.min.js' %}"></script>
+<script>
+    var PRODUCTS = {{ products_json|safe }};
+
+    function formatMoney(value) {
+        var num = parseFloat(value);
+        if (isNaN(num)) return '0.00';
+        return num.toFixed(2);
+    }
+
+    function previewCompanyLogo(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = document.getElementById('company_logo_img');
+                var icon = document.getElementById('company_logo_icon');
+                img.src = e.target.result;
+                img.classList.remove('d-none');
+                if (icon) icon.classList.add('d-none');
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function removeCompanyLogo() {
+        var input = document.getElementById('company_logo_input');
+        var img = document.getElementById('company_logo_img');
+        var icon = document.getElementById('company_logo_icon');
+        if (input) input.value = '';
+        if (img) { img.src = ''; img.classList.add('d-none'); }
+        if (icon) icon.classList.remove('d-none');
+    }
+
+    function previewSignature(input) {
+        var frames = document.getElementById('signature_frames');
+        frames.innerHTML = '';
+        if (input.files && input.files[0]) {
+            var img = document.createElement('img');
+            img.src = window.URL.createObjectURL(input.files[0]);
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '100px';
+            img.style.borderRadius = '6px';
+            img.style.marginTop = '10px';
+            frames.appendChild(img);
+        }
+    }
+
+    function recalcRow(tr) {
+        var qty = parseFloat(tr.querySelector('input[name="item_quantity"]').value) || 0;
+        var price = parseFloat(tr.querySelector('input[name="item_unit_price"]').value) || 0;
+        var disc = parseFloat(tr.querySelector('input[name="item_discount"]').value) || 0;
+        var net = qty * price * (1 - (disc / 100));
+        var cell = tr.querySelector('.net-amount');
+        if (cell) cell.textContent = formatMoney(net);
+        return net;
+    }
+
+    function recalcAll() {
+        var total = 0;
+        document.querySelectorAll('#product-body tr').forEach(function(tr) {
+            total += recalcRow(tr);
+        });
+        var discPct = parseFloat(document.getElementById('invoice_discount').value) || 0;
+        var taxPct = parseFloat(document.getElementById('invoice_tax').value) || 0;
+        var discAmt = total * (discPct / 100);
+        var taxable = total - discAmt;
+        var taxAmt = taxable * (taxPct / 100);
+        var payable = taxable + taxAmt;
+        document.getElementById('invoice_subtotal').textContent = formatMoney(total);
+        document.getElementById('invoice_discount_amount').textContent = formatMoney(discAmt);
+        document.getElementById('invoice_tax_amount').textContent = formatMoney(taxAmt);
+        document.getElementById('invoice_total').textContent = formatMoney(payable);
+    }
+
+    function addProductRow(name, quantity, unitPrice, discount) {
+        var tbody = document.getElementById('product-body');
+        var tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <span class="product-name">${name || ''}</span>
+                <input type="hidden" name="item_description" value="${name || ''}">
+            </td>
+            <td style="min-width: 110px;">
+                <input type="number" class="form-control item-quantity" name="item_quantity" min="1"
+                    value="${quantity || 1}" oninput="recalcAll();">
+            </td>
+            <td style="min-width: 130px;">
+                <input type="text" class="form-control item-unit-price" name="item_unit_price"
+                    value="${unitPrice || '0'}" oninput="recalcAll();">
+            </td>
+            <td style="min-width: 110px;">
+                <input type="text" class="form-control item-discount" name="item_discount" placeholder="%"
+                    value="${discount || '0'}" oninput="recalcAll();">
+            </td>
+            <td class="net-amount">0.00</td>
+            <td>
+                <a href="javascript:void(0);" class="delete-invoice-item"
+                    onclick="askRemoveItem(this);"><i class="ti ti-trash"></i></a>
+            </td>`;
+        tbody.appendChild(tr);
+        recalcAll();
+    }
+
+    function addToBill() {
+        var productSelect = document.getElementById('product_select');
+        var qtyInput = document.getElementById('product_quantity');
+        var priceInput = document.getElementById('product_unit_price');
+        if (!productSelect.value) { alert('Please select a product.'); return; }
+        var name = productSelect.options[productSelect.selectedIndex].text;
+        var qty = parseFloat(qtyInput.value) || 1;
+        var price = parseFloat(priceInput.value) || 0;
+        addProductRow(name, qty, price, 0);
+        productSelect.value = '';
+        qtyInput.value = 1;
+        priceInput.value = '';
+        if (window.jQuery && $(productSelect).data('select2')) {
+            $(productSelect).val('').trigger('change');
+        }
+    }
+
+    function onProductChange() {
+        var select = document.getElementById('product_select');
+        var priceInput = document.getElementById('product_unit_price');
+        var product = PRODUCTS.find(function(p) { return String(p.id) === String(select.value); });
+        priceInput.value = product ? product.price : '';
+    }
+
+    var pendingRemoveRow = null;
+
+    function askRemoveItem(link) {
+        var tr = link.closest('tr');
+        if (tr) {
+            pendingRemoveRow = tr;
+            var modal = new bootstrap.Modal(document.getElementById('delete-modal'));
+            modal.show();
+        }
+    }
+
+    function confirmRemoveItem() {
+        if (pendingRemoveRow) {
+            pendingRemoveRow.remove();
+            pendingRemoveRow = null;
+            recalcAll();
+        }
+        var modalEl = document.getElementById('delete-modal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+    }
+
+    $(document).ready(function() {
+        if (window.jQuery && $.fn.summernote) {
+            $('.summernote-editor').summernote({
+                minHeight: 80,
+                maxHeight: 200,
+                focus: false,
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['para', ['ul', 'ol']],
+                    ['insert', ['link', 'picture']]
+                ]
+            });
+        }
+
+        $('#invoice-form').on('submit', function() {
+            if (window.jQuery && $.fn.summernote) {
+                $('.summernote-editor').each(function() {
+                    $(this).val($(this).summernote('code'));
+                });
+            }
+        });
+
+        recalcAll();
+    });
+</script>
+{% endblock extra_js %}

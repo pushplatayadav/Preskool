@@ -43,31 +43,31 @@
 									</ul>
 								</li>
 								<li class="submenu">
-									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:parent-list' %}subdrop active{% endif %}"><i
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:parent-grid' or request.resolver_match.view_name == 'people:parent-list' %}subdrop active{% endif %}"><i
 											class="ti ti-user-bolt"></i><span>Parents</span><span
 											class="menu-arrow"></span></a>
-									<ul {% if request.resolver_match.view_name == 'people:parent-list' %}style="display: block;"{% endif %}>
-										<li><a href="#">All Parents</a></li>
+									<ul {% if request.resolver_match.view_name == 'people:parent-grid' or request.resolver_match.view_name == 'people:parent-list' %}style="display: block;"{% endif %}>
+										<li><a href="{% url 'people:parent-grid' %}" class="{% if request.resolver_match.view_name == 'people:parent-grid' %}active{% endif %}">All Parents</a></li>
 										<li><a href="{% url 'people:parent-list' %}" class="{% if request.resolver_match.view_name == 'people:parent-list' %}active{% endif %}">Parent List</a></li>
 									</ul>
 								</li>
 								<li class="submenu">
-									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:guardian-list' %}subdrop active{% endif %}"><i
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:guardian-list' or request.resolver_match.view_name == 'people:guardian-grid' %}subdrop active{% endif %}"><i
 											class="ti ti-user-shield"></i><span>Guardians</span><span
 											class="menu-arrow"></span></a>
-									<ul {% if request.resolver_match.view_name == 'people:guardian-list' %}style="display: block;"{% endif %}>
-										<li><a href="guardian-grid.html">All Guardians</a></li>
+									<ul {% if request.resolver_match.view_name == 'people:guardian-list' or request.resolver_match.view_name == 'people:guardian-grid' %}style="display: block;"{% endif %}>
+										<li><a href="{% url 'people:guardian-grid' %}" class="{% if request.resolver_match.view_name == 'people:guardian-grid' %}active{% endif %}">All Guardians</a></li>
 										<li><a href="{% url 'people:guardian-list' %}" class="{% if request.resolver_match.view_name == 'people:guardian-list' %}active{% endif %}">Guardian List</a></li>
 									</ul>
 								</li>
 								<li class="submenu">
-									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:teacher-grid' or request.resolver_match.view_name == 'people:teacher-list' or request.resolver_match.view_name == 'people:teacher-details' %}subdrop active{% endif %}"><i class="ti ti-users"></i><span>Teachers</span><span
+									<a href="javascript:void(0);" class="{% if request.resolver_match.view_name == 'people:teacher-grid' or request.resolver_match.view_name == 'people:teacher-list' or request.resolver_match.view_name == 'people:teacher-details' or request.resolver_match.view_name == 'people:teacher-routine' %}subdrop active{% endif %}"><i class="ti ti-users"></i><span>Teachers</span><span
 											class="menu-arrow"></span></a>
-									<ul {% if request.resolver_match.view_name == 'people:teacher-grid' or request.resolver_match.view_name == 'people:teacher-list' or request.resolver_match.view_name == 'people:teacher-details' %}style="display: block;"{% endif %}>
+									<ul {% if request.resolver_match.view_name == 'people:teacher-grid' or request.resolver_match.view_name == 'people:teacher-list' or request.resolver_match.view_name == 'people:teacher-details' or request.resolver_match.view_name == 'people:teacher-routine' %}style="display: block;"{% endif %}>
 										<li><a href="{% url 'people:teacher-grid' %}" class="{% if request.resolver_match.view_name == 'people:teacher-grid' %}active{% endif %}">All Teachers</a></li>
 										<li><a href="{% url 'people:teacher-list' %}" class="{% if request.resolver_match.view_name == 'people:teacher-list' %}active{% endif %}">Teacher List</a></li>
 										<li><a href="{% url 'people:teacher-details-redirect' %}" class="{% if request.resolver_match.view_name == 'people:teacher-details' %}active{% endif %}">Teacher Details</a></li>
-										<li><a href="routine-teachers.html">Routine</a></li>
+										<li><a href="{% url 'people:teacher-routine-redirect' %}" class="{% if request.resolver_match.view_name == 'people:teacher-routine' %}active{% endif %}">Routine</a></li>
 									</ul>
 								</li>
 							</ul>
@@ -109,7 +109,7 @@
 										<li><a href="{% url 'exam:exam-results-list' %}">Exam Results</a></li>
 									</ul>
 								</li>
-								<li><a href="academic-reasons.html"><i
+								<li><a href="{% url 'academics:academic-reasons' %}" class="{% if request.resolver_match.view_name == 'academics:academic-reasons' %}active{% endif %}"><i
 											class="ti ti-lifebuoy"></i><span>Reasons</span></a></li>
 							</ul>
 						</li>
@@ -132,34 +132,34 @@
 											class="ti ti-notebook"></i><span>Library</span><span
 											class="menu-arrow"></span></a>
 									<ul>
-										<li><a href="library-members.html">Library Members</a></li>
-										<li><a href="library-books.html">Books</a></li>
-										<li><a href="library-issue-book.html">Issue Book</a></li>
-										<li><a href="library-return.html">Return</a></li>
+										<li><a href="{% url 'management:library-members' %}">Library Members</a></li>
+										<li><a href="{% url 'management:library-books' %}">Books</a></li>
+										<li><a href="{% url 'management:library-issue-book' %}">Issue Book</a></li>
+										<li><a href="{% url 'management:library-return' %}">Return</a></li>
 									</ul>
 								</li>
-								<li><a href="sports.html"><i class="ti ti-run"></i><span>Sports</span></a></li>
-								<li><a href="players.html"><i class="ti ti-play-football"></i><span>Players</span></a>
+								<li><a href="{% url 'management:sports' %}"><i class="ti ti-run"></i><span>Sports</span></a></li>
+								<li><a href="{% url 'management:players' %}"><i class="ti ti-play-football"></i><span>Players</span></a>
 								</li>
 								<li class="submenu">
 									<a href="javascript:void(0);"><i
 											class="ti ti-building-fortress"></i><span>Hostel</span><span
 											class="menu-arrow"></span></a>
 									<ul>
-										<li><a href="hostel-list.html">Hostel List</a></li>
-										<li><a href="hostel-rooms.html">Hostel Rooms</a></li>
-										<li><a href="hostel-room-type.html">Room Type</a></li>
+										<li><a href="{% url 'management:hostel-list' %}">Hostel List</a></li>
+										<li><a href="{% url 'management:hostel-rooms' %}">Hostel Rooms</a></li>
+										<li><a href="{% url 'management:hostel-room-type' %}">Room Type</a></li>
 									</ul>
 								</li>
 								<li class="submenu">
 									<a href="javascript:void(0);"><i class="ti ti-bus"></i><span>Transport</span><span
 											class="menu-arrow"></span></a>
 									<ul>
-										<li><a href="transport-routes.html">Routes</a></li>
-										<li><a href="transport-pickup-points.html">Pickup Points</a></li>
-										<li><a href="transport-vehicle-drivers.html">Vehicle Drivers</a></li>
-										<li><a href="transport-vehicle.html">Vehicle</a></li>
-										<li><a href="transport-assign-vehicle.html">Assign Vehicle</a></li>
+										<li><a href="{% url 'management:transport-routes' %}">Routes</a></li>
+										<li><a href="{% url 'management:transport-pickup-points' %}">Pickup Points</a></li>
+										<li><a href="{% url 'management:transport-vehicle-drivers' %}">Vehicle Drivers</a></li>
+										<li><a href="{% url 'management:transport-vehicle' %}">Vehicle</a></li>
+										<li><a href="{% url 'management:transport-assign-vehicle' %}">Assign Vehicle</a></li>
 									</ul>
 								</li>
 							</ul>
@@ -194,7 +194,7 @@
 								</li>
 								<li><a href="{% url 'hrm:holiday-list' %}" class="{% if request.resolver_match.view_name == 'hrm:holiday-list' %}active{% endif %}"><i class="ti ti-briefcase"></i><span>Holidays</span></a>
 								</li>
-								<li><a href="payroll.html"><i class="ti ti-moneybag"></i><span>Payroll</span></a></li>
+								<li><a href="{% url 'hrm:payroll-list' %}"><i class="ti ti-moneybag"></i><span>Payroll</span></a></li>
 							</ul>
 						</li>
 						<li>
@@ -205,12 +205,12 @@
 										<i class="ti ti-swipe"></i><span>Accounts</span><span class="menu-arrow"></span>
 									</a>
 									<ul>
-										<li><a href="expenses.html">Expenses</a></li>
-										<li><a href="expenses-category.html">Expense Category</a></li>
-										<li><a href="accounts-income.html">Income</a></li>
-										<li><a href="accounts-invoices.html">Invoices</a></li>
-										<li><a href="invoice.html">Invoice View</a></li>
-										<li><a href="accounts-transactions.html">Transactions</a></li>
+										<li><a href="{% url 'finance:expenses' %}" class="{% if request.resolver_match.view_name == 'finance:expenses' %}active{% endif %}">Expenses</a></li>
+										<li><a href="{% url 'finance:expenses-category' %}" class="{% if request.resolver_match.view_name == 'finance:expenses-category' %}active{% endif %}">Expense Category</a></li>
+										<li><a href="{% url 'finance:incomes' %}" class="{% if request.resolver_match.view_name == 'finance:incomes' %}active{% endif %}">Income</a></li>
+										<li><a href="{% url 'finance:invoices' %}" class="{% if request.resolver_match.view_name == 'finance:invoices' or request.resolver_match.view_name == 'finance:invoices-add' or request.resolver_match.view_name == 'finance:invoices-edit' %}active{% endif %}">Invoices</a></li>
+										<li><a href="{% url 'finance:invoices-view' %}" class="{% if request.resolver_match.view_name == 'finance:invoices-view' or request.resolver_match.view_name == 'finance:invoice-view' %}active{% endif %}">Invoice View</a></li>
+										<li><a href="{% url 'finance:transactions' %}" class="{% if request.resolver_match.view_name == 'finance:transactions' %}active{% endif %}">Transactions</a></li>
 									</ul>
 								</li>
 							</ul>
@@ -219,9 +219,9 @@
 						<li>
 							<h6 class="submenu-hdr"><span>Announcements</span></h6>
 							<ul>
-								<li><a href="notice-board.html"><i class="ti ti-clipboard-data"></i><span>Notice
+								<li><a href="{% url 'communication:notice-board' %}"><i class="ti ti-clipboard-data"></i><span>Notice
 											Board</span></a></li>
-								<li><a href="events.html"><i class="ti ti-calendar-question"></i><span>Events</span></a>
+								<li><a href="{% url 'communication:events' %}"><i class="ti ti-calendar-question"></i><span>Events</span></a>
 								</li>
 							</ul>
 
@@ -231,16 +231,16 @@
 							<ul>
 								<li><a href="{% url 'people:attendance-report' %}" class="{% if request.resolver_match.view_name == 'people:attendance-report' %}active{% endif %}"><i class="ti ti-calendar-due"></i><span>Attendance
 											Report</span></a></li>
-							<li><a href="{% url 'academics:class-report' %}" class="{% if request.resolver_match.view_name == 'academics:class-report' %}active{% endif %}"><i class="ti ti-graph"></i><span>Class
+							<li><a href="{% url 'report:class-report' %}" class="{% if request.resolver_match.view_name == 'report:class-report' %}active{% endif %}"><i class="ti ti-graph"></i><span>Class
 										Report</span></a>
 								</li>
-								<li><a href="student-report.html"><i class="ti ti-chart-infographic"></i><span>Student
+								<li><a href="{% url 'report:student-report' %}" class="{% if request.resolver_match.view_name == 'report:student-report' %}active{% endif %}"><i class="ti ti-chart-infographic"></i><span>Student
 											Report</span></a></li>
-								<li><a href="grade-report.html"><i class="ti ti-calendar-x"></i><span>Grade
+								<li><a href="{% url 'report:grade-report' %}" class="{% if request.resolver_match.view_name == 'report:grade-report' %}active{% endif %}"><i class="ti ti-calendar-x"></i><span>Grade
 											Report</span></a></li>
-								<li><a href="leave-report.html"><i class="ti ti-line"></i><span>Leave Report</span></a>
+								<li><a href="{% url 'report:leave-report' %}" class="{% if request.resolver_match.view_name == 'report:leave-report' %}active{% endif %}"><i class="ti ti-line"></i><span>Leave Report</span></a>
 								</li>
-								<li><a href="fees-report.html"><i class="ti ti-mask"></i><span>Fees Report</span></a>
+								<li><a href="{% url 'report:fees-report' %}" class="{% if request.resolver_match.view_name == 'report:fees-report' %}active{% endif %}"><i class="ti ti-mask"></i><span>Fees Report</span></a>
 								</li>
 							</ul>
 						</li>

@@ -1,0 +1,309 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<style>
+.drop-width { min-width: 400px; }
+@media print { .no-print { display: none !important; } }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Leave Report</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Report</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Leave Report</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'report:leave-report' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+						data-bs-original-title="Print" id="btn-print">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-pdf"><i
+									class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-excel"><i
+									class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Student List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Leave Report List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+							value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'report:leave-report' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-12">
+											<div class="mb-3">
+												<label class="form-label">Class</label>
+												<select class="select" name="filter_class">
+													<option value="">Select</option>
+													{% for cname in class_names %}
+													<option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-0">
+												<label class="form-label">Section</label>
+												<select class="select" name="filter_section">
+													<option value="">Select</option>
+													{% for sname in section_names %}
+													<option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'report:leave-report' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'report:leave-report' %}?sort=asc{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+									Ascending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'report:leave-report' %}?sort=desc{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+									Descending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'report:leave-report' %}?sort=recent{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'recent' %}active{% endif %}">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'report:leave-report' %}?sort=recent_added{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'recent_added' %}active{% endif %}">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+				<!-- Student List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable" id="leave-report-table">
+						<thead class="thead-light">
+							<tr class="report-first-head">
+								<th></th>
+								<th></th>
+								{% for lt in leave_types %}
+								<th colspan="2">{{ lt.name }}({{ lt.quota }})</th>
+								{% endfor %}
+							</tr>
+							<tr>
+								<th>Admission No</th>
+								<th>Student Name</th>
+								{% for lt in leave_types %}
+								<th>Used</th>
+								<th>Available</th>
+								{% endfor %}
+							</tr>
+						</thead>
+						<tbody>
+							{% for row in rows %}
+							<tr>
+								<td><a href="{% url 'people:student-details' row.student.pk %}" class="link-primary">{{ row.student.admission_no }}</a></td>
+								<td>
+									<div class="d-flex align-items-center">
+										{% if row.student.profile_image %}
+										<a href="{% url 'people:student-details' row.student.pk %}" class="avatar avatar-md"><img
+												src="{{ row.student.profile_image.url }}"
+												class="img-fluid rounded-circle" alt="img"></a>
+										{% else %}
+										<a href="{% url 'people:student-details' row.student.pk %}" class="avatar avatar-md"><span
+												class="d-inline-flex align-items-center justify-content-center w-100 h-100 bg-primary rounded-circle text-white">{{ row.student.name|first }}</span></a>
+										{% endif %}
+										<div class="ms-2">
+											<p class="text-dark mb-0"><a href="{% url 'people:student-details' row.student.pk %}">{{ row.student.name }}</a></p>
+											<span class="fs-12">Roll No : {{ row.student.roll_no|default:"-" }}</span>
+										</div>
+									</div>
+								</td>
+								{% for lv in row.leaves %}
+								<td>{{ lv.used }}</td>
+								<td>{{ lv.available }}</td>
+								{% endfor %}
+							</tr>
+							{% empty %}
+							<tr>
+								<td colspan="{{ leave_colspan }}"
+									class="text-center text-muted py-4">
+									{% if filter_class or filter_section %}
+									No leave report data found for the selected filters.
+									{% else %}
+									No leave report data found. Please add students first.
+									{% endif %}
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Student List -->
+			</div>
+		</div>
+		<!-- /Student List -->
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+function buildExportUrl(baseUrl) {
+	var params = new URLSearchParams(window.location.search);
+	var url = baseUrl + '?';
+	if (params.get('filter_class')) url += 'filter_class=' + encodeURIComponent(params.get('filter_class')) + '&';
+	if (params.get('filter_section')) url += 'filter_section=' + encodeURIComponent(params.get('filter_section')) + '&';
+	if (params.get('sort')) url += 'sort=' + encodeURIComponent(params.get('sort')) + '&';
+	return url;
+}
+
+function printOrExportPDF() {
+	var url = buildExportUrl('{% url "report:leave-report-export-pdf" %}');
+	window.open(url, '_blank');
+}
+
+function exportToExcel() {
+	var url = buildExportUrl('{% url "report:leave-report-export-excel" %}');
+	window.location.href = url;
+}
+
+function initLeaveReportTable() {
+	var $table = $('#leave-report-table');
+	if (!$.fn.DataTable || $.fn.DataTable.isDataTable($table)) {
+		return;
+	}
+	var emptyMsg = "{% if filter_class or filter_section %}No leave report data found for the selected filters.{% else %}No leave report data found. Please add students first.{% endif %}";
+	$table.DataTable({
+		"bFilter": true,
+		"ordering": true,
+		"info": false,
+		"language": {
+			search: ' ',
+			sLengthMenu: 'Row Per Page _MENU_ Entries',
+			searchPlaceholder: "Search",
+			info: "_START_ - _END_ of _TOTAL_ items",
+			emptyTable: emptyMsg,
+			paginate: {
+				next: ' Next',
+				previous: 'Prev '
+			}
+		}
+	});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+	initLeaveReportTable();
+
+	var btnPrint = document.getElementById('btn-print');
+	if (btnPrint) {
+		btnPrint.addEventListener('click', function(e) {
+			e.preventDefault();
+			printOrExportPDF();
+		});
+	}
+
+	var exportPdfBtn = document.getElementById('export-pdf');
+	if (exportPdfBtn) {
+		exportPdfBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			printOrExportPDF();
+		});
+	}
+
+	var exportExcelBtn = document.getElementById('export-excel');
+	if (exportExcelBtn) {
+		exportExcelBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			exportToExcel();
+		});
+	}
+
+});
+</script>
+{% endblock extra_js %}

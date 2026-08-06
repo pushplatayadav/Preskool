@@ -1,0 +1,519 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<style>
+.drop-width { min-width: 400px; }
+.no-sort { white-space: nowrap; }
+@media print { .no-print { display: none !important; } }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Class Report</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Report</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Class
+							Report</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'report:class-report' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+						data-bs-original-title="Print" id="btn-print" onclick="printReport();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-pdf"><i
+									class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" id="export-excel"><i
+									class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Student List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Class Report List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+						value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'report:class-report' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Class</label>
+												<select class="select" name="filter_class">
+													<option value="">Select</option>
+													{% for cname in class_names %}
+													<option value="{{ cname }}" {% if filter_class == cname %}selected{% endif %}>{{ cname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Section</label>
+												<select class="select" name="filter_section">
+													<option value="">Select</option>
+													{% for sname in section_names %}
+													<option value="{{ sname }}" {% if filter_section == sname %}selected{% endif %}>{{ sname }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-0">
+												<label class="form-label">No Of Students</label>
+												<select class="select" name="filter_no_students">
+													<option value="">Select</option>
+													{% for count in student_count_options %}
+													<option value="{{ count }}" {% if filter_no_students == count|stringformat:'s' %}selected{% endif %}>{{ count }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'report:class-report' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'report:class-report' %}?sort=asc{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}{% if filter_no_students %}&filter_no_students={{ filter_no_students|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+									Ascending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'report:class-report' %}?sort=desc{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}{% if filter_no_students %}&filter_no_students={{ filter_no_students|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+									Descending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'report:class-report' %}?sort=recent{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}{% if filter_no_students %}&filter_no_students={{ filter_no_students|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'recent' %}active{% endif %}">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'report:class-report' %}?sort=recent_added{% if filter_class %}&filter_class={{ filter_class|urlencode }}{% endif %}{% if filter_section %}&filter_section={{ filter_section|urlencode }}{% endif %}{% if filter_no_students %}&filter_no_students={{ filter_no_students|urlencode }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'recent_added' %}active{% endif %}">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+				<!-- Student List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table" id="class-report-table">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<label class="checkboxs"><input type="checkbox" id="select-all"><span
+											class="checkmarks"></span></label>
+								</th>
+								<th>ID</th>
+								<th>Class</th>
+								<th>Section</th>
+								<th>No of Students</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for section in sections %}
+							<tr>
+								<td>
+									<label class="checkboxs">
+										<input type="checkbox">
+										<span class="checkmarks"></span>
+									</label>
+								</td>
+								<td><a href="#" class="link-primary">{{ section.display_id }}</a></td>
+								<td>{{ section.school_class.name }}</td>
+								<td>{{ section.name }}</td>
+								<td>{{ section.no_of_students }}</td>
+								<td>
+									<a href="javascript:void(0);" class="btn btn-light view-class-details"
+										data-bs-toggle="modal" data-bs-target="#view_class_report"
+										data-pk="{{ section.pk }}"
+										data-class-name="{{ section.school_class.name }}"
+										data-section="{{ section.name }}"
+										data-no-students="{{ section.no_of_students }}">View Details</a>
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Student List -->
+			</div>
+		</div>
+		<!-- /Student List -->
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- View Class Report -->
+<div class="modal fade" id="view_class_report">
+	<div class="modal-dialog modal-dialog-centered  modal-xl">
+		<div class="modal-content">
+			<div class="modal-wrapper">
+				<div class="modal-header border-0 pb-0">
+					<h4 class="modal-title" id="class-report-modal-title">Class Report - Student List</h4>
+					<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+						<i class="ti ti-x"></i>
+					</button>
+				</div>
+				<div class="modal-body">
+
+					<!-- Student List -->
+					<div class="table-responsive">
+						<table class="table" id="class-report-students-table">
+							<thead class="thead-light">
+								<tr>
+									<th class="no-sort">
+										<label class="checkboxs"><input type="checkbox" id="select-all2"><span
+												class="checkmarks"></span></label>
+									</th>
+									<th>Admission No</th>
+									<th>Roll No</th>
+									<th>Name</th>
+									<th>Class </th>
+									<th>Section</th>
+									<th>Gender</th>
+									<th>Parent Name</th>
+									<th>DOB</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody id="class-report-students-body">
+								<tr>
+									<td colspan="10" class="text-center text-muted py-4">
+										Loading students...
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<!-- /Student List -->
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /View Class Report -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+function getReportData() {
+	var headers = ["ID", "Class", "Section", "No of Students"];
+	var data = [];
+	var rows = [];
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('#class-report-table')) {
+		var table = $('#class-report-table').DataTable();
+		table.rows({ search: 'applied' }).every(function() {
+			rows.push(this.node());
+		});
+	} else {
+		rows = document.querySelectorAll("#class-report-table tbody tr");
+	}
+	rows.forEach(function(tr) {
+		if (!tr.parentNode) return;
+		var cols = tr.querySelectorAll("td");
+		if (cols.length < 6) return;
+		var row = [];
+		for (var i = 1; i < 5; i++) {
+			row.push(cols[i].innerText.trim());
+		}
+		data.push(row);
+	});
+	return {
+		headers: headers,
+		rows: data,
+		reportTitle: "Class Report",
+		schoolName: "{{ school_name|default:'Global International' }}"
+	};
+}
+
+function printReport() {
+	var data = getReportData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = window.open("", "_blank");
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+	var html = `
+	<html>
+	<head>
+		<title>` + data.reportTitle + `</title>
+		<style>
+			@page { size: A4 portrait; margin: 20mm; }
+			body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 40px; color: #333; background-color: #fff; position: relative; min-height: 100%; }
+			body::before { content: "PRESKOOL"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 100px; font-weight: 900; color: rgba(79, 70, 229, 0.04); z-index: -1; pointer-events: none; white-space: nowrap; letter-spacing: 15px; }
+			.header-container { text-align: center; margin-bottom: 40px; }
+			.logo-section { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; }
+			.logo-text { font-size: 32px; font-weight: 700; color: #1e3a8a; letter-spacing: -0.5px; }
+			.report-title { font-size: 26px; font-weight: 800; color: #4f46e5; margin: 5px 0; }
+			.report-meta { font-size: 13px; color: #64748b; margin-top: 8px; }
+			table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; background: transparent; }
+			th, td { border: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; }
+			th { background-color: #f0f3ff; color: #4f46e5; font-weight: 600; }
+			tr:nth-child(even) { background-color: #f8fafc; }
+			.footer { margin-top: 60px; text-align: center; font-size: 12px; color: #94a3b8; }
+			@media print { @page { size: A4 portrait; margin: 20mm; } body { padding: 0; margin: 0; width: 210mm; } }
+		</style>
+	</head>
+	<body>
+		<div class="header-container">
+			<div class="logo-section">
+				<img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+				<span class="logo-text">PreSkool</span>
+			</div>
+			<div class="report-title">` + data.reportTitle + `</div>
+			<div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'short', year: 'numeric'}) + `</div>
+		</div>
+		<table>
+			<thead><tr>`;
+	data.headers.forEach(function(h) {
+		html += `<th>` + h + `</th>`;
+	});
+	html += `</tr></thead><tbody>`;
+	data.rows.forEach(function(row) {
+		html += `<tr>`;
+		row.forEach(function(cell) {
+			html += `<td>` + (cell || '-') + `</td>`;
+		});
+		html += `</tr>`;
+	});
+	html += `</tbody></table>
+		<div class="footer">&copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.</div>
+		<script>window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); };<` + `/script>
+	</body></html>`;
+	printWindow.document.write(html);
+	printWindow.document.close();
+}
+
+function initClassReportTable() {
+	var $table = $('#class-report-table');
+	if (!$.fn.DataTable || $.fn.DataTable.isDataTable($table)) {
+		return;
+	}
+	var emptyMsg = "{% if filter_class or filter_section or filter_no_students %}No classes found for the selected filters.{% else %}No classes found. Please add classes first.{% endif %}";
+	$table.DataTable({
+		"bFilter": true,
+		"ordering": true,
+		"info": false,
+		"language": {
+			search: ' ',
+			sLengthMenu: 'Row Per Page _MENU_ Entries',
+			searchPlaceholder: "Search",
+			info: "_START_ - _END_ of _TOTAL_ items",
+			emptyTable: emptyMsg,
+			paginate: {
+				next: ' Next',
+				previous: 'Prev '
+			}
+		}
+	});
+}
+
+function initStudentsTable() {
+	var $table = $('#class-report-students-table');
+	if ($.fn.DataTable && $.fn.DataTable.isDataTable($table)) {
+		$table.DataTable().destroy();
+	}
+	$table.DataTable({
+		"bFilter": true,
+		"ordering": true,
+		"info": true,
+		"lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+		"pageLength": 10,
+		"language": {
+			search: ' ',
+			sLengthMenu: 'Row Per Page _MENU_ Entries',
+			searchPlaceholder: "Search",
+			info: "_START_ - _END_ of _TOTAL_ entries",
+			paginate: {
+				next: ' Next',
+				previous: 'Prev '
+			}
+		}
+	});
+}
+
+function loadClassReportStudents(pk) {
+	var body = document.getElementById('class-report-students-body');
+	body.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Loading students...</td></tr>';
+	var url = "{% url 'report:class-report-students' 0 %}".replace('/0/', '/' + pk + '/');
+	fetch(url)
+		.then(function(response) { return response.json(); })
+		.then(function(result) {
+			var students = result.students || [];
+			if (students.length === 0) {
+				body.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No students found in this class / section.</td></tr>';
+				if ($.fn.DataTable && $.fn.DataTable.isDataTable('#class-report-students-table')) {
+					$('#class-report-students-table').DataTable().destroy();
+					$('#class-report-students-table').removeClass('datatable');
+				}
+				return;
+			}
+			var html = '';
+			students.forEach(function(s) {
+				var statusActive = s.status === 'active';
+				var profileImg = s.profile_image ? s.profile_image : "{% static 'assets/img/students/student-01.jpg' %}";
+				var parentImg = s.parent_image ? s.parent_image : "{% static 'assets/img/parents/parent-01.jpg' %}";
+				html += '<tr>' +
+					'<td><label class="checkboxs"><input type="checkbox"><span class="checkmarks"></span></label></td>' +
+					'<td><a href="#" class="link-primary">' + s.admission_no + '</a></td>' +
+					'<td>' + s.roll_no + '</td>' +
+					'<td><div class="d-flex align-items-center"><span class="avatar avatar-md"><img src="' + profileImg + '" class="img-fluid rounded-circle" alt="img"></span><div class="ms-2"><p class="text-dark mb-0">' + s.name + '</p></div></div></td>' +
+					'<td>' + s.class_name + '</td>' +
+					'<td>' + s.section + '</td>' +
+					'<td>' + s.gender + '</td>' +
+					'<td><div class="d-flex align-items-center"><span class="avatar avatar-md"><img src="' + parentImg + '" class="img-fluid rounded-circle" alt="img"></span><div class="ms-2"><p class="text-dark mb-0">' + s.parent_name + '</p></div></div></td>' +
+					'<td>' + s.dob + '</td>' +
+					'<td>' + (statusActive
+						? '<span class="badge badge-soft-success d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-5 me-1"></i>Active</span>'
+						: '<span class="badge badge-soft-danger d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-5 me-1"></i>Inactive</span>') +
+					'</td>' +
+					'</tr>';
+			});
+			body.innerHTML = html;
+			$('#class-report-students-table').addClass('datatable');
+			initStudentsTable();
+			var selectAll2 = document.getElementById('select-all2');
+			if (selectAll2) {
+				selectAll2.onchange = function() {
+					var checkboxes = document.querySelectorAll('#class-report-students-body input[type="checkbox"]');
+					checkboxes.forEach(function(cb) { cb.checked = selectAll2.checked; });
+				};
+			}
+		})
+		.catch(function() {
+			body.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Error loading students. Please try again.</td></tr>';
+		});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+	initClassReportTable();
+
+	var selectAll = document.getElementById('select-all');
+	if (selectAll) {
+		selectAll.addEventListener('change', function() {
+			var checkboxes = document.querySelectorAll('#class-report-table tbody input[type="checkbox"]');
+			checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+		});
+	}
+
+	document.querySelectorAll('.view-class-details').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var pk = this.getAttribute('data-pk');
+			var className = this.getAttribute('data-class-name') || '';
+			var sectionName = this.getAttribute('data-section') || '';
+			var noStudents = this.getAttribute('data-no-students') || '';
+			var title = document.getElementById('class-report-modal-title');
+			if (title) {
+				title.textContent = 'Class Report - ' + className + ' (Section ' + sectionName + ') - ' + noStudents + ' Students';
+			}
+			loadClassReportStudents(pk);
+		});
+	});
+
+	var exportPdfBtn = document.getElementById('export-pdf');
+	if (exportPdfBtn) {
+		exportPdfBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var url = "{% url 'report:class-report-export-pdf' %}?" + window.location.search.substring(1);
+			window.open(url, '_blank');
+		});
+	}
+
+	var exportExcelBtn = document.getElementById('export-excel');
+	if (exportExcelBtn) {
+		exportExcelBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var url = "{% url 'report:class-report-export-excel' %}?" + window.location.search.substring(1);
+			window.location.href = url;
+		});
+	}
+
+});
+</script>
+{% endblock extra_js %}

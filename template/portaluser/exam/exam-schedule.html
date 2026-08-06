@@ -179,7 +179,7 @@
                                             <ul class="dropdown-menu dropdown-menu-right p-3">
                                                 <li>
                                                     <a class="dropdown-item rounded-1 edit-btn" href="#" data-bs-toggle="modal" data-bs-target="#edit_exam_schedule"
-                                                        data-pk="{{ schedule.pk }}" data-exam="{{ schedule.exam.pk }}"
+                                                        data-pk="{{ schedule.pk }}" data-schedule-id="{{ schedule.schedule_id }}" data-exam="{{ schedule.exam.pk }}"
                                                         data-class="{{ schedule.school_class.pk }}" data-section="{{ schedule.section.pk }}"
                                                         data-subject="{{ schedule.subject.pk }}" data-date="{{ schedule.exam_date|date:'Y-m-d' }}"
                                                         data-start="{{ schedule.start_time|time:'H:i' }}" data-end="{{ schedule.end_time|time:'H:i' }}"
@@ -227,6 +227,12 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Schedule ID</label>
+                                        <input type="text" class="form-control" name="schedule_id" value="{{ next_exam_schedule_id }}">
+                                    </div>
+                                </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label class="form-label">Class</label>
@@ -339,6 +345,12 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Schedule ID</label>
+                                        <input type="text" class="form-control" name="schedule_id" id="edit_schedule_id" value="">
+                                    </div>
+                                </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label class="form-label">Class</label>
@@ -714,6 +726,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             var pk = this.dataset.pk;
             document.getElementById('edit-schedule-form').action = '{% url "exam:exam-schedule-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_schedule_id').value = this.dataset.scheduleId || '';
             document.getElementById('edit_exam').value = this.dataset.exam;
             document.getElementById('edit_school_class').value = this.dataset.class;
             document.getElementById('edit_section').value = this.dataset.section;

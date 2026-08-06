@@ -33,6 +33,8 @@ urlpatterns = [
     path("edit-teacher/<int:pk>/", views.edit_teacher, name="edit-teacher"),
     path("teacher-details/", views.teacher_details_redirect, name="teacher-details-redirect"),
     path("teacher-details/<int:pk>/", views.teacher_details, name="teacher-details"),
+    path("teacher-routine/", views.teacher_routine_redirect, name="teacher-routine-redirect"),
+    path("teacher-routine/<int:pk>/", views.teacher_routine, name="teacher-routine"),
     path("teachers/export/pdf/", views.teacher_export_pdf, name="teacher-export-pdf"),
     path("teachers/export/excel/", views.teacher_export_excel, name="teacher-export-excel"),
     # Staff Attendance URLs
@@ -50,8 +52,12 @@ urlpatterns = [
     path("staffs/export/excel/", views.staff_export_excel, name="staff-export-excel"),
     # Parent URLs
     path("parents/", views.parent_list, name="parent-list"),
+    path("parent-grid/", views.parent_grid, name="parent-grid"),
+    path("parent-grid/export/pdf/", views.parent_export_pdf, name="parent-export-pdf"),
+    path("parent-grid/export/excel/", views.parent_export_excel, name="parent-export-excel"),
     # Guardian URLs
     path("guardians/", views.guardian_list, name="guardian-list"),
+    path("guardian-grid/", views.guardian_grid, name="guardian-grid"),
     # Attendance Report URLs
     path("attendance-report/", views.attendance_report, name="attendance-report"),
     path("attendance-report/export/pdf/", views.attendance_report_export_pdf, name="attendance-report-export-pdf"),

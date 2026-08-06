@@ -1,0 +1,40 @@
+from django.urls import path
+from . import views
+
+app_name = "finance"
+
+urlpatterns = [
+    path("expenses-category/", views.expenses_category_list, name="expenses-category"),
+    path("expenses-category/next-id/", views.expenses_category_next_id, name="expenses-category-next-id"),
+    path("expenses-category/<int:pk>/edit/", views.expenses_category_edit, name="expenses-category-edit"),
+    path("expenses-category/<int:pk>/delete/", views.expenses_category_delete, name="expenses-category-delete"),
+    path("expenses-category/export/excel/", views.expenses_category_export_excel, name="expenses-category-export-excel"),
+    path("expenses-category/export/pdf/", views.expenses_category_export_pdf, name="expenses-category-export-pdf"),
+    path("expenses/", views.expenses_list, name="expenses"),
+    path("expenses/next-id/", views.expenses_next_id, name="expenses-next-id"),
+    path("expenses/<int:pk>/edit/", views.expenses_edit, name="expenses-edit"),
+    path("expenses/<int:pk>/delete/", views.expenses_delete, name="expenses-delete"),
+    path("expenses/export/excel/", views.expenses_export_excel, name="expenses-export-excel"),
+    path("expenses/export/pdf/", views.expenses_export_pdf, name="expenses-export-pdf"),
+    path("incomes/", views.incomes_list, name="incomes"),
+    path("incomes/next-id/", views.incomes_next_id, name="incomes-next-id"),
+    path("incomes/<int:pk>/edit/", views.incomes_edit, name="incomes-edit"),
+    path("incomes/<int:pk>/delete/", views.incomes_delete, name="incomes-delete"),
+    path("incomes/export/excel/", views.incomes_export_excel, name="incomes-export-excel"),
+    path("incomes/export/pdf/", views.incomes_export_pdf, name="incomes-export-pdf"),
+    path("invoices/", views.invoices_list, name="invoices"),
+    path("invoices/next-id/", views.invoices_next_id, name="invoices-next-id"),
+    path("invoices/add/", views.add_invoice_page, name="invoices-add"),
+    path("invoices/view/", views.invoice_view_latest, name="invoices-view"),
+    path("invoices/<int:pk>/view/", views.invoice_view, name="invoice-view"),
+    path("invoices/<int:pk>/edit/", views.edit_invoice_page, name="invoices-edit"),
+    path("invoices/<int:pk>/delete/", views.invoices_delete, name="invoices-delete"),
+    path("invoices/export/excel/", views.invoices_export_excel, name="invoices-export-excel"),
+    path("invoices/export/pdf/", views.invoices_export_pdf, name="invoices-export-pdf"),
+    path("transactions/", views.transactions_list, name="transactions"),
+    path("transactions/next-id/", views.transactions_next_id, name="transactions-next-id"),
+    path("transactions/<int:pk>/edit/", views.transactions_edit, name="transactions-edit"),
+    path("transactions/<int:pk>/delete/", views.transactions_delete, name="transactions-delete"),
+    path("transactions/export/excel/", views.transactions_export_excel, name="transactions-export-excel"),
+    path("transactions/export/pdf/", views.transactions_export_pdf, name="transactions-export-pdf"),
+]

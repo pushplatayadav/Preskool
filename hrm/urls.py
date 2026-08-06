@@ -21,4 +21,10 @@ urlpatterns = [
     path("approve-request/export/excel/", views.approve_request_export_excel, name="approve-request-export-excel"),
     path("approve-request/<int:pk>/update/", views.approve_request_update, name="approve-request-update"),
     path("approve-request/<int:pk>/delete/", views.approve_request_delete, name="approve-request-delete"),
+    path("payroll/", views.payroll_list, name="payroll-list"),
+    path("payroll/export/pdf/", views.payroll_export_pdf, name="payroll-export-pdf"),
+    path("payroll/export/excel/", views.payroll_export_excel, name="payroll-export-excel"),
+    path("payroll/<int:pk>/payslip/", views.payroll_payslip, name="payroll-payslip"),
+    path("payroll/<int:pk>/update/", views.payroll_update, name="payroll-update"),
+    path("payroll/<int:pk>/delete/", views.payroll_delete, name="payroll-delete"),
 ]

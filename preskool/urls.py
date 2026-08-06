@@ -29,7 +29,10 @@ urlpatterns = [
     path('', include("fees.urls")),
     path('', include("exam.urls")),
     path('', include("hrm.urls")),
-
+    path('', include("report.urls")),
+    path('', include("communication.urls")),
+    path('', include("management.urls")),
+    path('', include("finance.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

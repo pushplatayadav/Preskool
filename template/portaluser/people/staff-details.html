@@ -130,13 +130,13 @@
 								<a href="{% url 'people:staff-details' staff_member.pk %}" class="nav-link active"><i class="ti ti-info-square-rounded me-2"></i>Basic Details</a>
 							</li>
 							<li>
-								<a href="javascript:void(0);" class="nav-link"><i class="ti ti-file-dollar me-2"></i>Payroll</a>
+								<a href="{% url 'hrm:payroll-list' %}" class="nav-link"><i class="ti ti-file-dollar me-2"></i>Payroll</a>
 							</li>
 							<li>
-								<a href="javascript:void(0);" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leaves</a>
+								<a href="{% url 'hrm:leave-list' %}" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leaves</a>
 							</li>
 							<li>
-								<a href="javascript:void(0);" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Attendance</a>
+								<a href="{% url 'people:staff-attendance' %}" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Attendance</a>
 							</li>
 						</ul>
 					</div>

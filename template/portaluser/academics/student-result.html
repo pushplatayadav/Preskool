@@ -94,12 +94,12 @@
                 <div class="row">
                     <div class="col-md-12">
                         <ul class="nav nav-tabs nav-tabs-bottom mb-4">
-                            <li><a href="student-details.html" class="nav-link"><i class="ti ti-school me-2"></i>Student Details</a></li>
-                            <li><a href="student-time-table.html" class="nav-link"><i class="ti ti-table-options me-2"></i>Time Table</a></li>
-                            <li><a href="student-leaves.html" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a></li>
-                            <li><a href="student-fees.html" class="nav-link"><i class="ti ti-report-money me-2"></i>Fees</a></li>
+                            <li><a href="{% url 'people:student-details' student.pk %}" class="nav-link"><i class="ti ti-school me-2"></i>Student Details</a></li>
+                            <li><a href="{% url 'academics:student-time-table' student.pk %}" class="nav-link"><i class="ti ti-table-options me-2"></i>Time Table</a></li>
+                            <li><a href="{% url 'people:student-leaves' student.pk %}" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a></li>
+                            <li><a href="{% url 'fees:student-fees' student.pk %}" class="nav-link"><i class="ti ti-report-money me-2"></i>Fees</a></li>
                             <li><a href="{% url 'exam:student-result' student.pk %}" class="nav-link active"><i class="ti ti-bookmark-edit me-2"></i>Exam & Results</a></li>
-                            <li><a href="student-library.html" class="nav-link"><i class="ti ti-books me-2"></i>Library</a></li>
+                            <li><a href="{% url 'management:library-issue-book' %}" class="nav-link"><i class="ti ti-books me-2"></i>Library</a></li>
                         </ul>
 
                         <!-- Overall Summary -->

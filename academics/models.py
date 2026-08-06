@@ -21,6 +21,7 @@ class SchoolClass(models.Model):
 class Section(models.Model):
     """'A', 'B', 'C' within a class."""
     school_class = models.ForeignKey(SchoolClass, on_delete=models.CASCADE, related_name="sections")
+    section_id = models.CharField(max_length=50, blank=True)
     name = models.CharField(max_length=10)
     no_of_students = models.PositiveIntegerField(default=0)
     no_of_subjects = models.PositiveIntegerField(default=0)
@@ -35,12 +36,13 @@ class Section(models.Model):
 
     @property
     def display_id(self):
-        return f"C{130000 + self.pk}"
+        return self.section_id if self.section_id else f"C{130000 + self.pk}"
 
 
 class Subject(models.Model):
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name="subjects")
     classes = models.ManyToManyField(SchoolClass, related_name="subjects", blank=True)
+    subject_id = models.CharField(max_length=50, blank=True)
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, blank=True)
     type = models.CharField(
@@ -58,14 +60,15 @@ class Subject(models.Model):
 
     @property
     def display_id(self):
-        return f"SU{128400 - self.pk}"
-   
+        return self.subject_id if self.subject_id else f"SU{128400 + self.pk}"
+
 
 
 
 class ClassRoom(models.Model):
     STATUS_CHOICES = [("active", "Active"), ("inactive", "Inactive")]
 
+    room_id = models.CharField(max_length=50, blank=True)
     name = models.CharField(max_length=50)              # "Room 101"
     room_number = models.CharField(max_length=20, unique=True)
     capacity = models.PositiveIntegerField(default=30)
@@ -81,7 +84,7 @@ class ClassRoom(models.Model):
 
     @property
     def display_id(self):
-        return f"R{167650 - self.pk}"
+        return self.room_id if self.room_id else f"R{167650 + self.pk}"
 
 
 class Syllabus(models.Model):
@@ -119,6 +122,7 @@ class TimeTableEntry(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="timetable_entries"
     )
+    routine_id = models.CharField(max_length=50, blank=True)
     room = models.ForeignKey(ClassRoom, on_delete=models.SET_NULL, null=True, blank=True)
     day = models.CharField(max_length=3, choices=DAY_CHOICES)
     start_time = models.TimeField()
@@ -129,6 +133,10 @@ class TimeTableEntry(models.Model):
 
     def __str__(self):
         return f"{self.school_class}-{self.section} {self.subject} ({self.day})"
+
+    @property
+    def display_id(self):
+        return self.routine_id if self.routine_id else f"RT{100000 + self.pk}"
 
 
 class Schedule(models.Model):
@@ -153,7 +161,14 @@ class Schedule(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.schedule_id:
-            self.schedule_id = f"S{148230 + Schedule.objects.count() + 1}"
+            numbers = []
+            for sid in Schedule.objects.values_list("schedule_id", flat=True):
+                if sid and sid.startswith("S") and sid[1:].isdigit():
+                    numbers.append(int(sid[1:]))
+            candidate = max(numbers) + 1 if numbers else 148231
+            while Schedule.objects.filter(schedule_id=f"S{candidate}").exists():
+                candidate += 1
+            self.schedule_id = f"S{candidate}"
         super().save(*args, **kwargs)
 
 
@@ -187,7 +202,41 @@ class HomeWork(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.homework_id:
-            self.homework_id = f"HW{uuid.uuid4().int % 10000000:07d}"
+            numbers = []
+            for hwid in HomeWork.objects.values_list("homework_id", flat=True):
+                if hwid and hwid.startswith("HW") and hwid[2:].isdigit():
+                    numbers.append(int(hwid[2:]))
+            candidate = max(numbers) + 1 if numbers else 1000001
+            while HomeWork.objects.filter(homework_id=f"HW{candidate}").exists():
+                candidate += 1
+            self.homework_id = f"HW{candidate}"
         super().save(*args, **kwargs)
+
+
+class AcademicReason(models.Model):
+    ROLE_CHOICES = [
+        ("Teacher", "Teacher"),
+        ("Student", "Student"),
+        ("Staff", "Staff"),
+    ]
+    STATUS_CHOICES = [
+        ("Active", "Active"),
+        ("Inactive", "Inactive"),
+    ]
+
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default="Teacher")
+    reason = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Academic Reason"
+        verbose_name_plural = "Academic Reasons"
+
+    def __str__(self):
+        return f"{self.role} - {self.reason}"
+
 
 

@@ -1,13 +1,21 @@
 import csv
 from datetime import datetime, date
+from decimal import Decimal, InvalidOperation
 
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
+from django.utils import timezone
 
 from core.models import AcademicYear, School
-from .models import Department, Designation, Holiday, LeaveType, LeaveRequest
+from people.models import Teacher, Staff
+from .models import Department, Designation, Holiday, LeaveType, LeaveRequest, Payroll
+
+PAYROLL_MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
 
 
 def _parse_date(value):
@@ -572,6 +580,286 @@ def approve_request_export_excel(request):
             req.applied_on.strftime("%d %b %Y") if req.applied_on else "-",
             req.authority or "-",
             req.get_status_display(),
+        ])
+
+    return response
+
+
+def _parse_decimal(value):
+    if value is None:
+        return Decimal("0")
+    text = str(value).replace(",", "").replace("$", "").strip()
+    if not text:
+        return Decimal("0")
+    try:
+        return Decimal(text)
+    except InvalidOperation:
+        return Decimal("0")
+
+
+def _payroll_base_queryset(request):
+    payrolls = Payroll.objects.all()
+
+    filter_staff = request.GET.get("filter_staff", "").strip()
+    filter_month = request.GET.get("filter_month", "").strip()
+    filter_year = request.GET.get("filter_year", "").strip()
+
+    if filter_staff:
+        payrolls = payrolls.filter(name__icontains=filter_staff)
+    if filter_month:
+        payrolls = payrolls.filter(month=filter_month)
+    if filter_year:
+        payrolls = payrolls.filter(year=filter_year)
+
+    sort = request.GET.get("sort", "asc")
+    if sort == "desc":
+        payrolls = payrolls.order_by("-name")
+    elif sort in ("recent", "recent_viewed"):
+        payrolls = payrolls.order_by("-updated_at")
+    elif sort == "recent_added":
+        payrolls = payrolls.order_by("-created_at")
+    else:
+        payrolls = payrolls.order_by("name")
+
+    return payrolls, sort, filter_staff, filter_month, filter_year
+
+
+def payroll_list(request):
+    if request.method == "POST":
+        if "add_payroll" in request.POST:
+            employee_type = request.POST.get("employee_type", "").strip()
+            employee_id = request.POST.get("employee_id", "").strip()
+            name = request.POST.get("name", "").strip()
+            month = request.POST.get("month", "").strip()
+            year = request.POST.get("year", "").strip()
+            status = request.POST.get("status", "generated").strip()
+            pay_date = _parse_date(request.POST.get("pay_date", ""))
+
+            teacher = None
+            staff = None
+            department = request.POST.get("department", "").strip()
+            designation = request.POST.get("designation", "").strip()
+            phone = request.POST.get("phone", "").strip()
+
+            if employee_type == "teacher" and employee_id:
+                teacher = Teacher.objects.filter(pk=employee_id).first()
+                if teacher:
+                    name = teacher.name
+                    department = department or "Teaching"
+                    designation = designation or "Teacher"
+                    phone = phone or teacher.phone or teacher.primary_contact_number or ""
+            elif employee_type == "staff" and employee_id:
+                staff = Staff.objects.filter(pk=employee_id).first()
+                if staff:
+                    name = staff.name
+                    department = department or staff.department or "Management"
+                    designation = designation or staff.designation or "Staff"
+                    phone = phone or staff.phone or staff.primary_contact_number or ""
+
+            if not name:
+                messages.error(request, "Employee name is required to generate payroll.")
+            else:
+                basic_salary = _parse_decimal(request.POST.get("basic_salary"))
+                house_rent_allowance = _parse_decimal(request.POST.get("house_rent_allowance"))
+                dearness_allowance = _parse_decimal(request.POST.get("dearness_allowance"))
+                medical_allowance = _parse_decimal(request.POST.get("medical_allowance"))
+                other_allowance = _parse_decimal(request.POST.get("other_allowance"))
+                bonus = _parse_decimal(request.POST.get("bonus"))
+                tax_deduction = _parse_decimal(request.POST.get("tax_deduction"))
+                provident_fund = _parse_decimal(request.POST.get("provident_fund"))
+                insurance = _parse_decimal(request.POST.get("insurance"))
+                other_deduction = _parse_decimal(request.POST.get("other_deduction"))
+
+                net_salary = (
+                    basic_salary + house_rent_allowance + dearness_allowance
+                    + medical_allowance + other_allowance + bonus
+                    - tax_deduction - provident_fund - insurance - other_deduction
+                )
+
+                if status == "paid" and not pay_date:
+                    pay_date = timezone.localdate()
+
+                Payroll.objects.create(
+                    teacher=teacher,
+                    staff=staff,
+                    name=name,
+                    department=department,
+                    designation=designation,
+                    phone=phone,
+                    month=month,
+                    year=year,
+                    basic_salary=basic_salary,
+                    house_rent_allowance=house_rent_allowance,
+                    dearness_allowance=dearness_allowance,
+                    medical_allowance=medical_allowance,
+                    other_allowance=other_allowance,
+                    bonus=bonus,
+                    tax_deduction=tax_deduction,
+                    provident_fund=provident_fund,
+                    insurance=insurance,
+                    other_deduction=other_deduction,
+                    net_salary=net_salary,
+                    status=status,
+                    pay_date=pay_date,
+                )
+                messages.success(
+                    request, f"Payroll generated for {name} successfully."
+                )
+            return redirect("hrm:payroll-list")
+
+        if "bulk_delete" in request.POST:
+            ids = request.POST.getlist("selected_items")
+            if ids:
+                Payroll.objects.filter(pk__in=ids).delete()
+                messages.success(
+                    request, f"{len(ids)} payroll record(s) deleted successfully."
+                )
+            else:
+                messages.warning(request, "No items selected for deletion.")
+            return redirect("hrm:payroll-list")
+
+    payrolls, sort, filter_staff, filter_month, filter_year = _payroll_base_queryset(request)
+
+    staff_names = (
+        Payroll.objects.values_list("name", flat=True).distinct().order_by("name")
+    )
+    years = (
+        Payroll.objects.exclude(year="")
+        .values_list("year", flat=True)
+        .distinct()
+        .order_by("-year")
+    )
+    if not years:
+        years = [str(timezone.localdate().year)]
+
+    teachers = Teacher.objects.order_by("name")
+    staff_members = Staff.objects.order_by("name")
+    employee_options = []
+    for teacher in teachers:
+        employee_options.append({
+            "type": "teacher",
+            "pk": teacher.pk,
+            "name": teacher.name,
+            "department": "Teaching",
+            "designation": "Teacher",
+            "phone": teacher.phone or teacher.primary_contact_number or "",
+            "basic": teacher.basic_salary or "",
+        })
+    for staff in staff_members:
+        employee_options.append({
+            "type": "staff",
+            "pk": staff.pk,
+            "name": staff.name,
+            "department": staff.department or "Management",
+            "designation": staff.designation or "Staff",
+            "phone": staff.phone or staff.primary_contact_number or "",
+            "basic": staff.basic_salary or "",
+        })
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    school = School.objects.filter(is_active=True).first()
+    current_month = timezone.localdate().strftime("%B")
+    current_year = str(timezone.localdate().year)
+
+    return render(request, "portaluser/hrm/payroll.html", {
+        "payrolls": payrolls,
+        "staff_names": staff_names,
+        "months": PAYROLL_MONTHS,
+        "years": years,
+        "employee_options": employee_options,
+        "current_month": current_month,
+        "current_year": current_year,
+        "current_academic_year": current_academic_year,
+        "school_name": school.name if school else "Global International",
+        "sort": sort,
+        "filter_staff": filter_staff,
+        "filter_month": filter_month,
+        "filter_year": filter_year,
+    })
+
+
+def payroll_update(request, pk):
+    payroll = get_object_or_404(Payroll, pk=pk)
+    if request.method == "POST":
+        status = request.POST.get("status", "").strip()
+        pay_date = _parse_date(request.POST.get("pay_date", ""))
+        if status in dict(Payroll.PAYROLL_STATUS_CHOICES):
+            payroll.status = status
+            if status == "paid":
+                payroll.pay_date = pay_date or timezone.localdate()
+            else:
+                payroll.pay_date = pay_date
+            payroll.save()
+            messages.success(
+                request,
+                f"Payroll status of {payroll.name} updated to "
+                f"{payroll.get_status_display()}.",
+            )
+        else:
+            messages.error(request, "Invalid payroll status selected.")
+    return redirect("hrm:payroll-list")
+
+
+def payroll_delete(request, pk):
+    payroll = get_object_or_404(Payroll, pk=pk)
+    if request.method == "POST":
+        name = payroll.name
+        payroll.delete()
+        messages.success(
+            request, f"Payroll record of {name} deleted successfully."
+        )
+    return redirect("hrm:payroll-list")
+
+
+def payroll_payslip(request, pk):
+    payroll = get_object_or_404(Payroll, pk=pk)
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    school = School.objects.filter(is_active=True).first()
+
+    return render(request, "portaluser/hrm/payroll-payslip.html", {
+        "payroll": payroll,
+        "current_academic_year": current_academic_year,
+        "school_name": school.name if school else "Global International",
+    })
+
+
+def payroll_export_pdf(request):
+    payrolls, sort, filter_staff, filter_month, filter_year = _payroll_base_queryset(request)
+    school = School.objects.filter(is_active=True).first()
+    total_net = sum((p.net_salary or 0) for p in payrolls)
+
+    return render(request, "portaluser/hrm/payroll-print.html", {
+        "payrolls": payrolls,
+        "school_name": school.name if school else "Global International",
+        "title": "Payroll List",
+        "filter_staff": filter_staff,
+        "filter_month": filter_month,
+        "filter_year": filter_year,
+        "total_net": total_net,
+    })
+
+
+def payroll_export_excel(request):
+    payrolls, *_ = _payroll_base_queryset(request)
+
+    filename = f"payroll_{date.today().strftime('%Y%m%d')}"
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}.csv"'
+    response.write("\ufeff")
+
+    writer = csv.writer(response)
+    writer.writerow([
+        "ID", "Name", "Department", "Designation", "Phone", "Amount", "Status",
+    ])
+
+    for pay in payrolls:
+        writer.writerow([
+            pay.code or "-",
+            pay.name,
+            pay.department or "-",
+            pay.designation or "-",
+            pay.phone or "-",
+            f"{pay.net_salary:,.2f}",
+            pay.get_status_display(),
         ])
 
     return response

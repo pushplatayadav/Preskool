@@ -331,16 +331,16 @@
                                 <a href="{% url 'academics:student-time-table' student.pk %}" class="nav-link active"><i class="ti ti-table-options me-2"></i>Time Table</a>
                             </li>
                             <li>
-                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a>
+                                <a href="{% url 'people:student-leaves' student.pk %}" class="nav-link"><i class="ti ti-calendar-due me-2"></i>Leave & Attendance</a>
                             </li>
                             <li>
-                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-report-money me-2"></i>Fees</a>
+                                <a href="{% url 'fees:student-fees' student.pk %}" class="nav-link"><i class="ti ti-report-money me-2"></i>Fees</a>
                             </li>
                             <li>
-                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-bookmark-edit me-2"></i>Exam & Results</a>
+                                <a href="{% url 'exam:student-result' student.pk %}" class="nav-link"><i class="ti ti-bookmark-edit me-2"></i>Exam & Results</a>
                             </li>
                             <li>
-                                <a href="javascript:void(0);" class="nav-link"><i class="ti ti-books me-2"></i>Library</a>
+                                <a href="{% url 'management:library-issue-book' %}" class="nav-link"><i class="ti ti-books me-2"></i>Library</a>
                             </li>
                         </ul>
                         <!-- /Tabs -->

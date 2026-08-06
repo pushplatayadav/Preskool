@@ -1,0 +1,709 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content content-two">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Notice Board</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">Announcement</li>
+						<li class="breadcrumb-item active" aria-current="page">Notice Board</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'communication:notice-board' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print" onclick="printOrExportPDF();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);" class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center" data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="printOrExportPDF();"><i class="ti ti-file-type-pdf me-2"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportToExcel();"><i class="ti ti-file-type-xls me-2"></i>Export as Excel</a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2 ms-1">
+					<a href="javascript:void(0);" class="btn btn-danger d-none" id="bulk-delete-btn" onclick="openDeleteModal(null, '', true);"><i class="ti ti-trash me-2"></i>Delete Selected</a>
+				</div>
+				<div class="mb-2">
+					<a href="#" data-bs-toggle="modal" data-bs-target="#add_message" class="btn btn-primary d-flex align-items-center"><i class="ti ti-square-rounded-plus me-2"></i>Add Message</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="d-flex align-items-center justify-content-end flex-wrap mb-2">
+			<div class="form-check me-2 mb-3">
+				<input class="form-check-input" type="checkbox" id="mark-delete-all">
+				<span class="checkmarks">Mark & Delete All</span>
+			</div>
+			<div class="d-flex align-items-center flex-wrap">
+				<div class="input-icon-start mb-3 me-2 position-relative">
+					<span class="icon-addon">
+						<i class="ti ti-calendar"></i>
+					</span>
+					<input type="text" id="notice-daterange" class="form-control" placeholder="Select" autocomplete="off" value="{% if filter_dates %}{{ filter_dates }}{% endif %}">
+				</div>
+				<div class="dropdown mb-3">
+					<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="ti ti-filter me-2"></i>Filter</a>
+					<div class="dropdown-menu drop-width">
+						<form method="get" action="{% url 'communication:notice-board' %}">
+							<div class="d-flex align-items-center border-bottom p-3">
+								<h4>Filter</h4>
+							</div>
+							<div class="p-3 border-bottom pb-0">
+								<div class="row">
+									<div class="col-md-12">
+										<div class="mb-3">
+											<label class="form-label">Message to</label>
+											<select class="select" name="filter_message_to">
+												<option value="">Select</option>
+												{% for rname in role_options %}
+												<option value="{{ rname }}" {% if filter_message_to == rname %}selected{% endif %}>{{ rname }}</option>
+												{% endfor %}
+											</select>
+										</div>
+									</div>
+									<div class="col-md-12">
+										<div class="mb-3">
+											<label class="form-label">Added Date</label>
+											<select class="select" name="filter_added_date">
+												<option value="">Select</option>
+												{% for d in date_options %}
+												<option value="{{ d.value }}" {% if filter_added_date == d.value %}selected{% endif %}>{{ d.label }}</option>
+												{% endfor %}
+											</select>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="p-3 d-flex align-items-center justify-content-end">
+								<a href="{% url 'communication:notice-board' %}" class="btn btn-light me-3">Reset</a>
+								<button type="submit" class="btn btn-primary">Apply</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="notice-list">
+			{% for notice in notices %}
+			<!-- Notice Board List -->
+			<div class="card board-hover mb-3 notice-card{% if forloop.counter > 5 %} notice-extra{% endif %}">
+				<div class="card-body d-md-flex align-items-center justify-content-between pb-1">
+					<div class="d-flex align-items-center mb-3">
+						<div class="form-check form-check-md me-2">
+							<input class="form-check-input notice-check" type="checkbox" name="selected_items" value="{{ notice.pk }}">
+						</div>
+						<span class="bg-soft-primary text-primary avatar avatar-md me-2 br-5 flex-shrink-0">
+							<i class="ti ti-notification fs-16"></i>
+						</span>
+						<div>
+							<h6 class="mb-1 fw-semibold">
+								<a href="#" class="view-details-link" data-bs-toggle="modal" data-bs-target="#view_details"
+									data-title="{{ notice.title }}" data-message="{{ notice.message }}"
+									data-date="{{ notice.notice_date|date:'d M Y' }}"
+									data-publish="{% if notice.publish_on %}{{ notice.publish_on|date:'d M Y' }}{% endif %}"
+									data-to="{{ notice.message_to_names }}"
+									data-attachment="{{ notice.attachment_name }}"
+									data-attachment-url="{% if notice.attachment %}{{ notice.attachment.url }}{% endif %}"
+									data-by="{{ notice.added_by_name }}"
+									data-on="{{ notice.created_at|date:'d M Y' }}">{{ notice.title }}</a>
+							</h6>
+							<p><i class="ti ti-calendar me-1"></i>Added on : {{ notice.notice_date|date:'d M Y' }}</p>
+						</div>
+					</div>
+					<div class="d-flex align-items-center board-action mb-3">
+						<a href="javascript:void(0);" class="edit-btn text-primary border rounded p-1 badge me-1 primary-btn-hover"
+							data-bs-toggle="modal" data-bs-target="#edit_message"
+							data-pk="{{ notice.pk }}" data-title="{{ notice.title }}"
+							data-notice-date="{{ notice.notice_date|date:'d-m-Y' }}"
+							data-publish-on="{% if notice.publish_on %}{{ notice.publish_on|date:'d-m-Y' }}{% endif %}"
+							data-message="{{ notice.message }}"
+							data-attachment="{{ notice.attachment_name }}"
+							data-message-to="{% for r in notice.message_to.all %}{{ r.pk }}{% if not forloop.last %},{% endif %}{% endfor %}">
+							<i class="ti ti-edit-circle fs-16"></i>
+						</a>
+						<a href="javascript:void(0);" class="delete-btn text-danger border rounded p-1 badge danger-btn-hover"
+							data-bs-toggle="modal" data-bs-target="#delete-modal"
+							data-pk="{{ notice.pk }}" data-title="{{ notice.title }}">
+							<i class="ti ti-trash-x fs-16"></i>
+						</a>
+					</div>
+				</div>
+			</div>
+			<!-- Notice Board List -->
+			{% empty %}
+			<div class="card mb-3">
+				<div class="card-body text-center text-muted py-5">
+					<i class="ti ti-notification fs-30 mb-2 d-block"></i>
+					<p class="mb-0">No notices found.</p>
+				</div>
+			</div>
+			{% endfor %}
+		</div>
+
+		<div class="text-center" id="load-more-wrap" style="display: {% if notices|length > 5 %}block{% else %}none{% endif %};">
+			<a href="javascript:void(0);" class="btn btn-primary" id="load-more-btn"><i class="ti ti-loader-3 me-2"></i>Load More</a>
+		</div>
+
+		<form method="post" id="bulk-delete-form" action="{% url 'communication:notice-board' %}" style="display:none;">
+			{% csrf_token %}
+			<input type="hidden" name="bulk_delete" value="1">
+			<div id="bulk-delete-items"></div>
+		</form>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Message -->
+<div class="modal fade" id="add_message">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">New Message</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'communication:notice-board' %}" enctype="multipart/form-data">
+				{% csrf_token %}
+				<input type="hidden" name="add_message" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Title</label>
+								<input type="text" class="form-control" name="title" placeholder="Enter Title" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Notice Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="notice_date" autocomplete="off" required>
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Publish On</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="publish_on" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+							<div class="mb-3">
+								<div class="bg-light p-3 pb-2 rounded">
+									<div class="mb-3">
+										<label class="form-label">Attachment</label>
+										<p>Upload size of 4MB, Accepted Format PDF</p>
+									</div>
+									<div class="d-flex align-items-center flex-wrap">
+										<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+											<i class="ti ti-file-upload me-1"></i>Upload
+											<input type="file" class="form-control image_sign" name="attachment" accept=".pdf">
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Message</label>
+								<textarea class="form-control" name="message" rows="4"></textarea>
+							</div>
+							<div class="mb-0">
+								<label class="form-label">Message To</label>
+								<div class="row">
+									{% for role in roles %}
+									<div class="col-md-6">
+										<label class="checkboxs mb-1">
+											<input type="checkbox" name="message_to" value="{{ role.pk }}">
+											<span class="checkmarks"></span>
+											{{ role.get_name_display }}
+										</label>
+									</div>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add New Message</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Message -->
+
+<!-- Edit Message -->
+<div class="modal fade" id="edit_message">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Edit Message</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" id="edit-message-form" enctype="multipart/form-data">
+				{% csrf_token %}
+				<input type="hidden" name="notice_id" id="edit_notice_id">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Title</label>
+								<input type="text" class="form-control" name="title" id="edit_title" placeholder="Enter Title" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Notice Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="notice_date" id="edit_notice_date" autocomplete="off" required>
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Publish On</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="publish_on" id="edit_publish_on" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+							<div class="mb-3">
+								<div class="bg-light p-3 pb-2 rounded">
+									<div class="mb-3">
+										<label class="form-label">Attachment</label>
+										<p>Upload size of 4MB, Accepted Format PDF</p>
+									</div>
+									<div class="d-flex align-items-center flex-wrap">
+										<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+											<i class="ti ti-file-upload me-1"></i>Upload
+											<input type="file" class="form-control image_sign" name="attachment" accept=".pdf">
+										</div>
+										<p class="mb-2" id="edit_attachment_name"></p>
+									</div>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Message</label>
+								<textarea class="form-control" name="message" id="edit_message_text" rows="4"></textarea>
+							</div>
+							<div class="mb-0">
+								<label class="form-label">Message To</label>
+								<div class="row">
+									{% for role in roles %}
+									<div class="col-md-6">
+										<label class="checkboxs mb-1">
+											<input type="checkbox" name="message_to" value="{{ role.pk }}" class="edit-message-to">
+											<span class="checkmarks"></span>
+											{{ role.get_name_display }}
+										</label>
+									</div>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit Message -->
+
+<!-- View Details -->
+<div class="modal fade" id="view_details">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title" id="view_title">Notice Details</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<div class="modal-body pb-0">
+				<div class="mb-3">
+					<p class="mb-1" id="view_message"></p>
+				</div>
+				<div class="row">
+					<div class="col-md-6">
+						<div class="mb-3">
+							<label class="form-label">Notice Date</label>
+							<p class="d-flex align-items-center"><i class="ti ti-calendar me-1"></i><span id="view_notice_date"></span></p>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="mb-3">
+							<label class="form-label">Publish On</label>
+							<p class="d-flex align-items-center"><i class="ti ti-calendar me-1"></i><span id="view_publish_on"></span></p>
+						</div>
+					</div>
+				</div>
+				<div class="mb-3" id="view_attachment_wrap" style="display: none;">
+					<div class="bg-light p-3 pb-2 rounded">
+						<div class="mb-0">
+							<label class="form-label">Attachment</label>
+							<p class="text-primary" id="view_attachment"></p>
+						</div>
+					</div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label d-block">Message To</label>
+					<div id="view_message_to"></div>
+				</div>
+				<div class="border-top pt-3">
+					<div class="d-flex align-items-center flex-wrap">
+						<div class="d-flex align-items-center me-4 mb-3">
+							<span class="avatar avatar-sm bg-light me-1"><i class="ti ti-calendar text-default fs-14"></i></span>Added on: <span id="view_added_on" class="ms-1"></span>
+						</div>
+						<div class="d-flex align-items-center mb-3">
+							<span class="avatar avatar-sm bg-light me-1"><i class="ti ti-user-edit text-default fs-14"></i></span>Added By: <span id="view_added_by" class="ms-1"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /View Details -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" id="delete-form">
+				{% csrf_token %}
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p id="delete-message">You want to delete all the marked items, this can't be undone once you delete.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="button" class="btn btn-danger" onclick="confirmDelete();">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script>
+function getNoticeData() {
+	var headers = ["Title", "Notice Date", "Publish On", "Message To", "Attachment", "Message", "Added By"];
+	var rows = [];
+	document.querySelectorAll('#notice-list .notice-card').forEach(function(card) {
+		var titleEl = card.querySelector('.view-details-link');
+		if (!titleEl) return;
+		var row = [
+			titleEl.getAttribute('data-title') || '',
+			titleEl.getAttribute('data-date') || '',
+			titleEl.getAttribute('data-publish') || '-',
+			titleEl.getAttribute('data-to') || '-',
+			titleEl.getAttribute('data-attachment') || '-',
+			titleEl.getAttribute('data-message') || '',
+			titleEl.getAttribute('data-by') || '-'
+		];
+		rows.push(row);
+	});
+	return {
+		headers: headers,
+		rows: rows,
+		reportTitle: "Notice Board Report",
+		schoolName: "{{ school_name|default:'Global International'|escapejs }}"
+	};
+}
+function csvSafe(value) {
+	return '"' + String(value == null ? "" : value).replace(/"/g, '""') + '"';
+}
+function exportToExcel() {
+	var data = getNoticeData();
+	if (data.rows.length === 0) { alert("No data available to export."); return; }
+	try {
+		var csvContent = [];
+		csvContent.push(data.headers.map(csvSafe).join(","));
+		data.rows.forEach(function(row) { csvContent.push(row.map(csvSafe).join(",")); });
+		var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+		var downloadLink = document.createElement("a");
+		downloadLink.download = "notice_board_" + new Date().toISOString().slice(0, 10) + ".csv";
+		downloadLink.href = window.URL.createObjectURL(csvBlob);
+		downloadLink.style.display = "none";
+		document.body.appendChild(downloadLink);
+		downloadLink.click();
+		document.body.removeChild(downloadLink);
+	} catch (e) {
+		var exportUrl = "{% url 'communication:notice-board-export-excel' %}";
+		if (window.location.search) exportUrl += window.location.search;
+		window.location.href = exportUrl;
+	}
+}
+function escapeHtml(value) {
+	return String(value == null ? "" : value)
+		.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function printOrExportPDF() {
+	var data = getNoticeData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = window.open("", "_blank");
+	if (!printWindow) {
+		var printUrl = "{% url 'communication:notice-board-export-pdf' %}";
+		if (window.location.search) printUrl += window.location.search;
+		if (confirm("Pop-ups are blocked. Open the printable report in a new tab instead?")) {
+			window.open(printUrl, "_blank");
+			return;
+		}
+		alert("Pop-ups are blocked. Please allow pop-ups for this site and try printing again.");
+		return;
+	}
+
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+	var html = '<html><head><title>' + escapeHtml(data.reportTitle) + '</title>' +
+	'<style>' +
+	'@page{size:A4 portrait;margin:20mm;}' +
+	'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+	'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+	'.header-container{text-align:center;margin-bottom:40px;}' +
+	'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+	'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+	'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+	'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+	'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+	'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;vertical-align:top;}' +
+	'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+	'tr:nth-child(even){background-color:#f8fafc;}' +
+	'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+	'@media print{@page{size:A4 portrait;margin:20mm;}body{padding:0;margin:0;width:210mm;}}' +
+	'</style></head><body>' +
+	'<div class="header-container">' +
+	'<div class="logo-section">' +
+	'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+	'<span class="logo-text">PreSkool</span>' +
+	'</div>' +
+	'<div class="report-title">' + escapeHtml(data.reportTitle) + '</div>' +
+	'<div class="report-meta">' + escapeHtml(data.schoolName) + ' | Total Records: ' + data.rows.length + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+	'</div>' +
+	'<table><thead><tr>';
+
+	data.headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+	html += '</tr></thead><tbody>';
+	data.rows.forEach(function(row) {
+		html += '<tr>';
+		row.forEach(function(val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+		html += '</tr>';
+	});
+	html += '</tbody></table>' +
+	'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+	'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+	'</body></html>';
+
+	printWindow.document.write(html);
+	printWindow.document.close();
+	printWindow.focus();
+}
+
+var bulkDeleteActive = false;
+function openDeleteModal(pk, title, isBulk) {
+	bulkDeleteActive = isBulk;
+	if (isBulk) {
+		document.getElementById('delete-message').textContent = 'You want to delete all the marked items, this can\'t be undone once you delete.';
+	} else {
+		document.getElementById('delete-message').textContent = 'You want to delete "' + (title || '') + '", this can\'t be undone once you delete.';
+		document.getElementById('delete-form').action = '{% url "communication:notice-board-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+	}
+}
+function confirmDelete() {
+	if (bulkDeleteActive) {
+		var checked = document.querySelectorAll('#notice-list .notice-check:checked');
+		var container = document.getElementById('bulk-delete-items');
+		container.innerHTML = '';
+		checked.forEach(function(cb) {
+			var input = document.createElement('input');
+			input.type = 'hidden';
+			input.name = 'selected_items';
+			input.value = cb.value;
+			container.appendChild(input);
+		});
+		if (checked.length === 0) {
+			alert("Please select at least one item to delete.");
+			return;
+		}
+		document.getElementById('bulk-delete-form').submit();
+	} else {
+		document.getElementById('delete-form').submit();
+	}
+}
+function toggleBulkDeleteBtn() {
+	var checked = document.querySelectorAll('#notice-list .notice-check:checked');
+	var btn = document.getElementById('bulk-delete-btn');
+	if (checked.length > 0) btn.classList.remove('d-none');
+	else btn.classList.add('d-none');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	// Select / Deselect all
+	var markAll = document.getElementById('mark-delete-all');
+	if (markAll) {
+		markAll.addEventListener('change', function() {
+			document.querySelectorAll('#notice-list .notice-check').forEach(function(cb) { cb.checked = markAll.checked; });
+			toggleBulkDeleteBtn();
+		});
+	}
+	document.querySelectorAll('#notice-list .notice-check').forEach(function(cb) {
+		cb.addEventListener('change', toggleBulkDeleteBtn);
+	});
+
+	// Load More
+	var loadMoreBtn = document.getElementById('load-more-btn');
+	if (loadMoreBtn) {
+		loadMoreBtn.addEventListener('click', function() {
+			document.querySelectorAll('#notice-list .notice-extra').forEach(function(el) { el.classList.remove('d-none'); });
+			document.getElementById('load-more-wrap').style.display = 'none';
+		});
+	}
+
+	// View details
+	document.querySelectorAll('.view-details-link').forEach(function(link) {
+		link.addEventListener('click', function() {
+			document.getElementById('view_title').textContent = this.getAttribute('data-title') || 'Notice Details';
+			document.getElementById('view_message').textContent = this.getAttribute('data-message') || '';
+			document.getElementById('view_notice_date').textContent = this.getAttribute('data-date') || '-';
+			document.getElementById('view_publish_on').textContent = this.getAttribute('data-publish') || '-';
+			var attWrap = document.getElementById('view_attachment_wrap');
+			var attName = this.getAttribute('data-attachment') || '';
+			var attUrl = this.getAttribute('data-attachment-url') || '';
+			if (attName) {
+				attWrap.style.display = '';
+				document.getElementById('view_attachment').innerHTML = '<a href="' + attUrl + '" target="_blank">' + escapeHtml(attName) + '</a>';
+			} else {
+				attWrap.style.display = 'none';
+			}
+			var msgTo = this.getAttribute('data-to') || '';
+			var toWrap = document.getElementById('view_message_to');
+			toWrap.innerHTML = '';
+			if (msgTo) {
+				msgTo.split(',').forEach(function(item) {
+					var span = document.createElement('span');
+					span.className = 'badge badge-soft-primary me-2';
+					span.textContent = item.trim();
+					toWrap.appendChild(span);
+				});
+			} else {
+				toWrap.innerHTML = '<span class="text-muted">-</span>';
+			}
+			document.getElementById('view_added_on').textContent = this.getAttribute('data-on') || '-';
+			document.getElementById('view_added_by').textContent = this.getAttribute('data-by') || '-';
+		});
+	});
+
+	// Edit modal
+	document.querySelectorAll('.edit-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var pk = this.getAttribute('data-pk');
+			document.getElementById('edit-message-form').action = '{% url "communication:notice-board-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+			document.getElementById('edit_notice_id').value = pk;
+			document.getElementById('edit_title').value = this.getAttribute('data-title') || '';
+			document.getElementById('edit_notice_date').value = this.getAttribute('data-notice-date') || '';
+			document.getElementById('edit_publish_on').value = this.getAttribute('data-publish-on') || '';
+			document.getElementById('edit_message_text').value = this.getAttribute('data-message') || '';
+			document.getElementById('edit_attachment_name').textContent = this.getAttribute('data-attachment') || '';
+			var selected = (this.getAttribute('data-message-to') || '').split(',');
+			document.querySelectorAll('#edit_message .edit-message-to').forEach(function(cb) {
+				cb.checked = selected.indexOf(cb.value) !== -1;
+			});
+		});
+	});
+
+	// Delete modal (single)
+	document.querySelectorAll('.delete-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			openDeleteModal(this.getAttribute('data-pk'), this.getAttribute('data-title'), false);
+		});
+	});
+
+	// Date range filter
+	var dateRangeEl = document.getElementById('notice-daterange');
+	if (dateRangeEl && window.moment && $.fn.daterangepicker) {
+		var start = moment().subtract(6, 'days');
+		var end = moment();
+		dateRangeEl.daterangepicker({
+			startDate: start,
+			endDate: end,
+			ranges: {
+				'Today': [moment(), moment()],
+				'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+				'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+				'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+				'This Year': [moment().startOf('year'), moment().endOf('year')],
+				'Next Year': [moment().add(1, 'year').startOf('year'), moment().add(1, 'year').endOf('year')]
+			}
+		});
+		$(dateRangeEl).on('apply.daterangepicker', function(ev, picker) {
+			var params = new URLSearchParams(window.location.search);
+			params.set('filter_dates', picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+			window.location.search = params.toString();
+		});
+	}
+
+	// Init select2 inside modals when shown
+	document.querySelectorAll('.modal').forEach(function(modal) {
+		modal.addEventListener('shown.bs.modal', function() {
+			$(this).find('.select').each(function() {
+				if (!$(this).data('select2')) {
+					$(this).select2({ dropdownParent: $(this).closest('.modal'), width: '100%' });
+				}
+			});
+		});
+	});
+});
+</script>
+{% endblock extra_js %}

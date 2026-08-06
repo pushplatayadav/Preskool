@@ -151,3 +151,87 @@ class LeaveRequest(models.Model):
                     continue
             self.code = f"LR{max_suffix + 1}"
         super().save(*args, **kwargs)
+
+
+class Payroll(models.Model):
+    PAYROLL_STATUS_CHOICES = [
+        ("generated", "Generated"),
+        ("paid", "Paid"),
+        ("pending", "Pending"),
+    ]
+
+    code = models.CharField(max_length=20, unique=True, blank=True)
+    teacher = models.ForeignKey(
+        "people.Teacher", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="payrolls"
+    )
+    staff = models.ForeignKey(
+        "people.Staff", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="payrolls"
+    )
+    name = models.CharField(max_length=100)
+    department = models.CharField(max_length=100, blank=True)
+    designation = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    month = models.CharField(max_length=20, blank=True)
+    year = models.CharField(max_length=10, blank=True)
+
+    # Earnings
+    basic_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    house_rent_allowance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    dearness_allowance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    medical_allowance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    other_allowance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    bonus = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # Deductions
+    tax_deduction = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    provident_fund = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    insurance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    other_deduction = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    net_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(
+        max_length=20, choices=PAYROLL_STATUS_CHOICES, default="generated"
+    )
+    pay_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} - {self.code}"
+
+    @property
+    def total_earnings(self):
+        return (
+            self.basic_salary
+            + self.house_rent_allowance
+            + self.dearness_allowance
+            + self.medical_allowance
+            + self.other_allowance
+            + self.bonus
+        )
+
+    @property
+    def total_deductions(self):
+        return (
+            self.tax_deduction
+            + self.provident_fund
+            + self.insurance
+            + self.other_deduction
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            max_suffix = 738197
+            for pay in Payroll.objects.exclude(code="").exclude(pk=self.pk):
+                try:
+                    num = int(pay.code.replace("P", ""))
+                    max_suffix = max(max_suffix, num)
+                except (ValueError, AttributeError):
+                    continue
+            self.code = f"P{max_suffix + 1}"
+        super().save(*args, **kwargs)

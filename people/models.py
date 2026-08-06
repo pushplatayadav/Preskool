@@ -304,10 +304,14 @@ class Staff(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.staff_id:
-            prefix = "S"
-            last = Staff.objects.order_by("-pk").first()
-            next_num = (last.pk + 1) if last else 1
-            self.staff_id = f"{prefix}{849127 - next_num + 1}"
+            numbers = []
+            for sid in Staff.objects.values_list("staff_id", flat=True):
+                if sid and sid.startswith("S") and sid[1:].isdigit():
+                    numbers.append(int(sid[1:]))
+            candidate = max(numbers) + 1 if numbers else 849128
+            while Staff.objects.filter(staff_id=f"S{candidate}").exists():
+                candidate += 1
+            self.staff_id = f"S{candidate}"
         super().save(*args, **kwargs)
 
 

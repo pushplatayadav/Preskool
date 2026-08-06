@@ -223,17 +223,13 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                {% for col in total_cols_list %}
-                                <td class="text-center text-muted py-4">
-                                    {% if forloop.first %}
+                                <td colspan="{{ total_cols }}" class="text-center text-muted py-4">
                                     {% if filter_class and filter_section %}
                                     No students or exams found for the selected filters.
                                     {% else %}
                                     Please select a Class, Section and Exam Type from the filter to view exam attendance.
                                     {% endif %}
-                                    {% endif %}
                                 </td>
-                                {% endfor %}
                             </tr>
                             {% endfor %}
                         </tbody>

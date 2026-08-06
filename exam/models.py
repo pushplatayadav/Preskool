@@ -35,7 +35,14 @@ class Exam(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.exam_id:
-            self.exam_id = f"EXM{uuid.uuid4().int % 10000000:07d}"
+            numbers = []
+            for eid in Exam.objects.values_list("exam_id", flat=True):
+                if eid and eid.startswith("EXM") and eid[3:].isdigit():
+                    numbers.append(int(eid[3:]))
+            candidate = max(numbers) + 1 if numbers else 1000001
+            while Exam.objects.filter(exam_id=f"EXM{candidate}").exists():
+                candidate += 1
+            self.exam_id = f"EXM{candidate}"
         super().save(*args, **kwargs)
 
     @property
@@ -64,7 +71,14 @@ class Grade(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.grade_id:
-            self.grade_id = f"GR{uuid.uuid4().int % 1000000:07d}"
+            numbers = []
+            for gid in Grade.objects.values_list("grade_id", flat=True):
+                if gid and gid.startswith("GR") and gid[2:].isdigit():
+                    numbers.append(int(gid[2:]))
+            candidate = max(numbers) + 1 if numbers else 1000001
+            while Grade.objects.filter(grade_id=f"GR{candidate}").exists():
+                candidate += 1
+            self.grade_id = f"GR{candidate}"
         super().save(*args, **kwargs)
 
     @property
@@ -97,7 +111,14 @@ class ExamSchedule(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.schedule_id:
-            self.schedule_id = f"ES{uuid.uuid4().int % 10000000:07d}"
+            numbers = []
+            for esid in ExamSchedule.objects.values_list("schedule_id", flat=True):
+                if esid and esid.startswith("ES") and esid[2:].isdigit():
+                    numbers.append(int(esid[2:]))
+            candidate = max(numbers) + 1 if numbers else 1000001
+            while ExamSchedule.objects.filter(schedule_id=f"ES{candidate}").exists():
+                candidate += 1
+            self.schedule_id = f"ES{candidate}"
         super().save(*args, **kwargs)
 
     @property

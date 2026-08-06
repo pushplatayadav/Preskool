@@ -186,7 +186,7 @@
                                             <ul class="dropdown-menu dropdown-menu-right p-3">
                                                 <li>
                                                     <a class="dropdown-item rounded-1 edit-btn" href="#" data-bs-toggle="modal" data-bs-target="#edit_exam"
-                                                        data-pk="{{ exam.pk }}" data-name="{{ exam.name }}"
+                                                        data-pk="{{ exam.pk }}" data-exam-id="{{ exam.exam_id }}" data-name="{{ exam.name }}"
                                                         data-class="{{ exam.school_class.pk }}" data-section="{{ exam.section.pk }}"
                                                         data-subject="{{ exam.subject.pk }}" data-date="{{ exam.exam_date|date:'Y-m-d' }}"
                                                         data-start="{{ exam.start_time|time:'H:i' }}" data-end="{{ exam.end_time|time:'H:i' }}"
@@ -246,6 +246,12 @@
                 <input type="hidden" name="add_exam" value="1">
                 <div class="modal-body">
                     <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Exam ID</label>
+                                <input type="text" class="form-control" name="exam_id" value="{{ next_exam_id }}">
+                            </div>
+                        </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Exam Name</label>
@@ -359,6 +365,12 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Exam ID</label>
+                                <input type="text" class="form-control" name="exam_id" id="edit_exam_id" value="">
+                            </div>
+                        </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Exam Name</label>
@@ -718,6 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             var pk = this.dataset.pk;
             document.getElementById('edit-exam-form').action = '{% url "exam:exam-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_exam_id').value = this.dataset.examId || '';
             document.getElementById('edit_name').value = this.dataset.name;
             document.getElementById('edit_school_class').value = this.dataset.class;
             document.getElementById('edit_section').value = this.dataset.section;

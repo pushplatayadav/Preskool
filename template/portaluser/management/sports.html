@@ -1,0 +1,584 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Sports</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Management</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Sports</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'management:sports' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printOrExportPDF()"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" onclick="printOrExportPDF()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" onclick="exportToExcel()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+						data-bs-target="#add_sports"><i class="ti ti-square-rounded-plus me-2"></i>Add Sport</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Sports List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width p-0">
+							<form method="get" action="{% url 'management:sports' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4 class="mb-0">Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Sport Name</label>
+												<input type="text" class="form-control" name="filter_name" value="{{ filter_name }}" placeholder="Search by name">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Coach</label>
+												<input type="text" class="form-control" name="filter_coach" value="{{ filter_coach }}" placeholder="Search by coach">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'management:sports' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>
+							{% if sort_by == 'name_desc' %}Sort by Z-A{% elif sort_by == 'year_asc' %}Sort by Year (Ascending){% elif sort_by == 'year_desc' %}Sort by Year (Descending){% else %}Sort by A-Z{% endif %}
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="?sort_by=name_asc" class="dropdown-item rounded-1 {% if not sort_by or sort_by == 'name_asc' %}active{% endif %}">
+									Ascending (A-Z)
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=name_desc" class="dropdown-item rounded-1 {% if sort_by == 'name_desc' %}active{% endif %}">
+									Descending (Z-A)
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=year_asc" class="dropdown-item rounded-1 {% if sort_by == 'year_asc' %}active{% endif %}">
+									Started Year (Oldest)
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=year_desc" class="dropdown-item rounded-1 {% if sort_by == 'year_desc' %}active{% endif %}">
+									Started Year (Newest)
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-0">
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>ID</th>
+								<th>Name</th>
+								<th>Coach</th>
+								<th>Started Year</th>
+								<th class="no-sort text-center">Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for s in sports %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox">
+									</div>
+								</td>
+								<td><a href="javascript:void(0);" class="link-primary fw-medium">{{ s.sport_id }}</a></td>
+								<td><strong>{{ s.name }}</strong></td>
+								<td>
+									<div class="d-flex align-items-center">
+										<a href="javascript:void(0);" class="avatar avatar-md me-2">
+											{% if s.coach_avatar %}
+											<img src="{{ s.coach_avatar.url }}" class="rounded-circle" alt="{{ s.coach }}">
+											{% else %}
+											<span class="avatar-title rounded-circle bg-primary-transparent text-primary fw-semibold">{{ s.coach|slice:":1"|upper|default:"C" }}</span>
+											{% endif %}
+										</a>
+										<div class="name font-w500">
+											<h6 class="mb-0"><a href="javascript:void(0);" class="text-dark">{{ s.coach|default:"-" }}</a></h6>
+										</div>
+									</div>
+								</td>
+								<td>{{ s.started_year }}</td>
+								<td class="action-table-data text-center">
+									<div class="dropdown">
+										<a href="javascript:void(0);" class="btn btn-icon btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false">
+											<i class="ti ti-dots-vertical"></i>
+										</a>
+										<div class="dropdown-menu dropdown-menu-end">
+											<a class="dropdown-item edit-sport-btn" href="javascript:void(0);"
+												data-pk="{{ s.pk }}"
+												data-id="{{ s.sport_id }}"
+												data-name="{{ s.name }}"
+												data-coach="{{ s.coach }}"
+												data-year="{{ s.started_year }}">
+												<i class="ti ti-edit-circle me-2"></i>Edit
+											</a>
+											<a class="dropdown-item delete-sport-btn" href="javascript:void(0);"
+												data-pk="{{ s.pk }}" data-name="{{ s.name }}">
+												<i class="ti ti-trash-x me-2"></i>Delete
+											</a>
+										</div>
+									</div>
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td colspan="6" class="text-center py-5 text-muted">
+									<i class="ti ti-run-off fs-30 mb-2 d-block"></i>
+									No sports records found.
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Sport Modal -->
+<div class="modal fade" id="add_sports">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add Sport</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:sports' %}" enctype="multipart/form-data" id="add_sport_form">
+				{% csrf_token %}
+				<input type="hidden" name="add_sport" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Sport ID</label>
+								<input type="text" class="form-control" name="sport_id" value="{{ next_sport_id }}" placeholder="Enter Sport ID" required>
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Sport Name</label>
+								<input type="text" class="form-control" name="name" placeholder="Enter Sport Name" required>
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Coach Name</label>
+								<input type="text" class="form-control" name="coach" placeholder="Enter Coach Name">
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Coach Photo (Optional)</label>
+								<input type="file" class="form-control" name="coach_avatar" accept="image/*">
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Started Year</label>
+								<input type="text" class="form-control" name="started_year" placeholder="e.g. 2004" required>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add Sport</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Sport Modal -->
+
+<!-- Edit Sport Modal -->
+<div class="modal fade" id="edit_sports">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Edit Sport</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:sports' %}" enctype="multipart/form-data">
+				{% csrf_token %}
+				<input type="hidden" name="edit_sport" value="1">
+				<input type="hidden" name="sport_db_id" id="edit_sport_db_id">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Sport ID</label>
+								<input type="text" class="form-control" id="edit_sport_id" readonly>
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Sport Name</label>
+								<input type="text" class="form-control" name="name" id="edit_sport_name" required>
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Coach Name</label>
+								<input type="text" class="form-control" name="coach" id="edit_sport_coach">
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Coach Photo (Optional)</label>
+								<input type="file" class="form-control" name="coach_avatar" accept="image/*">
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<label class="form-label">Started Year</label>
+								<input type="text" class="form-control" name="started_year" id="edit_started_year" required>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit Sport Modal -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete_sport_modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" action="{% url 'management:sports' %}">
+				{% csrf_token %}
+				<input type="hidden" name="delete_sport" value="1">
+				<input type="hidden" name="sport_db_id" id="delete_sport_db_id">
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete sport "<span id="delete_sport_name"></span>", this action cannot be undone.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script>
+function getSportsData() {
+    var headers = ["ID", "Name", "Coach", "Started Year"];
+    var data = [];
+    var rows = document.querySelectorAll("table.datatable tbody tr");
+    rows.forEach(function(tr) {
+        var cols = tr.querySelectorAll("td");
+        if (cols.length > 1) {
+            var sportId = cols[1].innerText.trim();
+            var name = cols[2].innerText.trim();
+            var coach = cols[3].innerText.trim();
+            var year = cols[4].innerText.trim();
+            if (sportId && name) {
+                data.push([sportId, name, coach, year]);
+            }
+        }
+    });
+    return {
+        headers: headers,
+        rows: data,
+        reportTitle: "Sports Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportToExcel() {
+    var data = getSportsData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "sports_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+    var data = getSportsData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    
+    var html = `
+    <html>
+    <head>
+        <title>` + data.reportTitle + `</title>
+        <style>
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 12px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 10px 12px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 210mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">` + data.reportTitle + `</div>
+            <div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    ` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+                </tr>
+            </thead>
+            <tbody>
+                ` + data.rows.map(function(row) {
+                    return '<tr>' + row.map(function(val) { return '<td>' + val + '</td>'; }).join("") + '</tr>';
+                }).join("") + `
+            </tbody>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <` + `/script>
+    </body>
+    </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	document.querySelectorAll('.edit-sport-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			document.getElementById('edit_sport_db_id').value = this.getAttribute('data-pk');
+			document.getElementById('edit_sport_id').value = this.getAttribute('data-id');
+			document.getElementById('edit_sport_name').value = this.getAttribute('data-name');
+			document.getElementById('edit_sport_coach').value = this.getAttribute('data-coach');
+			document.getElementById('edit_started_year').value = this.getAttribute('data-year');
+
+			var modal = new bootstrap.Modal(document.getElementById('edit_sports'));
+			modal.show();
+		});
+	});
+
+	document.querySelectorAll('.delete-sport-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			document.getElementById('delete_sport_db_id').value = this.getAttribute('data-pk');
+			document.getElementById('delete_sport_name').textContent = this.getAttribute('data-name');
+			var modal = new bootstrap.Modal(document.getElementById('delete_sport_modal'));
+			modal.show();
+		});
+	});
+});
+</script>
+{% endblock extra_js %}

@@ -4,11 +4,13 @@ from datetime import datetime, date, timedelta
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, Http404
 from django.views.decorators.http import require_POST
 from .models import Student, StudentLeave, StudentAttendance, Teacher, Staff, TeacherAttendance, StaffAttendance
-from academics.models import SchoolClass, Section, Subject
+from academics.models import SchoolClass, Section, Subject, TimeTableEntry
 from core.models import AcademicYear, School
+from accounts.models import User
 
 
 def student_grid(request):
@@ -836,6 +838,7 @@ def teacher_grid(request):
         teachers = teachers.order_by("name")
 
     class_names = SchoolClass.objects.values_list("name", flat=True).distinct().order_by("name")
+    teacher_names = Teacher.objects.values_list("name", flat=True).distinct().order_by("name")
     current_academic_year = AcademicYear.objects.filter(is_current=True).first()
     academic_years = AcademicYear.objects.all().order_by("-start_date")
     school = School.objects.filter(is_active=True).first()
@@ -856,6 +859,7 @@ def teacher_grid(request):
     return render(request, "portaluser/people/teacher-grid.html", {
         "teachers": teachers,
         "class_names": class_names,
+        "teacher_names": teacher_names,
         "current_academic_year": current_academic_year,
         "academic_years": academic_years,
         "school_name": school.name if school else "Global International",
@@ -874,6 +878,13 @@ def teacher_details_redirect(request):
     return redirect("people:teacher-list")
 
 
+def teacher_routine_redirect(request):
+    teacher = Teacher.objects.first()
+    if teacher:
+        return redirect("people:teacher-routine", pk=teacher.pk)
+    return redirect("people:teacher-list")
+
+
 def teacher_details(request, pk):
     teacher = get_object_or_404(
         Teacher.objects.select_related("school_class", "subject"),
@@ -888,6 +899,79 @@ def teacher_details(request, pk):
     return render(request, "portaluser/people/teacher-details.html", {
         "teacher": teacher,
         "languages": languages,
+        "current_academic_year": current_academic_year,
+        "academic_years": academic_years,
+        "school_name": school.name if school else "Global International",
+    })
+
+
+def _teacher_user_ids(teacher):
+    """Collect the auth-user accounts linked to a teacher profile.
+
+    TimeTableEntry stores the teacher as an auth User, so we resolve the
+    people.Teacher to matching user accounts through the explicit FK first,
+    then fall back to id / name / email matches.
+    """
+    user_ids = set()
+    if teacher.user_id:
+        user_ids.add(teacher.user_id)
+
+    match = User.objects.filter(is_staff=True)
+    if teacher.teacher_id:
+        user_ids.update(match.filter(username__iexact=teacher.teacher_id).values_list("pk", flat=True))
+    if teacher.email:
+        user_ids.update(match.filter(email__iexact=teacher.email).values_list("pk", flat=True))
+    if teacher.name:
+        name = teacher.name.strip()
+        user_ids.update(
+            match.filter(
+                Q(first_name__icontains=name)
+                | Q(last_name__icontains=name)
+                | Q(username__icontains=name)
+            ).values_list("pk", flat=True)
+        )
+    return user_ids
+
+
+def teacher_routine(request, pk):
+    teacher = get_object_or_404(
+        Teacher.objects.select_related("school_class", "subject"),
+        pk=pk,
+    )
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    academic_years = AcademicYear.objects.all().order_by("-start_date")
+    school = School.objects.filter(is_active=True).first()
+
+    user_ids = _teacher_user_ids(teacher)
+
+    entries = TimeTableEntry.objects.select_related(
+        "school_class", "section", "subject", "teacher", "room"
+    ).filter(teacher_id__in=user_ids).order_by("day", "start_time")
+
+    timetable = {}
+    for entry in entries:
+        timetable.setdefault(entry.day, []).append(entry)
+
+    DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat"]
+    DAY_NAMES = {
+        "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday",
+        "thu": "Thursday", "fri": "Friday", "sat": "Saturday",
+    }
+
+    timetable_grid = [
+        {"code": day_code, "name": DAY_NAMES[day_code], "entries": timetable.get(day_code, [])}
+        for day_code in DAY_ORDER
+    ]
+
+    languages = [lang.strip() for lang in teacher.languages_known.split(",") if lang.strip()]
+
+    return render(request, "portaluser/people/teacher-routine.html", {
+        "teacher": teacher,
+        "languages": languages,
+        "timetable_grid": timetable_grid,
+        "day_names": DAY_NAMES,
+        "day_order": DAY_ORDER,
+        "total_periods": entries.count(),
         "current_academic_year": current_academic_year,
         "academic_years": academic_years,
         "school_name": school.name if school else "Global International",
@@ -1322,10 +1406,14 @@ def staff_details(request, pk):
 
 
 def _generate_staff_id():
-    prefix = "S"
-    last = Staff.objects.order_by("-pk").first()
-    next_num = (last.pk + 1) if last else 1
-    return f"{prefix}{849127 - next_num + 1}"
+    numbers = []
+    for sid in Staff.objects.values_list("staff_id", flat=True):
+        if sid and sid.startswith("S") and sid[1:].isdigit():
+            numbers.append(int(sid[1:]))
+    candidate = max(numbers) + 1 if numbers else 849128
+    while Staff.objects.filter(staff_id=f"S{candidate}").exists():
+        candidate += 1
+    return f"S{candidate}"
 
 
 def add_staff(request):
@@ -1353,7 +1441,11 @@ def add_staff(request):
             languages = request.POST.getlist("languages_known")
             languages_known = ", ".join(languages) if languages else request.POST.get("languages_known", "")
 
+            posted_staff_id = request.POST.get("staff_id", "").strip()
+            staff_id_to_use = posted_staff_id or next_staff_id
+
             staff_member = Staff(
+                staff_id=staff_id_to_use,
                 name=name,
                 role=request.POST.get("role", ""),
                 department=request.POST.get("department", ""),
@@ -1459,8 +1551,9 @@ def edit_staff(request, pk):
                     "languages": languages,
                 })
 
-            languages = request.POST.getlist("languages_known")
-            languages_known = ", ".join(languages) if languages else request.POST.get("languages_known", "")
+            posted_staff_id = request.POST.get("staff_id", "").strip()
+            if posted_staff_id:
+                staff_member.staff_id = posted_staff_id
 
             staff_member.name = name
             staff_member.role = request.POST.get("role", "")
@@ -2196,19 +2289,20 @@ def teacher_attendance_export_excel(request):
     return response
 
 
-def parent_list(request):
-    students = Student.objects.select_related("school_class", "section", "academic_year").all()
+def _build_parent_list_data(students, filter_parent="", filter_child="", filter_class="", sort="asc"):
+    """Shared logic to build the parent grid/list data from a student queryset.
 
-    filter_parent = request.GET.get("filter_parent", "").strip()
-    filter_child = request.GET.get("filter_child", "").strip()
-    filter_class = request.GET.get("filter_class", "").strip()
-    filter_status = request.GET.get("filter_status", "").strip()
-    sort = request.GET.get("sort", "asc")
-
+    Returns (parent_list_data, filtered_students) where parent_list_data is a
+    list of dicts (parent_id, parent_name, parent_email, parent_phone,
+    parent_image, children, first_child) and filtered_students is the queryset
+    after applying the class/child filters.
+    """
     if filter_class:
         students = students.filter(school_class__name=filter_class)
     if filter_child:
         students = students.filter(name__icontains=filter_child)
+
+    filtered_students = students
 
     parents_data = []
     for student in students:
@@ -2252,7 +2346,6 @@ def parent_list(request):
             parent_groups[key]["parent_image"] = entry["parent_image"]
 
     parent_list_data = []
-    seen_parent_names = set()
     for key, group in parent_groups.items():
         group["children"] = list(set(group["children"]))
         group["children"].sort(key=lambda s: s.name)
@@ -2267,82 +2360,16 @@ def parent_list(request):
             "children": group["children"],
             "first_child": group["children"][0] if group["children"] else None,
         })
-        seen_parent_names.add(group["parent_name"].strip().lower())
 
     if sort == "desc":
         parent_list_data.sort(key=lambda p: p["parent_name"].lower(), reverse=True)
     else:
         parent_list_data.sort(key=lambda p: p["parent_name"].lower())
 
-    class_names = SchoolClass.objects.values_list("name", flat=True).distinct().order_by("name")
-    child_names = Student.objects.values_list("name", flat=True).distinct().order_by("name")
-    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
-    academic_years = AcademicYear.objects.all().order_by("-start_date")
-    school = School.objects.filter(is_active=True).first()
+    return parent_list_data, filtered_students
 
-    if request.method == "POST":
-        if "delete_parent" in request.POST:
-            parent_name = request.POST.get("parent_name", "").strip()
-            if parent_name:
-                updated = Student.objects.filter(father_name=parent_name).update(father_name="", father_email="", father_phone="")
-                updated += Student.objects.filter(mother_name=parent_name).update(mother_name="", mother_email="", mother_phone="")
-                if updated:
-                    messages.success(request, f"Parent '{parent_name}' deleted successfully.")
-                else:
-                    messages.error(request, "Parent not found.")
-            return redirect("people:parent-list")
 
-        if "add_parent" in request.POST:
-            name = request.POST.get("parent_name", "").strip()
-            phone = request.POST.get("parent_phone", "").strip()
-            email = request.POST.get("parent_email", "").strip()
-            child_ids = request.POST.getlist("child_ids")
-            if name and child_ids:
-                updated = 0
-                for cid in child_ids:
-                    try:
-                        student = Student.objects.get(pk=cid)
-                        if student.father_name and student.mother_name:
-                            if not student.father_email and email:
-                                student.father_email = email
-                            if not student.father_phone and phone:
-                                student.father_phone = phone
-                        elif not student.father_name:
-                            student.father_name = name
-                            student.father_email = email
-                            student.father_phone = phone
-                        else:
-                            student.mother_name = name
-                            student.mother_email = email
-                            student.mother_phone = phone
-                        student.save()
-                        updated += 1
-                    except Student.DoesNotExist:
-                        pass
-                if updated:
-                    messages.success(request, f"Parent '{name}' added to {updated} student(s).")
-            return redirect("people:parent-list")
-
-        if "edit_parent" in request.POST:
-            old_name = request.POST.get("old_parent_name", "").strip()
-            name = request.POST.get("parent_name", "").strip()
-            phone = request.POST.get("parent_phone", "").strip()
-            email = request.POST.get("parent_email", "").strip()
-            child_ids = request.POST.getlist("child_ids")
-            if old_name and name:
-                for student in Student.objects.filter(father_name=old_name):
-                    student.father_name = name
-                    if email: student.father_email = email
-                    if phone: student.father_phone = phone
-                    student.save()
-                for student in Student.objects.filter(mother_name=old_name):
-                    student.mother_name = name
-                    if email: student.mother_email = email
-                    if phone: student.mother_phone = phone
-                    student.save()
-                messages.success(request, f"Parent '{old_name}' updated successfully.")
-            return redirect("people:parent-list")
-
+def _build_parent_list_json(parent_list_data):
     parent_list_json = []
     for p in parent_list_data:
         children_json = []
@@ -2364,13 +2391,110 @@ def parent_list(request):
             "parent_phone": p["parent_phone"],
             "children": children_json,
         })
+    return parent_list_json
+
+
+def _handle_parent_post(request, success_url="people:parent-list"):
+    """Process add/edit/delete parent POST requests.
+
+    Returns a redirect HttpResponse when a form was submitted, else None.
+    """
+    if "delete_parent" in request.POST:
+        parent_name = request.POST.get("parent_name", "").strip()
+        if parent_name:
+            updated = Student.objects.filter(father_name=parent_name).update(father_name="", father_email="", father_phone="")
+            updated += Student.objects.filter(mother_name=parent_name).update(mother_name="", mother_email="", mother_phone="")
+            if updated:
+                messages.success(request, f"Parent '{parent_name}' deleted successfully.")
+            else:
+                messages.error(request, "Parent not found.")
+        return redirect(success_url)
+
+    if "add_parent" in request.POST:
+        name = request.POST.get("parent_name", "").strip()
+        phone = request.POST.get("parent_phone", "").strip()
+        email = request.POST.get("parent_email", "").strip()
+        child_ids = request.POST.getlist("child_ids")
+        if name and child_ids:
+            updated = 0
+            for cid in child_ids:
+                try:
+                    student = Student.objects.get(pk=cid)
+                    if student.father_name and student.mother_name:
+                        if not student.father_email and email:
+                            student.father_email = email
+                        if not student.father_phone and phone:
+                            student.father_phone = phone
+                    elif not student.father_name:
+                        student.father_name = name
+                        student.father_email = email
+                        student.father_phone = phone
+                    else:
+                        student.mother_name = name
+                        student.mother_email = email
+                        student.mother_phone = phone
+                    student.save()
+                    updated += 1
+                except Student.DoesNotExist:
+                    pass
+            if updated:
+                messages.success(request, f"Parent '{name}' added to {updated} student(s).")
+        return redirect(success_url)
+
+    if "edit_parent" in request.POST:
+        old_name = request.POST.get("old_parent_name", "").strip()
+        name = request.POST.get("parent_name", "").strip()
+        phone = request.POST.get("parent_phone", "").strip()
+        email = request.POST.get("parent_email", "").strip()
+        child_ids = request.POST.getlist("child_ids")
+        if old_name and name:
+            for student in Student.objects.filter(father_name=old_name):
+                student.father_name = name
+                if email: student.father_email = email
+                if phone: student.father_phone = phone
+                student.save()
+            for student in Student.objects.filter(mother_name=old_name):
+                student.mother_name = name
+                if email: student.mother_email = email
+                if phone: student.mother_phone = phone
+                student.save()
+            messages.success(request, f"Parent '{old_name}' updated successfully.")
+        return redirect(success_url)
+
+    return None
+
+
+def parent_list(request):
+    students = Student.objects.select_related("school_class", "section", "academic_year").all()
+
+    filter_parent = request.GET.get("filter_parent", "").strip()
+    filter_child = request.GET.get("filter_child", "").strip()
+    filter_class = request.GET.get("filter_class", "").strip()
+    filter_status = request.GET.get("filter_status", "").strip()
+    sort = request.GET.get("sort", "asc")
+
+    parent_list_data, filtered_students = _build_parent_list_data(
+        students, filter_parent, filter_child, filter_class, sort
+    )
+
+    class_names = SchoolClass.objects.values_list("name", flat=True).distinct().order_by("name")
+    child_names = Student.objects.values_list("name", flat=True).distinct().order_by("name")
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    academic_years = AcademicYear.objects.all().order_by("-start_date")
+    school = School.objects.filter(is_active=True).first()
+
+    post_response = _handle_parent_post(request)
+    if post_response:
+        return post_response
+
+    parent_list_json = _build_parent_list_json(parent_list_data)
 
     return render(request, "portaluser/people/parents.html", {
         "parent_list": parent_list_data,
         "parent_list_json": json.dumps(parent_list_json),
         "class_names": class_names,
         "child_names": child_names,
-        "students": students,
+        "students": filtered_students,
         "current_academic_year": current_academic_year,
         "academic_years": academic_years,
         "school_name": school.name if school else "Global International",
@@ -2382,19 +2506,140 @@ def parent_list(request):
     })
 
 
-def guardian_list(request):
+def parent_grid(request):
     students = Student.objects.select_related("school_class", "section", "academic_year").all()
 
-    filter_guardian = request.GET.get("filter_guardian", "").strip()
+    filter_parent = request.GET.get("filter_parent", "").strip()
     filter_child = request.GET.get("filter_child", "").strip()
     filter_class = request.GET.get("filter_class", "").strip()
     filter_status = request.GET.get("filter_status", "").strip()
     sort = request.GET.get("sort", "asc")
 
+    parent_list_data, filtered_students = _build_parent_list_data(
+        students, filter_parent, filter_child, filter_class, sort
+    )
+
+    class_names = SchoolClass.objects.values_list("name", flat=True).distinct().order_by("name")
+    child_names = Student.objects.values_list("name", flat=True).distinct().order_by("name")
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    academic_years = AcademicYear.objects.all().order_by("-start_date")
+    school = School.objects.filter(is_active=True).first()
+
+    post_response = _handle_parent_post(request, success_url="people:parent-grid")
+    if post_response:
+        return post_response
+
+    parent_list_json = _build_parent_list_json(parent_list_data)
+
+    return render(request, "portaluser/people/parent-grid.html", {
+        "parent_list": parent_list_data,
+        "parent_list_json": json.dumps(parent_list_json),
+        "class_names": class_names,
+        "child_names": child_names,
+        "students": filtered_students,
+        "current_academic_year": current_academic_year,
+        "academic_years": academic_years,
+        "school_name": school.name if school else "Global International",
+        "sort": sort,
+        "filter_parent": filter_parent,
+        "filter_child": filter_child,
+        "filter_class": filter_class,
+        "filter_status": filter_status,
+    })
+
+
+def _get_parent_query_params(request):
+    return {
+        "filter_parent": request.GET.get("filter_parent", "").strip(),
+        "filter_child": request.GET.get("filter_child", "").strip(),
+        "filter_class": request.GET.get("filter_class", "").strip(),
+        "filter_status": request.GET.get("filter_status", "").strip(),
+        "sort": request.GET.get("sort", "asc"),
+    }
+
+
+def parent_export_pdf(request):
+    students = Student.objects.select_related("school_class", "section", "academic_year").all()
+    params = _get_parent_query_params(request)
+
+    parent_list_data, _ = _build_parent_list_data(
+        students,
+        params["filter_parent"],
+        params["filter_child"],
+        params["filter_class"],
+        params["sort"],
+    )
+
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    school = School.objects.filter(is_active=True).first()
+
+    return render(request, "portaluser/people/parent-print.html", {
+        "parent_list": parent_list_data,
+        "school_name": school.name if school else "Global International",
+        "current_academic_year": current_academic_year,
+        "filter_parent": params["filter_parent"],
+        "filter_child": params["filter_child"],
+        "filter_class": params["filter_class"],
+        "sort": params["sort"],
+    })
+
+
+def parent_export_excel(request):
+    students = Student.objects.select_related("school_class", "section", "academic_year").all()
+    params = _get_parent_query_params(request)
+
+    parent_list_data, _ = _build_parent_list_data(
+        students,
+        params["filter_parent"],
+        params["filter_child"],
+        params["filter_class"],
+        params["sort"],
+    )
+
+    filename = "parents_grid"
+    if params["filter_parent"]:
+        filename += f"_{params['filter_parent']}"
+    if params["filter_child"]:
+        filename += f"_{params['filter_child']}"
+    if params["filter_class"]:
+        filename += f"_{params['filter_class']}"
+    filename += f"_{date.today().strftime('%Y%m%d')}"
+    filename = filename.replace(" ", "_")
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}.csv"'
+    response.write("\ufeff")
+
+    writer = csv.writer(response)
+    writer.writerow(["ID", "Parent Name", "Child", "Phone", "Email"])
+
+    for parent in parent_list_data:
+        first_child = parent["first_child"]
+        writer.writerow([
+            parent["parent_id"],
+            parent["parent_name"],
+            first_child.name if first_child else "-",
+            parent["parent_phone"] or "-",
+            parent["parent_email"] or "-",
+        ])
+
+    return response
+
+
+def _build_guardian_list_data(students, filter_guardian="", filter_child="", filter_class="", sort="asc"):
+    """Shared logic to build the guardian grid/list data from a student queryset.
+
+    Returns (guardian_list_data, filtered_students) where guardian_list_data is a
+    list of dicts (guardian_id, guardian_name, guardian_email, guardian_phone,
+    guardian_image, guardian_relation, children, first_child) and filtered_students
+    is the queryset after applying the class/child filters.
+    """
     if filter_class:
         students = students.filter(school_class__name=filter_class)
     if filter_child:
         students = students.filter(name__icontains=filter_child)
+
+    filtered_students = students
 
     guardians_data = []
     for student in students:
@@ -2451,66 +2696,10 @@ def guardian_list(request):
     else:
         guardian_list_data.sort(key=lambda g: g["guardian_name"].lower())
 
-    class_names = SchoolClass.objects.values_list("name", flat=True).distinct().order_by("name")
-    child_names = Student.objects.values_list("name", flat=True).distinct().order_by("name")
-    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
-    academic_years = AcademicYear.objects.all().order_by("-start_date")
-    school = School.objects.filter(is_active=True).first()
+    return guardian_list_data, filtered_students
 
-    if request.method == "POST":
-        if "delete_guardian" in request.POST:
-            guardian_name = request.POST.get("guardian_name", "").strip()
-            if guardian_name:
-                updated = Student.objects.filter(guardian_name=guardian_name).update(
-                    guardian_name="", guardian_email="", guardian_phone="",
-                    guardian_relation="", guardian_address="", guardian_occupation=""
-                )
-                if updated:
-                    messages.success(request, f"Guardian '{guardian_name}' deleted successfully.")
-                else:
-                    messages.error(request, "Guardian not found.")
-            return redirect("people:guardian-list")
 
-        if "add_guardian" in request.POST:
-            name = request.POST.get("guardian_name", "").strip()
-            phone = request.POST.get("guardian_phone", "").strip()
-            email = request.POST.get("guardian_email", "").strip()
-            relation = request.POST.get("guardian_relation", "").strip()
-            child_ids = request.POST.getlist("child_ids")
-            if name and child_ids:
-                updated = 0
-                for cid in child_ids:
-                    try:
-                        student = Student.objects.get(pk=cid)
-                        student.guardian_name = name
-                        student.guardian_email = email
-                        student.guardian_phone = phone
-                        student.guardian_relation = relation
-                        student.save()
-                        updated += 1
-                    except Student.DoesNotExist:
-                        pass
-                if updated:
-                    messages.success(request, f"Guardian '{name}' added to {updated} student(s).")
-            return redirect("people:guardian-list")
-
-        if "edit_guardian" in request.POST:
-            old_name = request.POST.get("old_guardian_name", "").strip()
-            name = request.POST.get("guardian_name", "").strip()
-            phone = request.POST.get("guardian_phone", "").strip()
-            email = request.POST.get("guardian_email", "").strip()
-            relation = request.POST.get("guardian_relation", "").strip()
-            child_ids = request.POST.getlist("child_ids")
-            if old_name and name:
-                for student in Student.objects.filter(guardian_name=old_name):
-                    student.guardian_name = name
-                    if email: student.guardian_email = email
-                    if phone: student.guardian_phone = phone
-                    if relation: student.guardian_relation = relation
-                    student.save()
-                messages.success(request, f"Guardian '{old_name}' updated successfully.")
-            return redirect("people:guardian-list")
-
+def _build_guardian_list_json(guardian_list_data):
     guardian_list_json = []
     for g in guardian_list_data:
         children_json = []
@@ -2525,21 +2714,161 @@ def guardian_list(request):
                 "gender": c.get_gender_display(),
                 "admission_date": c.admission_date.strftime("%d %b %Y") if c.admission_date else "-",
                 "created_at": c.created_at.strftime("%d %b %Y") if c.created_at else "",
+                "image_url": c.profile_image.url if c.profile_image else "",
             })
         guardian_list_json.append({
             "guardian_name": g["guardian_name"],
             "guardian_email": g["guardian_email"],
             "guardian_phone": g["guardian_phone"],
             "guardian_relation": g["guardian_relation"],
+            "guardian_image": g["guardian_image"].url if g["guardian_image"] else "",
             "children": children_json,
         })
+    return guardian_list_json
+
+
+def _handle_guardian_post(request, success_url="people:guardian-list"):
+    """Process add/edit/delete guardian POST requests.
+
+    Returns a redirect HttpResponse when a form was submitted, else None.
+    """
+    if "delete_guardian" in request.POST:
+        guardian_name = request.POST.get("guardian_name", "").strip()
+        if guardian_name:
+            updated = Student.objects.filter(guardian_name=guardian_name).update(
+                guardian_name="", guardian_email="", guardian_phone="",
+                guardian_relation="", guardian_address="", guardian_occupation=""
+            )
+            if updated:
+                messages.success(request, f"Guardian '{guardian_name}' deleted successfully.")
+            else:
+                messages.error(request, "Guardian not found.")
+        return redirect(success_url)
+
+    if "add_guardian" in request.POST:
+        name = request.POST.get("guardian_name", "").strip()
+        phone = request.POST.get("guardian_phone", "").strip()
+        email = request.POST.get("guardian_email", "").strip()
+        relation = request.POST.get("guardian_relation", "").strip()
+        guardian_image = request.FILES.get("guardian_image")
+        child_ids = request.POST.getlist("child_ids")
+        if name and child_ids:
+            updated = 0
+            for cid in child_ids:
+                try:
+                    student = Student.objects.get(pk=cid)
+                    student.guardian_name = name
+                    student.guardian_email = email
+                    student.guardian_phone = phone
+                    student.guardian_relation = relation
+                    if guardian_image:
+                        student.guardian_image = guardian_image
+                    student.save()
+                    updated += 1
+                except Student.DoesNotExist:
+                    pass
+            if updated:
+                messages.success(request, f"Guardian '{name}' added to {updated} student(s).")
+        return redirect(success_url)
+
+    if "edit_guardian" in request.POST:
+        old_name = request.POST.get("old_guardian_name", "").strip()
+        name = request.POST.get("guardian_name", "").strip()
+        phone = request.POST.get("guardian_phone", "").strip()
+        email = request.POST.get("guardian_email", "").strip()
+        relation = request.POST.get("guardian_relation", "").strip()
+        guardian_image = request.FILES.get("guardian_image")
+        child_ids = request.POST.getlist("child_ids")
+        if old_name and name:
+            for student in Student.objects.filter(guardian_name=old_name):
+                student.guardian_name = name
+                if email: student.guardian_email = email
+                if phone: student.guardian_phone = phone
+                if relation: student.guardian_relation = relation
+                if guardian_image:
+                    student.guardian_image = guardian_image
+                student.save()
+            messages.success(request, f"Guardian '{old_name}' updated successfully.")
+        return redirect(success_url)
+
+    return None
+
+
+def guardian_list(request):
+    students = Student.objects.select_related("school_class", "section", "academic_year").all()
+
+    filter_guardian = request.GET.get("filter_guardian", "").strip()
+    filter_child = request.GET.get("filter_child", "").strip()
+    filter_class = request.GET.get("filter_class", "").strip()
+    filter_status = request.GET.get("filter_status", "").strip()
+    sort = request.GET.get("sort", "asc")
+
+    guardian_list_data, filtered_students = _build_guardian_list_data(
+        students, filter_guardian, filter_child, filter_class, sort
+    )
+
+    class_names = SchoolClass.objects.values_list("name", flat=True).distinct().order_by("name")
+    child_names = Student.objects.values_list("name", flat=True).distinct().order_by("name")
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    academic_years = AcademicYear.objects.all().order_by("-start_date")
+    school = School.objects.filter(is_active=True).first()
+
+    post_response = _handle_guardian_post(request)
+    if post_response:
+        return post_response
+
+    guardian_list_json = _build_guardian_list_json(guardian_list_data)
 
     return render(request, "portaluser/people/guardians.html", {
         "guardian_list": guardian_list_data,
         "guardian_list_json": json.dumps(guardian_list_json),
         "class_names": class_names,
         "child_names": child_names,
-        "students": students,
+        "students": filtered_students,
+        "current_academic_year": current_academic_year,
+        "academic_years": academic_years,
+        "school_name": school.name if school else "Global International",
+        "sort": sort,
+        "filter_guardian": filter_guardian,
+        "filter_child": filter_child,
+        "filter_class": filter_class,
+        "filter_status": filter_status,
+    })
+
+
+def guardian_grid(request):
+    students = Student.objects.select_related("school_class", "section", "academic_year").all()
+
+    filter_guardian = request.GET.get("filter_guardian", "").strip()
+    filter_child = request.GET.get("filter_child", "").strip()
+    filter_class = request.GET.get("filter_class", "").strip()
+    filter_status = request.GET.get("filter_status", "").strip()
+    sort = request.GET.get("sort", "asc")
+
+    guardian_list_data, filtered_students = _build_guardian_list_data(
+        students, filter_guardian, filter_child, filter_class, sort
+    )
+
+    class_names = SchoolClass.objects.values_list("name", flat=True).distinct().order_by("name")
+    child_names = Student.objects.values_list("name", flat=True).distinct().order_by("name")
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
+    academic_years = AcademicYear.objects.all().order_by("-start_date")
+    school = School.objects.filter(is_active=True).first()
+
+    post_response = _handle_guardian_post(request, success_url="people:guardian-grid")
+    if post_response:
+        return post_response
+
+    guardian_list_json = _build_guardian_list_json(guardian_list_data)
+
+    all_students = Student.objects.select_related("school_class", "section").order_by("name")
+
+    return render(request, "portaluser/people/guardian-grid.html", {
+        "guardian_list": guardian_list_data,
+        "guardian_list_json": json.dumps(guardian_list_json),
+        "class_names": class_names,
+        "child_names": child_names,
+        "students": all_students,
         "current_academic_year": current_academic_year,
         "academic_years": academic_years,
         "school_name": school.name if school else "Global International",

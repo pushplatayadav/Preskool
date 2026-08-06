@@ -219,6 +219,7 @@
 																data-bs-toggle="modal"
 																data-bs-target="#edit_Schedule"
 																data-pk="{{ schedule.pk }}"
+																data-schedule-id="{{ schedule.schedule_id }}"
 																data-start-time="{{ schedule.start_time|time:'H:i' }}"
 																data-end-time="{{ schedule.end_time|time:'H:i' }}"
 																data-status="{{ schedule.status }}"><i
@@ -280,6 +281,10 @@
 						<div class="modal-body">
 							<div class="row">
 								<div class="col-md-12">
+									<div class="mb-3">
+										<label class="form-label">Schedule ID</label>
+										<input type="text" class="form-control" name="schedule_id" value="{{ next_schedule_id }}">
+									</div>
 									<div class="mb-3">
 										<label class="form-label">Type</label>
 										<select class="select" name="schedule_type">
@@ -360,6 +365,10 @@
 						<div class="modal-body">
 							<div class="row">
 								<div class="col-md-12">
+									<div class="mb-3">
+										<label class="form-label">Schedule ID</label>
+										<input type="text" class="form-control" name="schedule_id" id="edit_schedule_id" value="">
+									</div>
 									<div class="mb-3">
 										<label class="form-label">Type</label>
 										<select class="select" name="schedule_type" id="edit_schedule_type">
@@ -619,6 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var pk = this.dataset.pk;
             var baseUrl = '{% url "academics:schedule-edit" 0 %}';
             document.getElementById('edit-schedule-form').action = baseUrl.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_schedule_id').value = this.dataset.scheduleId || '';
 
             var startTime = this.dataset.startTime;
             var endTime = this.dataset.endTime;

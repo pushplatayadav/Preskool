@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
-
+from urllib.parse import urlparse
+from dotenv import load_dotenv
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,6 +47,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -59,6 +62,10 @@ INSTALLED_APPS = [
     'fees',
     'exam',
     'hrm',
+    'report',
+    'communication',
+    'management',
+    'finance',
 ]
 
 MIDDLEWARE = [
@@ -95,13 +102,29 @@ WSGI_APPLICATION = 'preskool.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+if DATABASE_URL:
+    url = urlparse(DATABASE_URL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': url.path[1:],
+            'USER': url.username,
+            'PASSWORD': url.password,
+            'HOST': url.hostname,
+            'PORT': url.port or '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -181,4 +204,68 @@ MESSAGE_TAGS = {
     message_constants.SUCCESS: 'success',
     message_constants.WARNING: 'warning',
     message_constants.ERROR: 'danger',
+}
+JAZZMIN_SETTINGS = {
+    # ... your other settings ...
+
+    "icons": {
+        # Academics
+        "academics.classroom": "fas fa-door-open",
+        "academics.examattendance": "fas fa-user-check",
+        "academics.examresult": "fas fa-poll",
+        "academics.examschedule": "fas fa-calendar-alt",
+        "academics.exam": "fas fa-file-signature",
+        "academics.grade": "fas fa-award",
+        "academics.homework": "fas fa-tasks",
+        "academics.schedule": "fas fa-calendar-week",
+        "academics.schoolclass": "fas fa-chalkboard",
+        "academics.section": "fas fa-layer-group",
+        "academics.subject": "fas fa-book",
+        "academics.syllabus": "fas fa-scroll",
+        "academics.timetableentry": "fas fa-clock",
+
+        # Accounts
+        "accounts.role": "fas fa-user-tag",
+        "accounts.user": "fas fa-user",
+
+        # Authentication and Authorization
+        "auth.group": "fas fa-users-cog",
+
+        # Communication
+        "communication.event": "fas fa-calendar-check",
+        "communication.noticeboard": "fas fa-bullhorn",
+
+        # Core
+        "core.academicyear": "fas fa-calendar",
+        "core.school": "fas fa-school",
+
+        # Fees
+        "fees.feesassign": "fas fa-hand-holding-usd",
+        "fees.feesmaster": "fas fa-file-invoice-dollar",
+        "fees.feesgroup": "fas fa-layer-group",
+        "fees.feestype": "fas fa-tags",
+
+        # Hrm
+        "hrm.department": "fas fa-building",
+        "hrm.designation": "fas fa-id-badge",
+        "hrm.holiday": "fas fa-umbrella-beach",
+        "hrm.leaverequest": "fas fa-envelope-open-text",
+        "hrm.leavetype": "fas fa-list-alt",
+        "hrm.payroll": "fas fa-money-check-alt",
+
+        # People
+        "people.staff": "fas fa-user-tie",
+        "people.studentattendance": "fas fa-user-clock",
+        "people.studentleave": "fas fa-file-export",
+        "people.student": "fas fa-user-graduate",
+        "people.teacherattendance": "fas fa-chalkboard-teacher",
+        "people.teacher": "fas fa-person-chalkboard",
+
+        # Report
+        "report.classreport": "fas fa-chart-bar",
+        "report.studentreport": "fas fa-file-alt",
+    },
+
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
 }

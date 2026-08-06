@@ -191,9 +191,10 @@
                                             </a>
                                             <ul class="dropdown-menu dropdown-menu-right p-3">
                                                 <li>
-                                                    <a class="dropdown-item rounded-1 edit-section-btn" href="#"
+                                                     <a class="dropdown-item rounded-1 edit-section-btn" href="#"
                                                         data-bs-toggle="modal" data-bs-target="#edit_section"
                                                         data-pk="{{ section.pk }}"
+                                                        data-display-id="{{ section.display_id }}"
                                                         data-class-name="{{ section.school_class.name }}"
                                                         data-section="{{ section.name }}"
                                                         data-no-students="{{ section.no_of_students }}"
@@ -255,6 +256,10 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Section ID</label>
+                                <input type="text" class="form-control" name="section_id" value="{{ next_section_id }}">
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Class Name</label>
                                 <input type="text" class="form-control" name="class_name" placeholder="Enter Class Name" required>
@@ -321,6 +326,10 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Section ID</label>
+                                <input type="text" class="form-control" name="section_id" id="edit_section_id" value="">
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Class Name</label>
                                 <input type="text" class="form-control" name="class_name" id="edit_class_name" placeholder="Enter Class Name">
@@ -565,6 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             var pk = this.dataset.pk;
             document.getElementById('edit-section-form').action = '{% url "academics:section-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_section_id').value = this.dataset.displayId || '';
             document.getElementById('edit_class_name').value = this.dataset.className;
             document.getElementById('edit_section_name').value = this.dataset.section;
             document.getElementById('edit_no_students').value = this.dataset.noStudents;

@@ -1,0 +1,92 @@
+{% load static %}
+
+{# Print template for Student Report - accessed via report:student-report-export-pdf #}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Preskool</title>
+    <style>
+        @page { size: A4 landscape; margin: 12mm; }
+        body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 25px; color: #333; background-color: #fff; }
+        body::before { content: "PRESKOOL"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 100px; font-weight: 900; color: rgba(79, 70, 229, 0.04); z-index: -1; pointer-events: none; white-space: nowrap; letter-spacing: 15px; }
+        .header-container { text-align: center; margin-bottom: 25px; }
+        .logo-section { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; }
+        .logo-text { font-size: 26px; font-weight: 700; color: #1e3a8a; letter-spacing: -0.5px; }
+        .report-title { font-size: 20px; font-weight: 800; color: #4f46e5; margin: 5px 0; }
+        .report-meta { font-size: 12px; color: #64748b; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+        th { background-color: #f0f3ff; color: #4f46e5; font-weight: 600; white-space: nowrap; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        .footer { margin-top: 35px; text-align: center; font-size: 11px; color: #94a3b8; }
+        .badge-active { color: #22c55e; }
+        .badge-inactive { color: #ef4444; }
+        @media print { @page { size: A4 landscape; margin: 12mm; } body { padding: 0; margin: 0; width: 100%; } }
+    </style>
+</head>
+
+<body>
+    <div class="header-container">
+        <div class="logo-section">
+            <img src="{% static 'assets/img/logo-small.svg' %}" alt="Logo" style="width: 34px; height: 34px; vertical-align: middle;">
+            <span class="logo-text">PreSkool</span>
+        </div>
+        <div class="report-title">{{ title }}</div>
+        <div class="report-meta">{{ school_name }} | Generated on: {% now "d M Y" %}</div>
+    </div>
+
+    {% if students %}
+    <table>
+        <thead>
+            <tr>
+                <th>Admission No</th>
+                <th>Roll No</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Section</th>
+                <th>Gender</th>
+                <th>Parent</th>
+                <th>Date of Join</th>
+                <th>DOB</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.admission_no }}</td>
+                <td>{{ student.roll_no|default:"-" }}</td>
+                <td>{{ student.name }}</td>
+                <td>{{ student.school_class.name }}</td>
+                <td>{{ student.section.name }}</td>
+                <td>{{ student.get_gender_display }}</td>
+                <td>{{ student.parent_name|default:student.father_name|default:student.mother_name|default:"-" }}</td>
+                <td>{% if student.admission_date %}{{ student.admission_date|date:"d M Y" }}{% else %}{{ student.created_at|date:"d M Y" }}{% endif %}</td>
+                <td>{% if student.date_of_birth %}{{ student.date_of_birth|date:"d M Y" }}{% else %}-{% endif %}</td>
+                <td class="{% if student.status == 'active' %}badge-active{% else %}badge-inactive{% endif %}">
+                    {{ student.get_status_display }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; padding: 40px; color: #999;">No student report data available. Please go back, select filters and try again.</p>
+    {% endif %}
+
+    <div class="footer">
+        &copy; {% now "Y" %} PreSkool. All rights reserved.
+    </div>
+
+    <script>
+        window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+        };
+    </script>
+</body>
+
+</html>

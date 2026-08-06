@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Preskool</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 20mm;
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            padding: 40px;
+            color: #333;
+            background-color: #fff;
+            position: relative;
+            min-height: 100%;
+        }
+        body::before {
+            content: "PRESKOOL";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 100px;
+            font-weight: 900;
+            color: rgba(79, 70, 229, 0.04);
+            z-index: -1;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: 15px;
+        }
+        .header-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo-section {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .logo-text {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e3a8a;
+            letter-spacing: -0.5px;
+        }
+        .report-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #4f46e5;
+            margin: 5px 0;
+        }
+        .report-meta {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+        .event-item {
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #4f46e5;
+            border-radius: 8px;
+            padding: 18px 20px;
+            margin-bottom: 18px;
+            page-break-inside: avoid;
+            background: #fafbff;
+        }
+        .event-item h3 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            color: #1e3a8a;
+            font-weight: 700;
+        }
+        .event-meta {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        .event-message {
+            font-size: 13px;
+            color: #475569;
+            margin: 0 0 8px;
+        }
+        .event-category {
+            font-size: 12px;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                padding: 0;
+                margin: 0;
+                width: 210mm;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-container">
+        <div class="logo-section">
+            <img src="{% static 'assets/img/logo-small.svg' %}" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+            <span class="logo-text">PreSkool</span>
+        </div>
+        <div class="report-title">{{ title }}</div>
+        <div class="report-meta">{{ school_name }} | Total Events: {{ events|length }} | Generated on: {% now "d M Y" %}</div>
+    </div>
+
+    {% if events %}
+        {% for event in events %}
+        <div class="event-item">
+            <h3>{{ event.title }}</h3>
+            <div class="event-meta">
+                {{ event.get_category_display }} | {{ event.get_event_for_display }}
+                | {{ event.start_date|date:"d M Y" }}{% if event.end_date %} - {{ event.end_date|date:"d M Y" }}{% endif %}
+                {% if event.start_time or event.end_time %}
+                    | {{ event.start_time|date:"h:i A"|default:"" }}{% if event.end_time %} - {{ event.end_time|date:"h:i A" }}{% endif %}
+                {% endif %}
+                | Added By: {{ event.added_by_name }}
+            </div>
+            {% if event.message %}<p class="event-message">{{ event.message }}</p>{% endif %}
+            <div class="event-category">
+                Classes: {{ event.classes_display }} | Sections: {{ event.sections_display }}
+                {% if event.roles.all %} | Roles: {{ event.roles_display }}{% endif %}
+                {% if event.teachers.all %} | Teachers: {{ event.teachers_names|join:", " }}{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="text-align: center; padding: 40px; color: #999;">No events available. Please go back, adjust the filters and try again.</p>
+    {% endif %}
+
+    <div class="footer">
+        &copy; {% now "Y" %} PreSkool. All rights reserved.
+    </div>
+
+    <script>
+        window.onload = function () {
+            window.print();
+            setTimeout(function () { window.close(); }, 500);
+        };
+    </script>
+</body>
+
+</html>

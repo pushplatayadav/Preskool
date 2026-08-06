@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SchoolClass, Section, Subject, ClassRoom, Syllabus, TimeTableEntry, HomeWork, Schedule
+from .models import SchoolClass, Section, Subject, ClassRoom, Syllabus, TimeTableEntry, HomeWork, Schedule, AcademicReason
 
 
 @admin.register(SchoolClass)
@@ -48,3 +48,11 @@ class ScheduleAdmin(admin.ModelAdmin):
     list_display = ("schedule_id", "schedule_type", "start_time", "end_time", "status")
     list_filter = ("status",)
     search_fields = ("schedule_id",)
+
+
+@admin.register(AcademicReason)
+class AcademicReasonAdmin(admin.ModelAdmin):
+    list_display = ("reason", "role", "status", "created_at")
+    list_filter = ("role", "status")
+    search_fields = ("reason",)
+

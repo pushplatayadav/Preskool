@@ -238,11 +238,11 @@
 										class="ti ti-report-money me-2"></i>Fees</a>
 							</li>
 							<li>
-								<a href="student-result.html" class="nav-link"><i
+								<a href="{% url 'exam:student-result' student.pk %}" class="nav-link"><i
 										class="ti ti-bookmark-edit me-2"></i>Exam & Results</a>
 							</li>
 							<li>
-								<a href="student-library.html" class="nav-link"><i
+								<a href="{% url 'management:library-issue-book' %}" class="nav-link"><i
 										class="ti ti-books me-2"></i>Library</a>
 							</li>
 						</ul>

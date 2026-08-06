@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Preskool</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 20mm;
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            padding: 40px;
+            color: #333;
+            background-color: #fff;
+            position: relative;
+            min-height: 100%;
+        }
+        body::before {
+            content: "PRESKOOL";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 100px;
+            font-weight: 900;
+            color: rgba(79, 70, 229, 0.04);
+            z-index: -1;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: 15px;
+        }
+        .header-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo-section {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .logo-text {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e3a8a;
+            letter-spacing: -0.5px;
+        }
+        .report-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #4f46e5;
+            margin: 5px 0;
+        }
+        .report-meta {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 12px;
+            background: transparent;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f3ff;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                padding: 0;
+                margin: 0;
+                width: 210mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <div class="logo-section">
+            <img src="{% static 'assets/img/logo-small.svg' %}" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+            <span class="logo-text">PreSkool</span>
+        </div>
+        <div class="report-title">{{ title }}</div>
+        <div class="report-meta">{{ school_name }} | Generated on: {% now "d M Y" %}</div>
+    </div>
+
+    {% if rooms %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>ID</th>
+                <th>Room No</th>
+                <th>Hostel Name</th>
+                <th>Room Type</th>
+                <th>No of Bed</th>
+                <th>Cost per Bed</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rooms %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><strong style="color: #4f46e5;">{{ r.room_id }}</strong></td>
+                <td><strong>{{ r.room_no }}</strong></td>
+                <td>{{ r.hostel.name|default:"-" }}</td>
+                <td>{{ r.room_type }}</td>
+                <td>{{ r.no_of_beds }}</td>
+                <td>{{ r.cost_per_bed }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p style="text-align: center; padding: 40px; color: #999;">No hostel room records available.</p>
+    {% endif %}
+
+    <div class="footer">
+        &copy; {% now "Y" %} {{ school_name }}. All rights reserved.
+    </div>
+</body>
+</html>

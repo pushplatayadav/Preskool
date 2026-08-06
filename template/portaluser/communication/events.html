@@ -1,0 +1,740 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+{% load communication_extras %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content content-two">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Events</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">Announcement</li>
+						<li class="breadcrumb-item active" aria-current="page">Events</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'communication:events' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+						data-bs-original-title="Print" onclick="printOrExportPDF();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);" class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center" data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="printOrExportPDF();"><i class="ti ti-file-type-pdf me-2"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportToExcel();"><i class="ti ti-file-type-xls me-2"></i>Export as Excel</a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="#" class="btn btn-light d-flex align-items-center me-2"><i class="ti ti-calendar-up me-2"></i>Sync with Google Calendar</a>
+				</div>
+				<div class="mb-2">
+					<a href="#" data-bs-toggle="modal" data-bs-target="#add_event" class="btn btn-primary d-flex align-items-center event-open-add"><i class="ti ti-square-rounded-plus me-2"></i>Add Event</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="row">
+
+			<!-- Event Calendar -->
+			<div class="col-xl-8 col-xxl-9 theiaStickySidebar">
+				<div class="card">
+					<div class="card-body">
+						<div id="events"></div>
+					</div>
+				</div>
+			</div>
+			<!-- /Event Calendar -->
+
+			<!-- Event List -->
+			<div class="col-xl-4 col-xxl-3 theiaStickySidebar">
+				<div class="d-flex align-items-center justify-content-between">
+					<h5 class="mb-3">Events <span class="text-muted fs-13 fw-normal">({{ events|length }})</span></h5>
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light dropdown-toggle"
+							data-bs-toggle="dropdown">{% if filter_category %}{{ selected_category_label }}{% else %}All Category{% endif %}
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'communication:events' %}" class="dropdown-item rounded-1 d-flex align-items-center {% if not filter_category %}active{% endif %}">
+									<i class="ti ti-circle-filled fs-8 text-secondary me-2"></i>All Category
+								</a>
+							</li>
+							{% for cat in category_options %}
+							<li>
+								<a href="?filter_category={{ cat.key }}" class="dropdown-item rounded-1 d-flex align-items-center {% if filter_category == cat.key %}active{% endif %}">
+									<i class="ti ti-circle-filled fs-8 {{ cat.style.color }} me-2"></i>{{ cat.label }}
+									<span class="badge badge-soft-secondary ms-auto">{{ cat.count }}</span>
+								</a>
+							</li>
+							{% endfor %}
+						</ul>
+					</div>
+				</div>
+
+				{% for event in events %}
+				{% with event.category|stringformat:"s" as cat_key %}
+				{% with category_styles|index:cat_key as style %}
+				<!-- Event Item -->
+				<div class="border-start {{ style.border }} border-3 shadow-sm p-3 mb-3 bg-white event-item">
+					<div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+						<span class="avatar p-1 me-3 {{ style.badge_bg }} flex-shrink-0">
+							<i class="{{ style.icon }} {{ style.color }} fs-20"></i>
+						</span>
+						<div class="flex-fill">
+							<h6 class="mb-1 fw-semibold">
+								<a href="javascript:void(0);" class="event-view-link" data-id="{{ event.pk }}">{{ event.title }}</a>
+							</h6>
+							<p class="fs-12"><i class="ti ti-calendar me-1"></i>{{ event.start_date|date:"d M Y" }}{% if event.end_date %} - {{ event.end_date|date:"d M Y" }}{% endif %}</p>
+						</div>
+					</div>
+					<div class="d-flex align-items-center justify-content-between">
+						<p class="mb-0 fs-12"><i class="ti ti-clock me-1"></i>{% if event.start_time %}{{ event.start_time|date:"h:i A" }}{% endif %}{% if event.end_time %} - {{ event.end_time|date:"h:i A" }}{% endif %}{% if not event.start_time and not event.end_time %}All Day{% endif %}</p>
+						<div class="d-flex align-items-center">
+							<div class="avatar-list-stacked avatar-group-sm me-2">
+								{% for av in avatar_map|index:event.pk %}
+								<span class="avatar {{ av.color }}" title="{{ av.name }}">{{ av.initial }}</span>
+								{% empty %}
+								<span class="avatar bg-light"><i class="ti ti-calendar text-default fs-14"></i></span>
+								{% endfor %}
+							</div>
+							<div class="d-flex align-items-center event-actions">
+								<a href="javascript:void(0);" class="event-edit-btn text-primary border rounded p-1 badge me-1 primary-btn-hover"
+									data-id="{{ event.pk }}">
+									<i class="ti ti-edit-circle fs-16"></i>
+								</a>
+								<a href="javascript:void(0);" class="event-delete-btn text-danger border rounded p-1 badge danger-btn-hover"
+									data-id="{{ event.pk }}" data-title="{{ event.title }}">
+									<i class="ti ti-trash-x fs-16"></i>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /Event Item -->
+				{% endwith %}
+				{% endwith %}
+				{% empty %}
+				<div class="card mb-3">
+					<div class="card-body text-center text-muted py-5">
+						<i class="ti ti-calendar-x fs-30 mb-2 d-block"></i>
+						<p class="mb-0">No events found.</p>
+					</div>
+				</div>
+				{% endfor %}
+
+			</div>
+			<!-- /Event List -->
+
+		</div>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Add / Edit Event -->
+<div class="modal fade" id="add_event">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title" id="eventModalTitle">New Event</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'communication:events' %}" enctype="multipart/form-data">
+				{% csrf_token %}
+				<input type="hidden" name="add_event" id="event-mode-add" value="1">
+				<input type="hidden" name="edit_event" id="event-mode-edit" value="0">
+				<input type="hidden" name="event_id" id="event-id">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div>
+								<label class="form-label">Event For</label>
+								<div class="d-flex align-items-center flex-wrap">
+									<div class="form-check me-3 mb-3">
+										<input class="form-check-input" type="radio" name="event_for" value="all" id="all" checked="">
+										<label class="form-check-label" for="all">
+											All
+										</label>
+									</div>
+									<div class="form-check me-3 mb-3">
+										<input class="form-check-input" type="radio" name="event_for" value="students" id="students">
+										<label class="form-check-label" for="students">
+											Students
+										</label>
+									</div>
+									<div class="form-check me-3 mb-3">
+										<input class="form-check-input" type="radio" name="event_for" value="staffs" id="staffs">
+										<label class="form-check-label" for="staffs">
+											Staffs
+										</label>
+									</div>
+								</div>
+							</div>
+							<div class="all-content" id="all-student">
+								<div class="mb-3">
+									<label class="form-label">Classes</label>
+									<select class="select" name="classes" id="event-classes">
+										<option value="">All Classes</option>
+										{% for c in classes %}
+										<option value="{{ c.pk }}">{{ c.name }}</option>
+										{% endfor %}
+									</select>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Sections</label>
+									<select class="select" name="sections" id="event-sections">
+										<option value="">All Sections</option>
+										{% for s in sections %}
+										<option value="{{ s.pk }}">{{ s.school_class.name }} - {{ s.name }}</option>
+										{% endfor %}
+									</select>
+								</div>
+							</div>
+							<div class="all-content" id="all-staffs">
+								<div class="mb-3">
+									<div class="bg-light-500 p-3 pb-2 rounded">
+										<label class="form-label">Role</label>
+										<div class="row">
+											{% for role in roles %}
+											<div class="col-md-6">
+												<div class="form-check form-check-sm mb-2">
+													<input class="form-check-input event-role" type="checkbox" name="roles" value="{{ role.pk }}" id="role_{{ role.pk }}">
+													<label class="form-check-label" for="role_{{ role.pk }}">{{ role.get_name_display }}</label>
+												</div>
+											</div>
+											{% endfor %}
+										</div>
+									</div>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Teachers</label>
+									<select class="select" name="teachers" id="event-teachers" multiple>
+										{% for t in teachers %}
+										<option value="{{ t.pk }}">{{ t.get_full_name|default:t.username }}</option>
+										{% endfor %}
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Event Title</label>
+							<input type="text" class="form-control" name="title" id="event-title" placeholder="Enter Title" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Event Category</label>
+							<select class="select" name="category" id="event-category" required>
+								<option value="">Select</option>
+								{% for key, label in categories %}
+								<option value="{{ key }}">{{ label }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Start Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="start_date" id="event-start-date" placeholder="15 May 2024" autocomplete="off" required>
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">End Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="end_date" id="event-end-date" placeholder="21 May 2024" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Start Time</label>
+								<div class="date-pic">
+									<input type="text" class="form-control timepicker" name="start_time" id="event-start-time" placeholder="09:10 AM" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-clock"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">End Time</label>
+								<div class="date-pic">
+									<input type="text" class="form-control timepicker" name="end_time" id="event-end-time" placeholder="12:50 PM" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-clock"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="mb-3">
+								<div class="bg-light p-3 pb-2 rounded">
+									<div class="mb-3">
+										<label class="form-label">Attachment</label>
+										<p>Upload size of 4MB, Accepted Format PDF</p>
+									</div>
+									<div class="d-flex align-items-center flex-wrap">
+										<div class="btn btn-primary drag-upload-btn mb-2 me-2">
+											<i class="ti ti-file-upload me-1"></i>Upload
+											<input type="file" class="form-control image_sign" name="attachment" accept=".pdf">
+										</div>
+										<p class="mb-2" id="event-attachment-name"></p>
+									</div>
+								</div>
+							</div>
+							<div class="mb-0">
+								<label class="form-label">Message</label>
+								<textarea class="form-control" name="message" id="event-message" rows="4"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add / Edit Event -->
+
+<!-- Event Details -->
+<div class="modal fade" id="eventModal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content border shadow-lg">
+			<div class="modal-header justify-content-between">
+				<span class="d-inline-flex align-items-center"><i class="ti ti-circle-filled fs-8 me-1 text-info"></i><span id="eventCategoryLabel">Meeting</span></span>
+				<div class="d-flex align-items-center">
+					<a href="javascript:void(0);" class="me-1 fs-18 event-edit-from-modal"><i class="ti ti-edit-circle"></i></a>
+					<a href="javascript:void(0);" class="me-1 fs-18 event-delete-from-modal text-danger"><i class="ti ti-trash-x"></i></a>
+					<a href="javascript:void(0);" class="fs-18" data-bs-dismiss="modal"><i class="ti ti-x"></i></a>
+				</div>
+			</div>
+			<div class="modal-body pb-0">
+				<div class="d-flex align-items-center mb-3">
+					<span class="avatar avatar-xl bg-primary-transparent me-3 flex-shrink-0">
+						<i class="ti ti-users-group fs-30"></i>
+					</span>
+					<div>
+						<h3 id="eventTitle" class="mb-1"></h3>
+						<div class="d-flex align-items-center flex-wrap">
+							<p class="me-3 mb-0"><i class="ti ti-calendar me-1"></i><span id="eventModalDate"></span></p>
+							<p class="mb-0"><i class="ti ti-clock me-1"></i><span id="eventModalTime"></span></p>
+						</div>
+					</div>
+				</div>
+				<div class="bg-light-400 p-3 rounded mb-3">
+					<p id="eventModalMessage" class="mb-0"></p>
+				</div>
+				<div class="d-flex align-items-center justify-content-between flex-wrap">
+					<div class="avatar-list-stacked avatar-group-sm d-flex mb-3" id="eventModalParticipants">
+					</div>
+					<div class="mb-3">
+						<p class="mb-1">Event For</p>
+						<h6 id="eventModalFor"></h6>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Event Details -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" id="event-delete-form">
+				{% csrf_token %}
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p id="event-delete-message">You want to delete this event, this can't be undone once you delete.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_css %}
+<style>
+	#events { min-height: 620px; }
+	.event-actions { opacity: 0; transition: opacity .2s ease; }
+	.event-item:hover .event-actions { opacity: 1; }
+	.fc .fc-button-primary { background-color: #4f46e5; border-color: #4f46e5; }
+	.fc .fc-button-primary:hover { background-color: #4338ca; border-color: #4338ca; }
+	.fc .fc-button-primary:not(:disabled).fc-button-active, .fc .fc-button-primary:not(:disabled):active { background-color: #4338ca; border-color: #4338ca; }
+</style>
+{% endblock extra_css %}
+
+{% block extra_js %}
+<script src="{% static 'assets/plugins/theia-sticky-sidebar/ResizeSensor.js' %}"></script>
+<script src="{% static 'assets/plugins/theia-sticky-sidebar/theia-sticky-sidebar.js' %}"></script>
+<script src="{% static 'assets/plugins/fullcalendar/calendar.js' %}"></script>
+
+<script>
+	var calendarEvents = {{ calendar_events|safe }};
+	var eventDetails = {{ event_details|safe }};
+	var avatarColors = {{ avatar_colors|safe }};
+	var schoolName = "{{ school_name|default:'Global International'|escapejs }}";
+
+	function escapeHtml(value) {
+		return String(value == null ? "" : value)
+			.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+	}
+	function csvSafe(value) {
+		return '"' + String(value == null ? "" : value).replace(/"/g, '""') + '"';
+	}
+	function getEventData() {
+		var headers = ["Title", "Category", "Event For", "Start Date", "End Date", "Start Time", "End Time", "Classes", "Sections", "Roles", "Teachers", "Message"];
+		var rows = [];
+		(calendarEvents || []).forEach(function(ev) {
+			var d = eventDetails[String(ev.id)] || {};
+			rows.push([
+				d.title || ev.title || '',
+				d.category || ev.category || '',
+				d.event_for || '',
+				d.start_date || '',
+				d.end_date || '-',
+				d.start_time || '-',
+				d.end_time || '-',
+				d.classes || 'All Classes',
+				d.sections || 'All Sections',
+				d.roles || '-',
+				(d.teachers || []).join(', ') || '-',
+				d.message || ''
+			]);
+		});
+		return { headers: headers, rows: rows, reportTitle: "Events Report", schoolName: schoolName };
+	}
+	function exportToExcel() {
+		var data = getEventData();
+		if (data.rows.length === 0) { alert("No data available to export."); return; }
+		try {
+			var csvContent = [];
+			csvContent.push(data.headers.map(csvSafe).join(","));
+			data.rows.forEach(function(row) { csvContent.push(row.map(csvSafe).join(",")); });
+			var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+			var downloadLink = document.createElement("a");
+			downloadLink.download = "events_" + new Date().toISOString().slice(0, 10) + ".csv";
+			downloadLink.href = window.URL.createObjectURL(csvBlob);
+			downloadLink.style.display = "none";
+			document.body.appendChild(downloadLink);
+			downloadLink.click();
+			document.body.removeChild(downloadLink);
+		} catch (e) {
+			var exportUrl = "{% url 'communication:events-export-excel' %}";
+			if (window.location.search) exportUrl += window.location.search;
+			window.location.href = exportUrl;
+		}
+	}
+	function printOrExportPDF() {
+		var data = getEventData();
+		if (data.rows.length === 0) {
+			alert("No data available to print.");
+			return;
+		}
+		var printWindow = window.open("", "_blank");
+		if (!printWindow) {
+			var printUrl = "{% url 'communication:events-export-pdf' %}";
+			if (window.location.search) printUrl += window.location.search;
+			if (confirm("Pop-ups are blocked. Open the printable report in a new tab instead?")) {
+				window.open(printUrl, "_blank");
+				return;
+			}
+			alert("Pop-ups are blocked. Please allow pop-ups for this site and try printing again.");
+			return;
+		}
+
+		var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+		var html = '<html><head><title>' + escapeHtml(data.reportTitle) + '</title>' +
+		'<style>' +
+		'@page{size:A4 portrait;margin:20mm;}' +
+		'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+		'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+		'.header-container{text-align:center;margin-bottom:40px;}' +
+		'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+		'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+		'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+		'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+		'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+		'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;vertical-align:top;}' +
+		'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+		'tr:nth-child(even){background-color:#f8fafc;}' +
+		'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+		'@media print{@page{size:A4 portrait;margin:20mm;}body{padding:0;margin:0;width:210mm;}}' +
+		'</style></head><body>' +
+		'<div class="header-container">' +
+		'<div class="logo-section">' +
+		'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+		'<span class="logo-text">PreSkool</span>' +
+		'</div>' +
+		'<div class="report-title">' + escapeHtml(data.reportTitle) + '</div>' +
+		'<div class="report-meta">' + escapeHtml(data.schoolName) + ' | Total Events: ' + data.rows.length + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+		'</div>' +
+		'<table><thead><tr>';
+
+		data.headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+		html += '</tr></thead><tbody>';
+		data.rows.forEach(function(row) {
+			html += '<tr>';
+			row.forEach(function(val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+			html += '</tr>';
+		});
+		html += '</tbody></table>' +
+		'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+		'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+		'</body></html>';
+
+		printWindow.document.write(html);
+		printWindow.document.close();
+		printWindow.focus();
+	}
+
+	var currentEventId = null;
+	function getDetail(pk) {
+		return eventDetails[String(pk)] || {};
+	}
+	function openEventModal(d) {
+		currentEventId = d.id;
+		document.getElementById('eventTitle').textContent = d.title || '';
+		document.getElementById('eventCategoryLabel').textContent = d.category || '';
+		var dateStr = d.start_date || '';
+		if (d.end_date && d.end_date !== d.start_date) dateStr += ' - ' + d.end_date;
+		document.getElementById('eventModalDate').textContent = dateStr;
+		var timeStr = '';
+		if (d.start_time) timeStr = d.start_time;
+		if (d.end_time) timeStr = (timeStr ? timeStr + ' - ' : '') + d.end_time;
+		document.getElementById('eventModalTime').textContent = timeStr || 'All Day';
+		document.getElementById('eventModalMessage').textContent = d.message || 'No message provided.';
+		document.getElementById('eventModalFor').textContent = (d.classes || 'All Classes') + ', ' + (d.sections || 'All Sections');
+		var list = document.getElementById('eventModalParticipants');
+		list.innerHTML = '';
+		var teachers = d.teachers || [];
+		if (teachers.length === 0) {
+			list.innerHTML = '<span class="text-muted fs-12">No participants</span>';
+		} else {
+			teachers.slice(0, 3).forEach(function(name, i) {
+				var span = document.createElement('span');
+				span.className = 'avatar ' + (avatarColors[i % avatarColors.length]);
+				span.title = name;
+				span.textContent = (name || '?').charAt(0).toUpperCase();
+				list.appendChild(span);
+			});
+			if (teachers.length > 3) {
+				var more = document.createElement('a');
+				more.className = 'avatar bg-white text-default';
+				more.href = 'javascript:void(0);';
+				more.textContent = '+' + (teachers.length - 3);
+				list.appendChild(more);
+			}
+		}
+		var modal = new bootstrap.Modal(document.getElementById('eventModal'));
+		modal.show();
+	}
+
+	function setSelectValue(id, value) {
+		var el = document.getElementById(id);
+		if (!el) return;
+		el.value = value;
+		var jq = $(el);
+		if (jq.data('select2')) jq.trigger('change');
+	}
+
+	function resetEventForm() {
+		document.getElementById('eventModalTitle').textContent = 'New Event';
+		var form = document.querySelector('#add_event form');
+		if (form) form.reset();
+		document.getElementById('event-mode-add').value = '1';
+		document.getElementById('event-mode-edit').value = '0';
+		document.getElementById('event-id').value = '';
+		document.getElementById('event-attachment-name').textContent = '';
+		setSelectValue('event-classes', '');
+		setSelectValue('event-sections', '');
+		setSelectValue('event-category', '');
+		setSelectValue('event-teachers', '');
+		document.querySelectorAll('.all-content').forEach(function(el) { el.classList.remove('active'); });
+		document.querySelector('#all-student').classList.add('active');
+	}
+
+	function fillEventForm(d) {
+		document.getElementById('eventModalTitle').textContent = 'Edit Event';
+		var form = document.querySelector('#add_event form');
+		if (form) form.reset();
+		document.getElementById('event-mode-add').value = '0';
+		document.getElementById('event-mode-edit').value = '1';
+		document.getElementById('event-id').value = d.id;
+		document.getElementById('event-title').value = d.title || '';
+		setSelectValue('event-category', d.category_key || '');
+		var eventForRadios = document.querySelectorAll('input[name="event_for"]');
+		eventForRadios.forEach(function(r) {
+			r.checked = (r.value === (d.event_for_key || 'all'));
+		});
+		document.querySelectorAll('.all-content').forEach(function(el) { el.classList.remove('active'); });
+		if ((d.event_for_key || 'all') === 'staffs') {
+			document.querySelector('#all-staffs').classList.add('active');
+		} else if ((d.event_for_key || 'all') === 'students') {
+			document.querySelector('#all-student').classList.add('active');
+		}
+		if (document.getElementById('event-start-date')) document.getElementById('event-start-date').value = d.start_date_iso || '';
+		if (document.getElementById('event-end-date')) document.getElementById('event-end-date').value = d.end_date_iso || '';
+		if (document.getElementById('event-start-time')) document.getElementById('event-start-time').value = d.start_time_iso || '';
+		if (document.getElementById('event-end-time')) document.getElementById('event-end-time').value = d.end_time_iso || '';
+		document.getElementById('event-message').value = d.message || '';
+		document.getElementById('event-attachment-name').textContent = d.attachment_name || '';
+		setSelectValue('event-classes', d.class_ids && d.class_ids.length ? d.class_ids[0] : '');
+		setSelectValue('event-sections', d.section_ids && d.section_ids.length ? d.section_ids[0] : '');
+		var roleChecks = document.querySelectorAll('.event-role');
+		roleChecks.forEach(function(cb) {
+			cb.checked = (d.role_ids || []).indexOf(cb.value) !== -1;
+		});
+		var teachersSel = document.getElementById('event-teachers');
+		if (teachersSel) {
+			Array.prototype.forEach.call(teachersSel.options, function(opt) {
+				opt.selected = (d.teacher_ids || []).indexOf(opt.value) !== -1;
+			});
+			if ($(teachersSel).data('select2')) $(teachersSel).trigger('change');
+		}
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+		// FullCalendar init
+		var calendarEl = document.getElementById('events');
+		if (calendarEl && window.FullCalendar) {
+			var calendar = new FullCalendar.Calendar(calendarEl, {
+				initialView: 'dayGridMonth',
+				headerToolbar: {
+					left: 'prev,next today',
+					center: 'title',
+					right: 'dayGridMonth,timeGridWeek,timeGridDay'
+				},
+				height: 'auto',
+				events: calendarEvents,
+				eventClick: function(info) {
+					var d = getDetail(info.event.id);
+					openEventModal(d);
+				}
+			});
+			calendar.render();
+		}
+
+		// Open add modal -> reset form
+		document.querySelectorAll('.event-open-add').forEach(function(btn) {
+			btn.addEventListener('click', function() { resetEventForm(); });
+		});
+
+		// View event details from list
+		document.querySelectorAll('.event-view-link').forEach(function(link) {
+			link.addEventListener('click', function() {
+				var d = getDetail(this.getAttribute('data-id'));
+				openEventModal(d);
+			});
+		});
+
+		// Edit from list
+		document.querySelectorAll('.event-edit-btn').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var d = getDetail(this.getAttribute('data-id'));
+				fillEventForm(d);
+				var modal = new bootstrap.Modal(document.getElementById('add_event'));
+				modal.show();
+			});
+		});
+
+		// Edit from details modal
+		document.querySelectorAll('.event-edit-from-modal').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+				var d = getDetail(currentEventId);
+				fillEventForm(d);
+				var modal = new bootstrap.Modal(document.getElementById('add_event'));
+				modal.show();
+			});
+		});
+
+		// Delete from list
+		document.querySelectorAll('.event-delete-btn').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var pk = this.getAttribute('data-id');
+				var title = this.getAttribute('data-title') || '';
+				document.getElementById('event-delete-form').action = '{% url "communication:events-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+				document.getElementById('event-delete-message').textContent = 'You want to delete "' + title + '", this can\'t be undone once you delete.';
+				var modal = new bootstrap.Modal(document.getElementById('delete-modal'));
+				modal.show();
+			});
+		});
+
+		// Delete from details modal
+		document.querySelectorAll('.event-delete-from-modal').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+				var pk = currentEventId;
+				document.getElementById('event-delete-form').action = '{% url "communication:events-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+				document.getElementById('event-delete-message').textContent = 'You want to delete this event, this can\'t be undone once you delete.';
+				var modal = new bootstrap.Modal(document.getElementById('delete-modal'));
+				modal.show();
+			});
+		});
+
+		// Re-init select2 + pickers when the event modal is shown
+		var addEventModal = document.getElementById('add_event');
+		if (addEventModal) {
+			addEventModal.addEventListener('shown.bs.modal', function() {
+				$(this).find('.select').each(function() {
+					if (!$(this).data('select2')) {
+						$(this).select2({ dropdownParent: $(this).closest('.modal'), width: '100%' });
+					}
+				});
+			});
+		}
+	});
+</script>
+{% endblock extra_js %}

@@ -1,0 +1,710 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Books</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Management</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Books</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'management:library-books' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printOrExportPDF()"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" onclick="printOrExportPDF()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" onclick="exportToExcel()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+						data-bs-target="#add_library_book"><i class="ti ti-square-rounded-plus me-2"></i>Add Book</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Books List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width p-0">
+							<form method="get" action="{% url 'management:library-books' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4 class="mb-0">Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Subject</label>
+												<select class="select" name="filter_subject">
+													<option value="">Select Subject</option>
+													{% for s in subjects %}
+													<option value="{{ s }}" {% if filter_subject == s %}selected{% endif %}>{{ s }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Book No</label>
+												<select class="select" name="filter_book_no">
+													<option value="">Select Book No</option>
+													{% for b in all_books %}
+													<option value="{{ b.book_no }}" {% if filter_book_no == b.book_no %}selected{% endif %}>{{ b.book_no }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'management:library-books' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>
+							{% if sort_by == 'name_desc' %}Sort by Z-A{% elif sort_by == 'date_asc' %}Sort by Date (Oldest){% elif sort_by == 'date_desc' %}Sort by Date (Newest){% else %}Sort by A-Z{% endif %}
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="?sort_by=name_asc" class="dropdown-item rounded-1 {% if not sort_by or sort_by == 'name_asc' %}active{% endif %}">
+									Sort by A-Z
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=name_desc" class="dropdown-item rounded-1 {% if sort_by == 'name_desc' %}active{% endif %}">
+									Sort by Z-A
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=date_desc" class="dropdown-item rounded-1 {% if sort_by == 'date_desc' %}active{% endif %}">
+									Date Posted (Newest)
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=date_asc" class="dropdown-item rounded-1 {% if sort_by == 'date_asc' %}active{% endif %}">
+									Date Posted (Oldest)
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-0">
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>ID</th>
+								<th>Book Name</th>
+								<th>Book No</th>
+								<th>Publisher</th>
+								<th>Author</th>
+								<th>Subject</th>
+								<th>Rack No</th>
+								<th>Qty</th>
+								<th>Available</th>
+								<th>Price</th>
+								<th>Post Date</th>
+								<th class="no-sort text-center">Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for b in books %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox">
+									</div>
+								</td>
+								<td><a href="javascript:void(0);" class="link-primary fw-medium">{{ b.book_id }}</a></td>
+								<td><strong class="text-dark">{{ b.name }}</strong></td>
+								<td>{{ b.book_no }}</td>
+								<td>{{ b.publisher|default:"-" }}</td>
+								<td>{{ b.author|default:"-" }}</td>
+								<td><span class="badge badge-soft-info">{{ b.subject|default:"-" }}</span></td>
+								<td>{{ b.rack_no|default:"-" }}</td>
+								<td>{{ b.qty }}</td>
+								<td><span class="fw-semibold text-success">{{ b.available }}</span></td>
+								<td>{{ b.price }}</td>
+								<td>{{ b.post_date|date:"d M Y" }}</td>
+								<td class="action-table-data text-center">
+									<div class="dropdown">
+										<a href="javascript:void(0);" class="btn btn-icon btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false">
+											<i class="ti ti-dots-vertical"></i>
+										</a>
+										<div class="dropdown-menu dropdown-menu-end">
+											<a class="dropdown-item edit-book-btn" href="javascript:void(0);"
+												data-pk="{{ b.pk }}"
+												data-id="{{ b.book_id }}"
+												data-name="{{ b.name }}"
+												data-no="{{ b.book_no }}"
+												data-publisher="{{ b.publisher }}"
+												data-author="{{ b.author }}"
+												data-subject="{{ b.subject }}"
+												data-rack="{{ b.rack_no }}"
+												data-qty="{{ b.qty }}"
+												data-available="{{ b.available }}"
+												data-price="{{ b.price }}"
+												data-date="{{ b.post_date|date:'Y-m-d' }}">
+												<i class="ti ti-edit-circle me-2"></i>Edit
+											</a>
+											<a class="dropdown-item delete-book-btn" href="javascript:void(0);"
+												data-pk="{{ b.pk }}" data-name="{{ b.name }}">
+												<i class="ti ti-trash-x me-2"></i>Delete
+											</a>
+										</div>
+									</div>
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td colspan="13" class="text-center py-5 text-muted">
+									<i class="ti ti-book-off fs-30 mb-2 d-block"></i>
+									No library books found.
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Book Modal -->
+<div class="modal fade" id="add_library_book">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add Book</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:library-books' %}" id="add_book_form">
+				{% csrf_token %}
+				<input type="hidden" name="add_book" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Book ID</label>
+								<input type="text" class="form-control" name="book_id" id="add_book_id" value="{{ next_book_id }}" placeholder="Enter Book ID" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Book Name</label>
+								<input type="text" class="form-control" name="name" id="add_book_name" placeholder="Enter Book Name" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Book No</label>
+								<input type="text" class="form-control" name="book_no" id="add_book_no" value="{{ next_book_no }}" placeholder="Enter Book No" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Publisher</label>
+								<input type="text" class="form-control" name="publisher" id="add_publisher" placeholder="Enter Publisher">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Author</label>
+								<input type="text" class="form-control" name="author" id="add_author" placeholder="Enter Author">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Subject</label>
+								<input type="text" class="form-control" name="subject" id="add_subject" placeholder="Enter Subject (e.g. History, Science)">
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Rack No</label>
+								<input type="text" class="form-control" name="rack_no" id="add_rack_no" placeholder="Rack No (e.g. 6550)">
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Quantity</label>
+								<input type="number" class="form-control" name="qty" id="add_qty" value="150" min="1" required>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Available Copies</label>
+								<input type="number" class="form-control" name="available" id="add_available" value="120" min="0">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Price</label>
+								<input type="number" step="0.01" class="form-control" name="price" id="add_price" value="300.00" placeholder="0.00">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Post Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="post_date" id="add_post_date" value="{{ today_date }}" placeholder="Select Date" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add Book</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Book Modal -->
+
+<!-- Edit Book Modal -->
+<div class="modal fade" id="edit_library_book">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Edit Book</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:library-books' %}">
+				{% csrf_token %}
+				<input type="hidden" name="edit_book" value="1">
+				<input type="hidden" name="book_db_id" id="edit_book_db_id">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Book ID</label>
+								<input type="text" class="form-control" name="book_id" id="edit_book_id" readonly>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Book Name</label>
+								<input type="text" class="form-control" name="name" id="edit_book_name" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Book No</label>
+								<input type="text" class="form-control" name="book_no" id="edit_book_no" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Publisher</label>
+								<input type="text" class="form-control" name="publisher" id="edit_publisher">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Author</label>
+								<input type="text" class="form-control" name="author" id="edit_author">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Subject</label>
+								<input type="text" class="form-control" name="subject" id="edit_subject">
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Rack No</label>
+								<input type="text" class="form-control" name="rack_no" id="edit_rack_no">
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Quantity</label>
+								<input type="number" class="form-control" name="qty" id="edit_qty" min="1" required>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Available Copies</label>
+								<input type="number" class="form-control" name="available" id="edit_available" min="0">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Price</label>
+								<input type="number" step="0.01" class="form-control" name="price" id="edit_price">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Post Date</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="post_date" id="edit_post_date" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit Book Modal -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete_library_book_modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" action="{% url 'management:library-books' %}">
+				{% csrf_token %}
+				<input type="hidden" name="delete_book" value="1">
+				<input type="hidden" name="book_db_id" id="delete_book_db_id">
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete "<span id="delete_book_name"></span>", this action cannot be undone.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script>
+function getBooksData() {
+    var headers = ["ID", "Book Name", "Book No", "Publisher", "Author", "Subject", "Rack No", "Qty", "Available", "Price", "Post Date"];
+    var data = [];
+    var rows = document.querySelectorAll("table.datatable tbody tr");
+    rows.forEach(function(tr) {
+        var cols = tr.querySelectorAll("td");
+        if (cols.length > 1) {
+            var bookId = cols[1].innerText.trim();
+            var name = cols[2].innerText.trim();
+            var bookNo = cols[3].innerText.trim();
+            var publisher = cols[4].innerText.trim();
+            var author = cols[5].innerText.trim();
+            var subject = cols[6].innerText.trim();
+            var rackNo = cols[7].innerText.trim();
+            var qty = cols[8].innerText.trim();
+            var available = cols[9].innerText.trim();
+            var price = cols[10].innerText.trim();
+            var postDate = cols[11].innerText.trim();
+            if (bookId && name) {
+                data.push([bookId, name, bookNo, publisher, author, subject, rackNo, qty, available, price, postDate]);
+            }
+        }
+    });
+    return {
+        headers: headers,
+        rows: data,
+        reportTitle: "Library Books Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportToExcel() {
+    var data = getBooksData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "library_books_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+    var data = getBooksData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    
+    var html = `
+    <html>
+    <head>
+        <title>` + data.reportTitle + `</title>
+        <style>
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 12px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 10px 12px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 210mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">` + data.reportTitle + `</div>
+            <div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    ` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+                </tr>
+            </thead>
+            <tbody>
+                ` + data.rows.map(function(row) {
+                    return '<tr>' + row.map(function(val) { return '<td>' + val + '</td>'; }).join("") + '</tr>';
+                }).join("") + `
+            </tbody>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <` + `/script>
+    </body>
+    </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	var addModalEl = document.getElementById('add_library_book');
+	if (addModalEl) {
+		addModalEl.addEventListener('show.bs.modal', function() {
+			var nameInput = document.getElementById('add_book_name');
+			if (nameInput) nameInput.value = '';
+			var pubInput = document.getElementById('add_publisher');
+			if (pubInput) pubInput.value = '';
+			var authorInput = document.getElementById('add_author');
+			if (authorInput) authorInput.value = '';
+			var subjectInput = document.getElementById('add_subject');
+			if (subjectInput) subjectInput.value = '';
+			var rackInput = document.getElementById('add_rack_no');
+			if (rackInput) rackInput.value = '';
+		});
+	}
+
+	document.querySelectorAll('.edit-book-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			document.getElementById('edit_book_db_id').value = this.getAttribute('data-pk');
+			document.getElementById('edit_book_id').value = this.getAttribute('data-id');
+			document.getElementById('edit_book_name').value = this.getAttribute('data-name');
+			document.getElementById('edit_book_no').value = this.getAttribute('data-no');
+			document.getElementById('edit_publisher').value = this.getAttribute('data-publisher');
+			document.getElementById('edit_author').value = this.getAttribute('data-author');
+			document.getElementById('edit_subject').value = this.getAttribute('data-subject');
+			document.getElementById('edit_rack_no').value = this.getAttribute('data-rack');
+			document.getElementById('edit_qty').value = this.getAttribute('data-qty');
+			document.getElementById('edit_available').value = this.getAttribute('data-available');
+			document.getElementById('edit_price').value = this.getAttribute('data-price');
+			document.getElementById('edit_post_date').value = this.getAttribute('data-date');
+
+			var modal = new bootstrap.Modal(document.getElementById('edit_library_book'));
+			modal.show();
+		});
+	});
+
+	document.querySelectorAll('.delete-book-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			document.getElementById('delete_book_db_id').value = this.getAttribute('data-pk');
+			document.getElementById('delete_book_name').textContent = this.getAttribute('data-name');
+			var modal = new bootstrap.Modal(document.getElementById('delete_library_book_modal'));
+			modal.show();
+		});
+	});
+});
+</script>
+{% endblock extra_js %}

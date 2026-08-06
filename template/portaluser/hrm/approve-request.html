@@ -277,10 +277,6 @@
 									</div>
 								</td>
 							</tr>
-							{% empty %}
-							<tr>
-								<td colspan="10" class="text-center text-muted py-4">No leave requests found.</td>
-							</tr>
 							{% endfor %}
 						</tbody>
 					</table>
@@ -451,21 +447,123 @@ function toggleBulkDeleteBtn() {
 	}
 }
 
-function currentQueryString() {
-	return window.location.search.substring(1);
-}
-
-function printOrExportPDF() {
-	var url = "{% url 'hrm:approve-request-export-pdf' %}?" + currentQueryString();
-	var win = window.open(url, '_blank');
-	if (!win) {
-		alert("Pop-ups are blocked. Please allow pop-ups for this site and try exporting as PDF again.");
+function getLeaveRequestData() {
+	var headers = ["Submitted By", "Leave Type", "Role", "Leave Date", "No of Days", "Applied On", "Authority", "Status"];
+	var data = [];
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+		var table = $('.datatable').DataTable();
+		table.rows({ search: 'applied' }).every(function() {
+			var rowData = this.data();
+			var row = [];
+			for (var i = 1; i < rowData.length - 1; i++) {
+				var cellHtml = rowData[i];
+				var tempDiv = document.createElement("div");
+				tempDiv.innerHTML = cellHtml;
+				var text = tempDiv.textContent || tempDiv.innerText || "";
+				row.push(text.trim());
+			}
+			data.push(row);
+		});
+	} else {
+		var rows = document.querySelectorAll("table.datatable tbody tr");
+		rows.forEach(function(tr) {
+			var cols = tr.querySelectorAll("td");
+			if (cols.length > 1) {
+				var row = [];
+				for (var j = 1; j < cols.length - 1; j++) {
+					row.push((cols[j].textContent || cols[j].innerText || "").trim());
+				}
+				data.push(row);
+			}
+		});
 	}
+	data = data.filter(function(row) {
+		return row.some(function(val) { return val && val.trim() !== ""; });
+	});
+	return {
+		headers: headers,
+		rows: data,
+		reportTitle: "Approved Leave Request List",
+		schoolName: "{{ school_name|default:'Global International' }}"
+	};
 }
 
 function exportToExcel() {
-	var url = "{% url 'hrm:approve-request-export-excel' %}?" + currentQueryString();
-	window.location.href = url;
+	var data = getLeaveRequestData();
+	if (data.rows.length === 0) {
+		alert("No data available to export.");
+		return;
+	}
+	var csvContent = [];
+	csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+	data.rows.forEach(function(row) {
+		csvContent.push(row.map(function(val) { return '"' + (val || "").replace(/"/g, '""') + '"'; }).join(","));
+	});
+	var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+	var downloadLink = document.createElement("a");
+	downloadLink.download = "approved_leave_requests_" + new Date().toISOString().slice(0, 10) + ".csv";
+	downloadLink.href = window.URL.createObjectURL(csvBlob);
+	downloadLink.style.display = "none";
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+	var data = getLeaveRequestData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = window.open("", "_blank");
+	if (!printWindow) {
+		alert("Pop-ups are blocked. Please allow pop-ups for this site and try printing again.");
+		return;
+	}
+
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+	var html = '<html><head><title>' + data.reportTitle + '</title>' +
+	'<style>' +
+	'@page{size:A4 landscape;margin:20mm;}' +
+	'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+	'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+	'.header-container{text-align:center;margin-bottom:40px;}' +
+	'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+	'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+	'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+	'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+	'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+	'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+	'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+	'tr:nth-child(even){background-color:#f8fafc;}' +
+	'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+	'@media print{@page{size:A4 landscape;margin:20mm;}body{padding:0;margin:0;width:297mm;}}' +
+	'</style></head><body>' +
+	'<div class="header-container">' +
+	'<div class="logo-section">' +
+	'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+	'<span class="logo-text">PreSkool</span>' +
+	'</div>' +
+	'<div class="report-title">' + data.reportTitle + '</div>' +
+	'<div class="report-meta">' + data.schoolName + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+	'</div>' +
+	'<table><thead><tr>';
+
+	data.headers.forEach(function(h) { html += '<th>' + h + '</th>'; });
+	html += '</tr></thead><tbody>';
+	data.rows.forEach(function(row) {
+		html += '<tr>';
+		row.forEach(function(val) { html += '<td>' + (val || "") + '</td>'; });
+		html += '</tr>';
+	});
+	html += '</tbody></table>' +
+	'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+	'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+	'</body></html>';
+
+	printWindow.document.write(html);
+	printWindow.document.close();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -533,6 +631,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
 		var dt = $('.datatable').DataTable();
+		dt.settings()[0].oLanguage.sEmptyTable = "No leave requests found.";
+		dt.settings()[0].oLanguage.sZeroRecords = "No leave requests found.";
+		dt.draw();
 		dt.on('draw', function() {
 			var selAll = document.getElementById('select-all');
 			if (selAll) {

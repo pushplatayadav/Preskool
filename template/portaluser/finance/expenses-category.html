@@ -1,0 +1,610 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<link rel="stylesheet" href="{% static 'assets/plugins/select2/css/select2.min.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+
+        {% if messages %}
+        <div class="messages-container mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Header -->
+        <div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+            <div class="my-auto mb-2">
+                <h3 class="page-title mb-1">Expense Category</h3>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'home' %}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="javascript:void(0);">Finance & Accounts</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Expense Category</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+                <div class="pe-1 mb-2">
+                    <a href="{% url 'finance:expenses-category' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+                        data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+                        <i class="ti ti-refresh"></i>
+                    </a>
+                </div>
+                <div class="pe-1 mb-2">
+                    <button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+                        data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+                        data-bs-original-title="Print" onclick="printOrExportPDF();">
+                        <i class="ti ti-printer"></i>
+                    </button>
+                </div>
+                <div class="dropdown me-2 mb-2">
+                    <a href="javascript:void(0);"
+                        class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+                        data-bs-toggle="dropdown">
+                        <i class="ti ti-file-export me-2"></i>Export
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end p-3">
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="printOrExportPDF();"><i
+                                    class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportToExcel();"><i
+                                    class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mb-2">
+                    <a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+                        data-bs-target="#add_expenses_category"><i class="ti ti-square-rounded-plus me-2"></i>Add
+                        Category</a>
+                </div>
+            </div>
+        </div>
+        <!-- /Page Header -->
+
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                <h4 class="mb-3">Expense Category List</h4>
+                <div class="d-flex align-items-center flex-wrap">
+                    <div class="input-icon-start mb-3 me-2 position-relative">
+                        <span class="icon-addon">
+                            <i class="ti ti-calendar"></i>
+                        </span>
+                        <input type="text" class="form-control date-range bookingrange" placeholder="Select"
+                            value="{% if current_academic_year %}Academic Year : {{ current_academic_year.name }}{% else %}Academic Year : 2024 / 2025{% endif %}" readonly>
+                    </div>
+                    <div class="dropdown mb-3 me-2">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+                                class="ti ti-filter me-2"></i>Filter</a>
+                        <div class="dropdown-menu drop-width">
+                            <form method="get" action="{% url 'finance:expenses-category' %}">
+                                <div class="d-flex align-items-center border-bottom p-3">
+                                    <h4>Filter</h4>
+                                </div>
+                                <div class="p-3 pb-0 border-bottom">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Category</label>
+                                                <select class="select" name="filter_category">
+                                                    <option value="">Select</option>
+                                                    {% for cname in category_names %}
+                                                    <option value="{{ cname }}" {% if filter_category == cname %}selected{% endif %}>{{ cname }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-3 d-flex align-items-center justify-content-end">
+                                    <a href="{% url 'finance:expenses-category' %}" class="btn btn-light me-3">Reset</a>
+                                    <button type="submit" class="btn btn-primary">Apply</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="dropdown mb-3">
+                        <a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+                            data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+                        </a>
+                        <ul class="dropdown-menu p-3">
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort != 'desc' and sort != 'recent' and sort != 'recent_added' %}active{% endif %}" data-sort="asc">Ascending (A-Z)</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'desc' %}active{% endif %}" data-sort="desc">Descending (Z-A)</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'recent' %}active{% endif %}" data-sort="recent">Recently Viewed</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded-1 sort-option {% if sort == 'recent_added' %}active{% endif %}" data-sort="recent_added">Recently Added</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-0 py-3">
+                <!-- Expenses Category List -->
+                <div class="custom-datatable-filter table-responsive">
+                    <table class="table" id="expense-category-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th class="no-sort">
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" id="select-all">
+                                    </div>
+                                </th>
+                                <th>ID</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr>
+                                <td>
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" name="selected_items" value="{{ cat.pk }}">
+                                    </div>
+                                </td>
+                                <td><a href="javascript:void(0);" class="link-primary edit-category-btn"
+                                        data-pk="{{ cat.pk }}"
+                                        data-id="{{ cat.category_id }}"
+                                        data-name="{{ cat.name }}"
+                                        data-description="{{ cat.description }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#edit_expenses_category">{{ cat.category_id }}</a></td>
+                                <td>{{ cat.name }}</td>
+                                <td>{{ cat.description|default:"-" }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="dropdown">
+                                            <a href="#" class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="ti ti-dots-vertical fs-14"></i>
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-end p-3">
+                                                <li>
+                                                    <a href="javascript:void(0);" class="dropdown-item rounded-1 edit-category-btn"
+                                                        data-pk="{{ cat.pk }}"
+                                                        data-id="{{ cat.category_id }}"
+                                                        data-name="{{ cat.name }}"
+                                                        data-description="{{ cat.description }}"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#edit_expenses_category"><i
+                                                            class="ti ti-edit-circle me-2"></i>Edit</a>
+                                                </li>
+                                                <li>
+                                                    <a href="javascript:void(0);" class="dropdown-item rounded-1 text-danger delete-btn"
+                                                        data-pk="{{ cat.pk }}"
+                                                        data-name="{{ cat.name }}"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#delete-modal"><i
+                                                            class="ti ti-trash-x me-2"></i>Delete</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No expense categories found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- /Expenses Category List -->
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Expense Category Modal -->
+<div class="modal fade" id="add_expenses_category">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Expense Category</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <form method="post" action="{% url 'finance:expenses-category' %}">
+                {% csrf_token %}
+                <input type="hidden" name="add_category" value="1">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Category ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="category_id" id="add_category_id" value="{{ next_category_id }}" placeholder="e.g. EXC617453">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Category Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" placeholder="Enter Category Name" required>
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="3" placeholder="Add description"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Add Expense Category Modal -->
+
+<!-- Edit Expense Category Modal -->
+<div class="modal fade" id="edit_expenses_category">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Edit Expense Category</h4>
+                <button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <form method="post" id="edit-category-form">
+                {% csrf_token %}
+                <input type="hidden" name="edit_category" value="1">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Category ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="category_id" id="edit_category_id" placeholder="e.g. EXC617453">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Category Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" id="edit_name" placeholder="Enter Category Name" required>
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" id="edit_description" rows="3" placeholder="Add description"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Edit Expense Category Modal -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="delete-category-form">
+                {% csrf_token %}
+                <div class="modal-body text-center">
+                    <span class="delete-icon"><i class="ti ti-trash-x"></i></span>
+                    <h4>Confirm Deletion</h4>
+                    <p>You want to delete category <strong id="delete-category-name"></strong>, this can't be undone once deleted.</p>
+                    <div class="d-flex justify-content-center">
+                        <a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script src="{% static 'assets/plugins/select2/js/select2.min.js' %}"></script>
+<script>
+// Global helper functions for Print and Export
+function getExpenseCategoryData() {
+    var headers = ["ID", "Category", "Description"];
+    var data = [];
+    var rows = document.querySelectorAll('#expense-category-table tbody tr');
+    rows.forEach(function(tr) {
+        var cols = tr.querySelectorAll('td');
+        if (cols.length >= 4) {
+            data.push([
+                cols[1].innerText.trim(),
+                cols[2].innerText.trim(),
+                cols[3].innerText.trim()
+            ]);
+        }
+    });
+    return {
+        headers: headers,
+        rows: data,
+        reportTitle: "Expense Category Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportToExcel() {
+    var data = getExpenseCategoryData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "expense_categories_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+    var data = getExpenseCategoryData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+    var html = `
+    <html>
+    <head>
+        <title>` + data.reportTitle + `</title>
+        <style>
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 13px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 12px 16px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 210mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">` + data.reportTitle + `</div>
+            <div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    ` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+                </tr>
+            </thead>
+            <tbody>
+                ` + data.rows.map(function(row) {
+                    return '<tr>' + row.map(function(val) { return '<td>' + val + '</td>'; }).join("") + '</tr>';
+                }).join("") + `
+            </tbody>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <\/script>
+    </body>
+    </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Initialize DataTable explicitly with columnDefs to suppress tn/18
+    if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#expense-category-table')) {
+        $('#expense-category-table').DataTable({
+            "bFilter": true,
+            "ordering": true,
+            "info": false,
+            "columnDefs": [{ "orderable": false, "targets": [0, 4] }],
+            "language": {
+                search: ' ',
+                sLengthMenu: 'Row Per Page _MENU_ Entries',
+                searchPlaceholder: "Search",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                paginate: { next: ' Next', previous: 'Prev ' }
+            }
+        });
+    }
+
+    // Fetch dynamic next ID when opening Add modal
+    var addModalEl = document.getElementById('add_expenses_category');
+    if (addModalEl) {
+        addModalEl.addEventListener('show.bs.modal', function() {
+            fetch('{% url "finance:expenses-category-next-id" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.next_id) {
+                        document.getElementById('add_category_id').value = data.next_id;
+                    }
+                })
+                .catch(err => console.error('Error fetching next category ID:', err));
+        });
+    }
+
+    // Populate Edit Modal
+    document.querySelectorAll('.edit-category-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var pk = this.dataset.pk;
+            var id = this.dataset.id;
+            var name = this.dataset.name;
+            var description = this.dataset.description;
+
+            document.getElementById('edit-category-form').action = '{% url "finance:expenses-category-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_category_id').value = id;
+            document.getElementById('edit_name').value = name;
+            document.getElementById('edit_description').value = description;
+        });
+    });
+
+    // Populate Delete Modal
+    document.querySelectorAll('.delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var pk = this.dataset.pk;
+            var name = this.dataset.name;
+
+            document.getElementById('delete-category-form').action = '{% url "finance:expenses-category-delete" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('delete-category-name').textContent = name;
+        });
+    });
+
+    // Sort options
+    document.querySelectorAll('.sort-option').forEach(function(opt) {
+        opt.addEventListener('click', function(e) {
+            e.preventDefault();
+            var sortVal = this.getAttribute('data-sort');
+            var url = new URL(window.location.href);
+            url.searchParams.set('sort', sortVal);
+            window.location.href = url.toString();
+        });
+    });
+
+    // Select all checkboxes
+    var selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            var checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+            checkboxes.forEach(function(cb) {
+                cb.checked = selectAll.checked;
+            });
+        });
+    }
+});
+</script>
+{% endblock extra_js %}

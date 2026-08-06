@@ -1,0 +1,991 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Transport</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Management</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Vehicles List</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'management:transport-vehicle' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printOrExportPDF()"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" onclick="printOrExportPDF()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" onclick="exportToExcel()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+
+					<a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+						data-bs-target="#add_vehicle"><i class="ti ti-square-rounded-plus me-2"></i>Add
+						Vehicle</a>
+
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Vehicles List -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Transport</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+							value="{% if current_academic_year %}{{ current_academic_year }}{% else %}Academic Year : 2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width p-0">
+							<form method="get" action="{% url 'management:transport-vehicle' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4 class="mb-0">Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Vehicle Number</label>
+												<select class="select form-select" name="filter_vehicle_no">
+													<option value="">Select</option>
+													{% for no in vehicle_numbers %}
+													<option value="{{ no }}" {% if filter_vehicle_no == no %}selected{% endif %}>{{ no }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Model</label>
+												<select class="select form-select" name="filter_model">
+													<option value="">Select</option>
+													{% for model in vehicle_models %}
+													<option value="{{ model }}" {% if filter_model == model %}selected{% endif %}>{{ model }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">GPS Device</label>
+												<select class="select form-select" name="filter_gps_device">
+													<option value="">Select</option>
+													{% for gps in gps_devices %}
+													<option value="{{ gps }}" {% if filter_gps_device == gps %}selected{% endif %}>{{ gps }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Driver</label>
+												<select class="select form-select" name="filter_driver">
+													<option value="">Select</option>
+													{% for driver in all_drivers %}
+													<option value="{{ driver.name }}" {% if filter_driver == driver.name %}selected{% endif %}>{{ driver.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Status</label>
+												<select class="select form-select" name="filter_status">
+													<option value="">Select</option>
+													<option value="Active" {% if filter_status == 'Active' %}selected{% endif %}>Active</option>
+													<option value="Inactive" {% if filter_status == 'Inactive' %}selected{% endif %}>Inactive</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'management:transport-vehicle' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>
+							{% if sort_by == 'name_desc' %}Sort by Z-A{% elif sort_by == 'viewed' %}Sort by Recently Viewed{% elif sort_by == 'date_desc' %}Sort by Recently Added{% else %}Sort by A-Z{% endif %}
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="?sort_by=name_asc" class="dropdown-item rounded-1 {% if not sort_by or sort_by == 'name_asc' %}active{% endif %}">
+									Ascending (A-Z)
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=name_desc" class="dropdown-item rounded-1 {% if sort_by == 'name_desc' %}active{% endif %}">
+									Descending (Z-A)
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=viewed" class="dropdown-item rounded-1 {% if sort_by == 'viewed' %}active{% endif %}">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=date_desc" class="dropdown-item rounded-1 {% if sort_by == 'date_desc' %}active{% endif %}">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+
+				<!-- Vehicle List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>ID</th>
+								<th>Vehicle No</th>
+								<th>Vehicle Model</th>
+								<th>Made of Year</th>
+								<th>Registration No</th>
+								<th>Chassis No</th>
+								<th>GPS Device ID</th>
+								<th>Live Track</th>
+								<th>Driver</th>
+								<th>Status</th>
+								<th class="no-sort">Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for vehicle in vehicles %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox">
+									</div>
+								</td>
+								<td><a href="javascript:void(0);" class="link-primary fw-medium">{{ vehicle.vehicle_id }}</a></td>
+								<td>
+									{{ vehicle.vehicle_no }}
+								</td>
+								<td>{{ vehicle.vehicle_model|default:"-" }}</td>
+								<td>{{ vehicle.made_of_year|default:"-" }}</td>
+								<td>{{ vehicle.registration_no|default:"-" }}</td>
+								<td><span class="badge bg-soft-light">{{ vehicle.chassis_no|default:"-" }}</span></td>
+								<td>{{ vehicle.gps_device_id|default:"-" }}</td>
+								<td><a href="javascript:void(0);" class="btn btn-light live-track-btn"
+										data-bs-toggle="modal" data-bs-target="#live_track"
+										data-vehicle-no="{{ vehicle.vehicle_no }}"
+										data-vehicle-model="{{ vehicle.vehicle_model }}"
+										data-driver="{{ vehicle.driver.name|default:'-' }}"
+										data-driver-contact="{{ vehicle.driver_contact_no|default:'-' }}"
+										data-gps="{{ vehicle.gps_device_id|default:'-' }}">Live Track</a></td>
+								<td>
+									<div class="d-flex align-items-center">
+										<a href="javascript:void(0);" class="avatar avatar-md">
+											<span class="avatar-title rounded-circle bg-primary-transparent text-primary fw-semibold">{{ vehicle.driver.name|slice:":1"|upper|default:"-" }}</span>
+										</a>
+										<div class="ms-2">
+											<p class="text-dark mb-0"><a href="javascript:void(0);">{{ vehicle.driver.name|default:"-" }}</a></p>
+											<span class="fs-12">{{ vehicle.driver_contact_no|default:"-" }}</span>
+										</div>
+									</div>
+								</td>
+								<td>
+									<span class="badge {% if vehicle.status == 'Active' %}badge-soft-success{% else %}badge-soft-danger{% endif %} d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>{{ vehicle.status }}</span>
+								</td>
+								<td class="action-table-data">
+									<div class="d-flex align-items-center">
+										<div class="dropdown">
+											<a href="javascript:void(0);"
+												class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+												data-bs-toggle="dropdown" aria-expanded="false">
+												<i class="ti ti-dots-vertical fs-14"></i>
+											</a>
+											<ul class="dropdown-menu dropdown-menu-end p-3">
+												<li>
+													<a class="dropdown-item rounded-1 edit-vehicle-btn" href="javascript:void(0);"
+														data-pk="{{ vehicle.pk }}"
+														data-id="{{ vehicle.vehicle_id }}"
+														data-vehicle-no="{{ vehicle.vehicle_no }}"
+														data-vehicle-model="{{ vehicle.vehicle_model }}"
+														data-made-of-year="{{ vehicle.made_of_year }}"
+														data-registration-no="{{ vehicle.registration_no }}"
+														data-chassis-no="{{ vehicle.chassis_no }}"
+														data-seat-capacity="{{ vehicle.seat_capacity }}"
+														data-gps="{{ vehicle.gps_device_id }}"
+														data-driver-pk="{{ vehicle.driver.pk|default:'' }}"
+														data-license="{{ vehicle.driver_license_no }}"
+														data-contact="{{ vehicle.driver_contact_no }}"
+														data-address="{{ vehicle.driver_address }}"
+														data-status="{{ vehicle.status }}">
+														<i class="ti ti-edit-circle me-2"></i>Edit
+													</a>
+												</li>
+												<li>
+													<a class="dropdown-item rounded-1 delete-vehicle-btn" href="javascript:void(0);"
+														data-pk="{{ vehicle.pk }}" data-vehicle-no="{{ vehicle.vehicle_no }}">
+														<i class="ti ti-trash-x me-2"></i>Delete
+													</a>
+												</li>
+											</ul>
+										</div>
+									</div>
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td colspan="12" class="text-center py-5 text-muted">
+									<i class="ti ti-bus fs-30 mb-2 d-block"></i>
+									No vehicle records found.
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Vehicle List -->
+			</div>
+		</div>
+		<!-- /Vehicles List -->
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Add New Vehicle -->
+<div class="modal fade" id="add_vehicle">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add New Vehicle</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:transport-vehicle' %}">
+				{% csrf_token %}
+				<input type="hidden" name="add_vehicle" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle ID</label>
+										<input type="text" class="form-control" name="vehicle_id" id="add_vehicle_id" value="{{ next_vehicle_id }}">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle No <span class="text-danger">*</span></label>
+										<input type="text" class="form-control" name="vehicle_no" id="add_vehicle_no" placeholder="Enter Vehicle No" required>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle Model</label>
+										<input type="text" class="form-control" name="vehicle_model" id="add_vehicle_model" placeholder="Enter Vehicle Model">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Made of Year</label>
+										<div class="date-pic">
+											<input type="text" class="form-control datetimepicker" name="made_of_year" id="add_made_of_year">
+											<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Registration No</label>
+										<input type="text" class="form-control" name="registration_no" id="add_registration_no" placeholder="Enter Registration No">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Chassis No</label>
+										<input type="text" class="form-control" name="chassis_no" id="add_chassis_no" placeholder="Enter Chassis No">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Seat Capacity</label>
+										<input type="text" class="form-control" name="seat_capacity" id="add_seat_capacity" placeholder="Enter Seat Capacity">
+									</div>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">GPS Tracking ID</label>
+								<input type="text" class="form-control" name="gps_device_id" id="add_gps_device_id" placeholder="Enter GPS Tracking ID">
+							</div>
+							<hr>
+							<div class="mb-3">
+								<h4>Driver details</h4>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Select Driver</label>
+								<select class="select form-select" name="driver" id="add_driver">
+									<option value="">Select</option>
+									{% for driver in all_drivers %}
+									<option value="{{ driver.pk }}" data-license="{{ driver.driver_license_no }}" data-phone="{{ driver.phone_number }}" data-address="{{ driver.address }}">{{ driver.name }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Driver License</label>
+										<input type="text" class="form-control" name="driver_license_no" id="add_driver_license_no" placeholder="Enter Driver License">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Driver Contact No</label>
+										<input type="text" class="form-control" name="driver_contact_no" id="add_driver_contact_no" placeholder="Enter Driver Contact No">
+									</div>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Driver Address</label>
+								<input type="text" class="form-control" name="driver_address" id="add_driver_address" placeholder="Enter Driver Address">
+							</div>
+						</div>
+						<div class="modal-satus-toggle d-flex align-items-center justify-content-between">
+							<div class="status-title">
+								<h5>Status</h5>
+								<p>Change the Status by toggle </p>
+							</div>
+							<div class="status-toggle modal-status">
+								<input type="hidden" name="status" value="Active" id="add_vehicle_status">
+								<input type="checkbox" id="vehicle_status_check_add" class="check" value="Active" checked>
+								<label for="vehicle_status_check_add" class="checktoggle"> </label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-primary">Add New Vehicle</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add New Vehicle -->
+
+<!-- Edit New Vehicle -->
+<div class="modal fade" id="edit_vehicle">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header align-items-center">
+				<div class="d-flex align-items-center">
+					<h4 class="modal-title">Edit Vehicle</h4>
+					<span class="badge badge-soft-primary ms-2" id="edit_vehicle_badge">ID : -</span>
+				</div>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:transport-vehicle' %}">
+				{% csrf_token %}
+				<input type="hidden" name="edit_vehicle" value="1">
+				<input type="hidden" name="vehicle_db_id" id="edit_vehicle_db_id">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle ID</label>
+										<input type="text" class="form-control" name="vehicle_id" id="edit_vehicle_id">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle No <span class="text-danger">*</span></label>
+										<input type="text" class="form-control" name="vehicle_no" id="edit_vehicle_no" placeholder="Enter Vehicle No" required>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Vehicle Model</label>
+										<input type="text" class="form-control" name="vehicle_model" id="edit_vehicle_model" placeholder="Enter Vehicle Model">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Made of Year</label>
+										<div class="date-pic">
+											<input type="text" class="form-control datetimepicker" name="made_of_year" id="edit_made_of_year" placeholder="Choose">
+											<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Registration No</label>
+										<input type="text" class="form-control" name="registration_no" id="edit_registration_no" placeholder="Enter Registration No">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Chassis No</label>
+										<input type="text" class="form-control" name="chassis_no" id="edit_chassis_no" placeholder="Enter Chassis No">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Seat Capacity</label>
+										<input type="text" class="form-control" name="seat_capacity" id="edit_seat_capacity" placeholder="Enter Seat Capacity">
+									</div>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">GPS Tracking ID</label>
+								<input type="text" class="form-control" name="gps_device_id" id="edit_gps_device_id" placeholder="Enter GPS Tracking ID">
+							</div>
+							<hr>
+							<div class="mb-3">
+								<h4>Driver details</h4>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Select Driver</label>
+								<select class="select form-select" name="driver" id="edit_driver">
+									<option value="">Select</option>
+									{% for driver in all_drivers %}
+									<option value="{{ driver.pk }}" data-license="{{ driver.driver_license_no }}" data-phone="{{ driver.phone_number }}" data-address="{{ driver.address }}">{{ driver.name }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="row">
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Driver License</label>
+										<input type="text" class="form-control" name="driver_license_no" id="edit_driver_license_no" placeholder="Enter Driver License">
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="mb-3">
+										<label class="form-label">Driver Contact No</label>
+										<input type="text" class="form-control" name="driver_contact_no" id="edit_driver_contact_no" placeholder="Enter Driver Contact No">
+									</div>
+								</div>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Driver Address</label>
+								<input type="text" class="form-control" name="driver_address" id="edit_driver_address" placeholder="Enter Driver Address">
+							</div>
+						</div>
+						<div class="modal-satus-toggle d-flex align-items-center justify-content-between">
+							<div class="status-title">
+								<h5>Status</h5>
+								<p>Change the Status by toggle </p>
+							</div>
+							<div class="status-toggle modal-status">
+								<input type="hidden" name="status" value="Active" id="edit_vehicle_status">
+								<input type="checkbox" id="vehicle_status_check_edit" class="check" value="Active" checked>
+								<label for="vehicle_status_check_edit" class="checktoggle"> </label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-primary">Save Vehicle</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit New Vehicle -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete_vehicle_modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" action="{% url 'management:transport-vehicle' %}">
+				{% csrf_token %}
+				<input type="hidden" name="delete_vehicle" value="1">
+				<input type="hidden" name="vehicle_db_id" id="delete_vehicle_db_id">
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete all the marked items, this cant be undone once you delete. <strong id="delete_vehicle_no"></strong></p>
+					<div class="d-flex justify-content-center">
+						<button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</button>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+
+<!-- Live Track -->
+<div class="modal fade" id="live_track">
+	<div class="modal-dialog modal-dialog-centered  modal-xl">
+		<div class="modal-content">
+			<div class="modal-header align-items-center">
+				<div class="d-flex align-items-center">
+					<h4 class="modal-title">Live Tracking Vehicle</h4>
+					<span class="badge badge-soft-primary ms-2" id="live_track_gps_badge">GPS Tracking ID : -</span>
+				</div>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<div class="modal-body mb-4">
+				<ul class="book-taker-info live-track-info justify-content-between">
+					<li>
+						<span>Vehicle No</span>
+						<h6 id="live_track_vehicle_no">-</h6>
+					</li>
+					<li>
+						<span>Vehicle Model</span>
+						<h6 id="live_track_vehicle_model">-</h6>
+					</li>
+					<li>
+						<span>Driver</span>
+						<h6 id="live_track_driver">-</h6>
+					</li>
+					<li>
+						<span>Driver Contact No</span>
+						<h6 id="live_track_driver_contact">-</h6>
+					</li>
+				</ul>
+				<div class="live-track-map w-100">
+					<iframe
+						src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3321.6088932774796!2d-117.8132203247921!3d33.64138153931407!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80dcddf599c1986f%3A0x6826f6868b4f8e35!2sHillcrest%2C%20Irvine%2C%20CA%2092603%2C%20USA!5e0!3m2!1sen!2sin!4v1706772657955!5m2!1sen!2sin"
+						allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+				<a href="{% url 'management:transport-vehicle' %}" class="btn btn-primary">Reset to Live Location</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Live Track -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script>
+function getVehiclesData() {
+    var headers = ["ID", "Vehicle No", "Vehicle Model", "Made of Year", "Registration No", "Chassis No", "GPS Device ID", "Driver", "Driver Contact No", "Status"];
+    var data = [];
+    var rows = document.querySelectorAll("table.datatable tbody tr");
+    rows.forEach(function(tr) {
+        var cols = tr.querySelectorAll("td");
+        if (cols.length > 1) {
+            var vehicleId = cols[1].innerText.trim();
+            var vehicleNo = cols[2].innerText.trim();
+            var vehicleModel = cols[3].innerText.trim();
+            var madeOfYear = cols[4].innerText.trim();
+            var registrationNo = cols[5].innerText.trim();
+            var chassisNo = cols[6].innerText.trim();
+            var gps = cols[7].innerText.trim();
+            var driverEl = cols[9].querySelector('p a');
+            var driver = driverEl ? driverEl.textContent.trim() : cols[9].innerText.trim();
+            var contactEl = cols[9].querySelector('span');
+            var contact = contactEl ? contactEl.textContent.trim() : '-';
+            var status = cols[10].innerText.trim();
+            if (vehicleId && vehicleNo) {
+                data.push([vehicleId, vehicleNo, vehicleModel, madeOfYear, registrationNo, chassisNo, gps, driver, contact, status]);
+            }
+        }
+    });
+    return {
+        headers: headers,
+        rows: data,
+        reportTitle: "Transport Vehicle Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function computeNextVehicleId() {
+    var maxNum = 0;
+    document.querySelectorAll('table.datatable tbody tr td:nth-child(2)').forEach(function(td) {
+        var text = (td.textContent || '').trim();
+        var match = text.match(/B8048(\d+)/i) || text.match(/(\d+)/);
+        if (match) {
+            var num = parseInt(match[1], 10);
+            if (num > maxNum) maxNum = num;
+        }
+    });
+    return maxNum > 0 ? 'B8048' + (maxNum + 1) : 'B80481';
+}
+
+function exportToExcel() {
+    var data = getVehiclesData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "transport_vehicles_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+    var data = getVehiclesData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+    var html = `
+    <html>
+    <head>
+        <title>` + data.reportTitle + `</title>
+        <style>
+            @page {
+                size: A4 landscape;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 12px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 10px 12px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 landscape;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 297mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">` + data.reportTitle + `</div>
+            <div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + `</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    ` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+                </tr>
+            </thead>
+            <tbody>
+                ` + data.rows.map(function(row) {
+                    return '<tr>' + row.map(function(val) { return '<td>' + val + '</td>'; }).join("") + '</tr>';
+                }).join("") + `
+            </tbody>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <` + `/script>
+    </body>
+    </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+function clearVehicleAddForm() {
+    ['add_vehicle_no', 'add_vehicle_model', 'add_registration_no', 'add_chassis_no', 'add_seat_capacity', 'add_gps_device_id', 'add_driver_license_no', 'add_driver_contact_no', 'add_driver_address', 'add_made_of_year'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    var driverSelect = document.getElementById('add_driver');
+    if (driverSelect) driverSelect.value = '';
+    var statusInput = document.getElementById('add_vehicle_status');
+    var statusCheck = document.getElementById('vehicle_status_check_add');
+    if (statusInput) statusInput.value = 'Active';
+    if (statusCheck) {
+        statusCheck.checked = true;
+        statusCheck.value = 'Active';
+    }
+}
+
+function fillDriverDetails(selectId, licenseId, contactId, addressId) {
+    var select = document.getElementById(selectId);
+    var license = document.getElementById(licenseId);
+    var contact = document.getElementById(contactId);
+    var address = document.getElementById(addressId);
+    if (!select) return;
+    var opt = select.options[select.selectedIndex];
+    if (license) license.value = opt.getAttribute('data-license') || '';
+    if (contact) contact.value = opt.getAttribute('data-phone') || '';
+    if (address) address.value = opt.getAttribute('data-address') || '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var addModalEl = document.getElementById('add_vehicle');
+    if (addModalEl) {
+        addModalEl.addEventListener('show.bs.modal', function() {
+            clearVehicleAddForm();
+            var idInput = document.getElementById('add_vehicle_id');
+            fetch('{% url "management:transport-vehicle-next-id" %}')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data && data.success && data.vehicle_id) {
+                        idInput.value = data.vehicle_id;
+                    } else {
+                        idInput.value = computeNextVehicleId();
+                    }
+                })
+                .catch(function() {
+                    idInput.value = computeNextVehicleId();
+                });
+        });
+    }
+
+    var addDriverSelect = document.getElementById('add_driver');
+    if (addDriverSelect) {
+        addDriverSelect.addEventListener('change', function() {
+            fillDriverDetails('add_driver', 'add_driver_license_no', 'add_driver_contact_no', 'add_driver_address');
+        });
+    }
+    var editDriverSelect = document.getElementById('edit_driver');
+    if (editDriverSelect) {
+        editDriverSelect.addEventListener('change', function() {
+            fillDriverDetails('edit_driver', 'edit_driver_license_no', 'edit_driver_contact_no', 'edit_driver_address');
+        });
+    }
+
+    document.querySelectorAll('.edit-vehicle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('edit_vehicle_db_id').value = this.getAttribute('data-pk');
+            var editVehicleId = document.getElementById('edit_vehicle_id');
+            if (editVehicleId) editVehicleId.value = this.getAttribute('data-id');
+            document.getElementById('edit_vehicle_badge').textContent = 'ID : ' + this.getAttribute('data-id');
+            document.getElementById('edit_vehicle_no').value = this.getAttribute('data-vehicle-no');
+            document.getElementById('edit_vehicle_model').value = this.getAttribute('data-vehicle-model');
+            document.getElementById('edit_made_of_year').value = this.getAttribute('data-made-of-year');
+            document.getElementById('edit_registration_no').value = this.getAttribute('data-registration-no');
+            document.getElementById('edit_chassis_no').value = this.getAttribute('data-chassis-no');
+            document.getElementById('edit_seat_capacity').value = this.getAttribute('data-seat-capacity');
+            document.getElementById('edit_gps_device_id').value = this.getAttribute('data-gps');
+            document.getElementById('edit_driver_license_no').value = this.getAttribute('data-license');
+            document.getElementById('edit_driver_contact_no').value = this.getAttribute('data-contact');
+            document.getElementById('edit_driver_address').value = this.getAttribute('data-address');
+            var driverSelect = document.getElementById('edit_driver');
+            if (driverSelect) {
+                var driverPk = this.getAttribute('data-driver-pk');
+                for (var i = 0; i < driverSelect.options.length; i++) {
+                    if (driverSelect.options[i].value === driverPk) {
+                        driverSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            var statusVal = this.getAttribute('data-status');
+            var statusCheck = document.getElementById('vehicle_status_check_edit');
+            var statusInput = document.getElementById('edit_vehicle_status');
+            if (statusCheck) {
+                statusCheck.checked = (statusVal === 'Active');
+                statusCheck.value = statusVal === 'Active' ? 'Active' : 'Inactive';
+            }
+            if (statusInput) {
+                statusInput.value = statusVal === 'Active' ? 'Active' : 'Inactive';
+            }
+            var modal = new bootstrap.Modal(document.getElementById('edit_vehicle'));
+            modal.show();
+        });
+    });
+
+    document.querySelectorAll('.delete-vehicle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('delete_vehicle_db_id').value = this.getAttribute('data-pk');
+            document.getElementById('delete_vehicle_no').textContent = this.getAttribute('data-vehicle-no');
+            var modal = new bootstrap.Modal(document.getElementById('delete_vehicle_modal'));
+            modal.show();
+        });
+    });
+
+    document.querySelectorAll('.live-track-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('live_track_vehicle_no').textContent = this.getAttribute('data-vehicle-no');
+            document.getElementById('live_track_vehicle_model').textContent = this.getAttribute('data-vehicle-model');
+            document.getElementById('live_track_driver').textContent = this.getAttribute('data-driver');
+            document.getElementById('live_track_driver_contact').textContent = this.getAttribute('data-driver-contact');
+            document.getElementById('live_track_gps_badge').textContent = 'GPS Tracking ID : ' + this.getAttribute('data-gps');
+        });
+    });
+
+    document.querySelectorAll('.status-toggle .check').forEach(function(check) {
+        check.addEventListener('change', function() {
+            var statusInput = this.closest('.status-toggle').querySelector('input[type="hidden"]');
+            if (statusInput) {
+                statusInput.value = this.checked ? 'Active' : 'Inactive';
+            }
+            this.value = this.checked ? 'Active' : 'Inactive';
+        });
+    });
+});
+</script>
+{% endblock extra_js %}

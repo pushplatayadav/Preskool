@@ -220,6 +220,7 @@
                                                     <a class="dropdown-item rounded-1 edit-homework-btn" href="#"
                                                         data-bs-toggle="modal" data-bs-target="#edit_home_work"
                                                         data-pk="{{ hw.pk }}"
+                                                        data-homework-id="{{ hw.homework_id }}"
                                                         data-class-name="{{ hw.school_class.name }}"
                                                         data-class-pk="{{ hw.school_class.pk }}"
                                                         data-section="{{ hw.section.name }}"
@@ -277,6 +278,10 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Homework ID</label>
+                                <input type="text" class="form-control" name="homework_id" value="{{ next_homework_id }}">
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Class</label>
                                 <select class="form-select" name="school_class" required>
@@ -371,6 +376,10 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Homework ID</label>
+                                <input type="text" class="form-control" name="homework_id" id="edit_homework_id" value="">
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Class</label>
                                 <select class="form-select" name="school_class" id="edit_class" required>
@@ -692,6 +701,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             var pk = this.dataset.pk;
             document.getElementById('edit-homework-form').action = '{% url "academics:homework-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_homework_id').value = this.dataset.homeworkId || '';
 
             document.getElementById('edit_class').value = this.dataset.classPk || '';
             document.getElementById('edit_section').value = this.dataset.sectionPk || '';

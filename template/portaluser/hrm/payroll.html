@@ -1,0 +1,804 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+{% load hrm_extras %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/dataTables.bootstrap5.min.css' %}">
+<style>
+.drop-width { min-width: 400px; }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Payroll</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">HRM</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Payroll</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'hrm:payroll-list' %}" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+						data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print"
+						data-bs-original-title="Print" onclick="printOrExportPDF();">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1"
+								onclick="printOrExportPDF();"><i class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1"
+								onclick="exportToExcel();"><i class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="javascript:void(0);" class="btn btn-primary d-flex align-items-center"
+						data-bs-toggle="modal" data-bs-target="#add_payroll"><i
+							class="ti ti-square-rounded-plus me-2"></i>Generate Payroll</a>
+				</div>
+				<div class="mb-2 ms-1">
+					<a href="javascript:void(0);" class="btn btn-danger d-none" id="bulk-delete-btn"
+						onclick="bulkDeleteSelected();"><i class="ti ti-trash me-2"></i>Delete Selected</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Filter Section -->
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Payroll List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+						value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width">
+							<form method="get" action="{% url 'hrm:payroll-list' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4>Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">All Staffs</label>
+												<select class="select" name="filter_staff">
+													<option value="">Select</option>
+													{% for opt in staff_names %}
+													<option value="{{ opt }}"
+														{% if filter_staff == opt %}selected{% endif %}>{{ opt }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Month</label>
+												<select class="select" name="filter_month">
+													<option value="">Select</option>
+													{% for month in months %}
+													<option value="{{ month }}"
+														{% if filter_month == month %}selected{% endif %}>{{ month }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="mb-0">
+												<label class="form-label">Year</label>
+												<select class="select" name="filter_year">
+													<option value="">Select</option>
+													{% for year in years %}
+													<option value="{{ year }}"
+														{% if filter_year == year %}selected{% endif %}>{{ year }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'hrm:payroll-list' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>Sort by A-Z
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="{% url 'hrm:payroll-list' %}?sort=asc{% if filter_staff %}&filter_staff={{ filter_staff }}{% endif %}{% if filter_month %}&filter_month={{ filter_month }}{% endif %}{% if filter_year %}&filter_year={{ filter_year }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+									Ascending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'hrm:payroll-list' %}?sort=desc{% if filter_staff %}&filter_staff={{ filter_staff }}{% endif %}{% if filter_month %}&filter_month={{ filter_month }}{% endif %}{% if filter_year %}&filter_year={{ filter_year }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+									Descending
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'hrm:payroll-list' %}?sort=recent{% if filter_staff %}&filter_staff={{ filter_staff }}{% endif %}{% if filter_month %}&filter_month={{ filter_month }}{% endif %}{% if filter_year %}&filter_year={{ filter_year }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recent' %}active{% endif %}">
+									Recently Viewed
+								</a>
+							</li>
+							<li>
+								<a href="{% url 'hrm:payroll-list' %}?sort=recent_added{% if filter_staff %}&filter_staff={{ filter_staff }}{% endif %}{% if filter_month %}&filter_month={{ filter_month }}{% endif %}{% if filter_year %}&filter_year={{ filter_year }}{% endif %}"
+									class="dropdown-item rounded-1 {% if sort == 'recent_added' %}active{% endif %}">
+									Recently Added
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 py-3">
+				<!-- Payroll List -->
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>ID</th>
+								<th>Name</th>
+								<th>Department</th>
+								<th>Designation </th>
+								<th>Phone</th>
+								<th>Amount</th>
+								<th>Status</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for pay in payrolls %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" name="selected_items"
+											value="{{ pay.pk }}">
+									</div>
+								</td>
+								<td><a href="{% url 'hrm:payroll-payslip' pay.pk %}" class="link-primary">{{ pay.code|default:"-" }}</a></td>
+								<td>
+									<div class="d-flex align-items-center">
+										<a href="{% url 'hrm:payroll-payslip' pay.pk %}" class="avatar avatar-md me-2"><span>
+											{% if pay.teacher and pay.teacher.profile_image %}
+											<img src="{{ pay.teacher.profile_image.url }}" alt="img">
+											{% elif pay.staff and pay.staff.profile_image %}
+											<img src="{{ pay.staff.profile_image.url }}" alt="img">
+											{% else %}
+											<img src="{% static 'assets/img/profiles/avatar-01.jpg' %}" alt="img">
+											{% endif %}
+										</span></a>
+										<a href="{% url 'hrm:payroll-payslip' pay.pk %}" class="text-dark">{{ pay.name }}</a>
+									</div>
+								</td>
+								<td>{{ pay.department|default:"-" }}</td>
+								<td>{{ pay.designation|default:"-" }}</td>
+								<td>{{ pay.phone|default:"-" }}</td>
+								<td>{{ pay.net_salary|currency }}</td>
+								<td>
+									{% if pay.status == "paid" %}
+									<span class="badge badge-soft-success d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>Paid</span>
+									{% elif pay.status == "generated" %}
+									<span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>Generated</span>
+									{% else %}
+									<span class="badge badge-soft-pending d-inline-flex align-items-center"><i
+											class="ti ti-circle-filled fs-5 me-1"></i>Pending</span>
+									{% endif %}
+								</td>
+								<td>
+									{% if pay.status == "paid" %}
+									<a href="{% url 'hrm:payroll-payslip' pay.pk %}" class="btn btn-light add-fee">View Payslip</a>
+									{% else %}
+									<a href="{% url 'hrm:payroll-payslip' pay.pk %}" class="btn btn-light add-fee">View Details</a>
+									{% endif %}
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td class="text-center text-muted py-4">No payroll records found. Click "Generate
+									Payroll" to create one.</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /Payroll List -->
+
+				<form method="post" id="bulk-delete-form" action="{% url 'hrm:payroll-list' %}" style="display:none;">
+					{% csrf_token %}
+					<input type="hidden" name="bulk_delete" value="1">
+					<div id="bulk-delete-items"></div>
+				</form>
+			</div>
+		</div>
+		<!-- /Filter Section -->
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Generate Payroll -->
+<div class="modal fade" id="add_payroll">
+	<div class="modal-dialog modal-dialog-centered modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Generate Payroll</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'hrm:payroll-list' %}" id="add-payroll-form">
+				{% csrf_token %}
+				<input type="hidden" name="add_payroll" value="1">
+				<input type="hidden" name="employee_type" id="payroll_employee_type">
+				<input type="hidden" name="employee_id" id="payroll_employee_id">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Employee <span class="text-danger">*</span></label>
+								<select class="select" id="payroll_employee" required>
+									<option value="">Select Employee</option>
+									{% for emp in employee_options %}
+									<option value="{{ emp.pk }}" data-type="{{ emp.type }}" data-name="{{ emp.name }}"
+										data-dept="{{ emp.department }}" data-designation="{{ emp.designation }}"
+										data-phone="{{ emp.phone }}" data-basic="{{ emp.basic }}">{{ emp.name }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Employee Name <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="name" id="payroll_name"
+									placeholder="Enter Employee Name" required>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Month <span class="text-danger">*</span></label>
+								<select class="select" name="month" required>
+									<option value="">Select</option>
+									{% for month in months %}
+									<option value="{{ month }}" {% if month == current_month %}selected{% endif %}>{{ month }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Year <span class="text-danger">*</span></label>
+								<select class="select" name="year" required>
+									<option value="">Select</option>
+									{% for year in years %}
+									<option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Status</label>
+								<select class="select" name="status" id="payroll_status">
+									<option value="generated">Generated</option>
+									<option value="paid">Paid</option>
+									<option value="pending">Pending</option>
+								</select>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Department</label>
+								<input type="text" class="form-control" name="department" id="payroll_department"
+									placeholder="Enter Department">
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Designation</label>
+								<input type="text" class="form-control" name="designation" id="payroll_designation"
+									placeholder="Enter Designation">
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Phone</label>
+								<input type="text" class="form-control" name="phone" id="payroll_phone"
+									placeholder="Enter Phone Number">
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label class="form-label">Pay Date</label>
+								<input type="date" class="form-control" name="pay_date" id="payroll_pay_date">
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-6">
+							<div class="card border">
+								<div class="card-header pb-0">
+									<h5 class="mb-3">Earnings</h5>
+								</div>
+								<div class="card-body">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Basic Salary</label>
+												<input type="text" class="form-control payroll-amount" name="basic_salary"
+													id="payroll_basic" placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">House Rent Allowance</label>
+												<input type="text" class="form-control payroll-amount"
+													name="house_rent_allowance" placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Dearness Allowance</label>
+												<input type="text" class="form-control payroll-amount"
+													name="dearness_allowance" placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Medical Allowance</label>
+												<input type="text" class="form-control payroll-amount"
+													name="medical_allowance" placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Other Allowance</label>
+												<input type="text" class="form-control payroll-amount"
+													name="other_allowance" placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Bonus</label>
+												<input type="text" class="form-control payroll-amount" name="bonus"
+													placeholder="0.00">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="card border">
+								<div class="card-header pb-0">
+									<h5 class="mb-3">Deductions</h5>
+								</div>
+								<div class="card-body">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Tax Deduction</label>
+												<input type="text" class="form-control payroll-amount"
+													name="tax_deduction" placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Provident Fund</label>
+												<input type="text" class="form-control payroll-amount"
+													name="provident_fund" placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Insurance</label>
+												<input type="text" class="form-control payroll-amount" name="insurance"
+													placeholder="0.00">
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-0">
+												<label class="form-label">Other Deduction</label>
+												<input type="text" class="form-control payroll-amount"
+													name="other_deduction" placeholder="0.00">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-12 mt-3">
+							<div class="d-flex align-items-center justify-content-between bg-light border rounded p-3">
+								<div>
+									<h6 class="mb-0">Net Salary</h6>
+									<small class="text-muted">Earnings minus Deductions</small>
+								</div>
+								<h4 class="mb-0 text-primary" id="payroll_net_preview">0</h4>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Generate Payroll</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Generate Payroll -->
+
+{% endblock modals %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap5.min.js' %}"></script>
+<script>
+function bulkDeleteSelected() {
+	var checked = document.querySelectorAll('table.datatable tbody input[type="checkbox"]:checked');
+	if (checked.length === 0) {
+		alert("Please select at least one item to delete.");
+		return;
+	}
+	if (!confirm("Are you sure you want to delete " + checked.length + " selected item(s)?")) {
+		return;
+	}
+	var container = document.getElementById('bulk-delete-items');
+	container.innerHTML = '';
+	checked.forEach(function(cb) {
+		var input = document.createElement('input');
+		input.type = 'hidden';
+		input.name = 'selected_items';
+		input.value = cb.value;
+		container.appendChild(input);
+	});
+	document.getElementById('bulk-delete-form').submit();
+}
+
+function toggleBulkDeleteBtn() {
+	var checked = document.querySelectorAll('table.datatable tbody input[type="checkbox"]:checked');
+	var btn = document.getElementById('bulk-delete-btn');
+	if (checked.length > 0) {
+		btn.classList.remove('d-none');
+	} else {
+		btn.classList.add('d-none');
+	}
+}
+
+function stripHtml(html) {
+	var el = document.createElement("div");
+	el.innerHTML = html;
+	return (el.textContent || el.innerText || "").trim();
+}
+
+function escapeHtml(value) {
+	return String(value == null ? "" : value)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+}
+
+function csvSafe(value) {
+	var text = String(value == null ? "" : value);
+	if (/^[=+\-@]/.test(text)) {
+		text = "'" + text;
+	}
+	return '"' + text.replace(/"/g, '""') + '"';
+}
+
+function getPayrollData() {
+	var headers = ["ID", "Name", "Department", "Designation", "Phone", "Amount", "Status"];
+	var data = [];
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+		var table = $('.datatable').DataTable();
+		table.rows({ search: 'applied' }).every(function() {
+			var rowData = this.data();
+			var row = [];
+			for (var i = 1; i < rowData.length - 1; i++) {
+				row.push(stripHtml(rowData[i]));
+			}
+			data.push(row);
+		});
+	} else {
+		var rows = document.querySelectorAll("table.datatable tbody tr");
+		rows.forEach(function(tr) {
+			var cols = tr.querySelectorAll("td");
+			if (cols.length > 1) {
+				var row = [];
+				for (var j = 1; j < cols.length - 1; j++) {
+					row.push((cols[j].textContent || cols[j].innerText || "").trim());
+				}
+				data.push(row);
+			}
+		});
+	}
+	data = data.filter(function(row) {
+		return row.some(function(val) { return val && val.trim() !== ""; });
+	});
+	return {
+		headers: headers,
+		rows: data,
+		reportTitle: "Payroll List",
+		schoolName: "{{ school_name|default:'Global International'|escapejs }}"
+	};
+}
+
+function exportToExcel() {
+	var data = getPayrollData();
+	if (data.rows.length === 0) {
+		alert("No data available to export.");
+		return;
+	}
+	try {
+		var csvContent = [];
+		csvContent.push(data.headers.map(csvSafe).join(","));
+		data.rows.forEach(function(row) {
+			csvContent.push(row.map(csvSafe).join(","));
+		});
+		var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+		var downloadLink = document.createElement("a");
+		downloadLink.download = "payroll_" + new Date().toISOString().slice(0, 10) + ".csv";
+		downloadLink.href = window.URL.createObjectURL(csvBlob);
+		downloadLink.style.display = "none";
+		document.body.appendChild(downloadLink);
+		downloadLink.click();
+		document.body.removeChild(downloadLink);
+	} catch (e) {
+		var exportUrl = "{% url 'hrm:payroll-export-excel' %}";
+		if (window.location.search) exportUrl += window.location.search;
+		window.location.href = exportUrl;
+	}
+}
+
+function printOrExportPDF() {
+	var data = getPayrollData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var printWindow = window.open("", "_blank");
+	if (!printWindow) {
+		var printUrl = "{% url 'hrm:payroll-export-pdf' %}";
+		if (window.location.search) printUrl += window.location.search;
+		if (confirm("Pop-ups are blocked. Open the printable report in a new tab instead?")) {
+			window.open(printUrl, "_blank");
+			return;
+		}
+		alert("Pop-ups are blocked. Please allow pop-ups for this site and try printing again.");
+		return;
+	}
+
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+
+	var totalAmount = 0;
+	data.rows.forEach(function(row) {
+		totalAmount += parseAmount(row[5]);
+	});
+
+	var filtersLine = "Staff: {% if filter_staff %}{{ filter_staff|escapejs }}{% else %}All{% endif %} | " +
+		"Month: {% if filter_month %}{{ filter_month|escapejs }}{% else %}All{% endif %} | " +
+		"Year: {% if filter_year %}{{ filter_year|escapejs }}{% else %}All{% endif %}";
+
+	var html = '<html><head><title>' + escapeHtml(data.reportTitle) + '</title>' +
+	'<style>' +
+	'@page{size:A4 portrait;margin:20mm;}' +
+	'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+	'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+	'.header-container{text-align:center;margin-bottom:40px;}' +
+	'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+	'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+	'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+	'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+	'.filters-line{font-size:12px;color:#475569;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;margin:14px auto 0;max-width:640px;}' +
+	'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+	'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+	'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+	'tr:nth-child(even){background-color:#f8fafc;}' +
+	'.total-row td{font-weight:700;background:#eef2ff;border-top:2px solid #4f46e5;}' +
+	'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+	'@media print{@page{size:A4 portrait;margin:20mm;}body{padding:0;margin:0;width:210mm;}}' +
+	'</style></head><body>' +
+	'<div class="header-container">' +
+	'<div class="logo-section">' +
+	'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+	'<span class="logo-text">PreSkool</span>' +
+	'</div>' +
+	'<div class="report-title">' + escapeHtml(data.reportTitle) + '</div>' +
+	'<div class="report-meta">' + escapeHtml(data.schoolName) + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+	'</div>' +
+	'<div class="filters-line">' + escapeHtml(filtersLine) + ' | Total Records: ' + data.rows.length + '</div>' +
+	'<table><thead><tr>';
+
+	data.headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+	html += '</tr></thead><tbody>';
+	data.rows.forEach(function(row) {
+		html += '<tr>';
+		row.forEach(function(val) { html += '<td>' + escapeHtml(val) + '</td>'; });
+		html += '</tr>';
+	});
+	html += '</tbody><tfoot><tr class="total-row">' +
+		'<td colspan="6" style="text-align:right;">Total Net Salary</td>' +
+		'<td>' + totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
+		'</tr></tfoot></table>' +
+	'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+	'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+	'</body></html>';
+
+	printWindow.document.write(html);
+	printWindow.document.close();
+	printWindow.focus();
+}
+
+function parseAmount(value) {
+	var text = String(value || "").replace(/[$,]/g, "").trim();
+	if (!text) return 0;
+	var num = parseFloat(text);
+	return isNaN(num) ? 0 : num;
+}
+
+function computeNetPreview() {
+	var earnings = ['basic_salary', 'house_rent_allowance', 'dearness_allowance', 'medical_allowance', 'other_allowance', 'bonus'];
+	var deductions = ['tax_deduction', 'provident_fund', 'insurance', 'other_deduction'];
+	var form = document.getElementById('add-payroll-form');
+	if (!form) return;
+	var totalEarnings = 0;
+	var totalDeductions = 0;
+	earnings.forEach(function(name) {
+		var input = form.querySelector('input[name="' + name + '"]');
+		if (input) totalEarnings += parseAmount(input.value);
+	});
+	deductions.forEach(function(name) {
+		var input = form.querySelector('input[name="' + name + '"]');
+		if (input) totalDeductions += parseAmount(input.value);
+	});
+	var net = totalEarnings - totalDeductions;
+	var el = document.getElementById('payroll_net_preview');
+	if (el) {
+		el.textContent = net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+	}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+	var bulkForm = document.getElementById('bulk-delete-form');
+	if (bulkForm) {
+		bulkForm.action += window.location.search;
+	}
+
+	var selectAllEl = document.getElementById('select-all');
+	if (selectAllEl) {
+		selectAllEl.addEventListener('change', function() {
+			var checkboxes = document.querySelectorAll('table.datatable tbody input[type="checkbox"]');
+			checkboxes.forEach(function(cb) {
+				cb.checked = selectAllEl.checked;
+			});
+			toggleBulkDeleteBtn();
+		});
+	}
+
+	document.addEventListener('change', function(e) {
+		var target = e.target;
+		if (target && target.matches && target.matches('table.datatable tbody input[type="checkbox"]')) {
+			toggleBulkDeleteBtn();
+		}
+	});
+
+	var employeeSelect = document.getElementById('payroll_employee');
+	if (employeeSelect) {
+		employeeSelect.addEventListener('change', function() {
+			var option = this.options[this.selectedIndex];
+			var typeInput = document.getElementById('payroll_employee_type');
+			var idInput = document.getElementById('payroll_employee_id');
+			if (!option || !option.value) {
+				typeInput.value = '';
+				idInput.value = '';
+				return;
+			}
+			typeInput.value = option.dataset.type || '';
+			idInput.value = option.value;
+
+			document.getElementById('payroll_name').value = option.dataset.name || '';
+			document.getElementById('payroll_department').value = option.dataset.dept || '';
+			document.getElementById('payroll_designation').value = option.dataset.designation || '';
+			document.getElementById('payroll_phone').value = option.dataset.phone || '';
+			document.getElementById('payroll_basic').value = option.dataset.basic || '';
+			computeNetPreview();
+		});
+	}
+
+	document.querySelectorAll('.payroll-amount').forEach(function(input) {
+		input.addEventListener('input', computeNetPreview);
+	});
+
+	computeNetPreview();
+
+	if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('.datatable')) {
+		var dt = $('.datatable').DataTable();
+		dt.settings()[0].oLanguage.sEmptyTable = "No payroll records found.";
+		dt.settings()[0].oLanguage.sZeroRecords = "No payroll records found.";
+		dt.draw();
+		dt.on('draw', function() {
+			var selAll = document.getElementById('select-all');
+			if (selAll) {
+				selAll.checked = false;
+			}
+			toggleBulkDeleteBtn();
+		});
+	}
+
+});
+</script>
+{% endblock extra_js %}

@@ -278,6 +278,10 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="mb-3">
+                                <label class="form-label">Class ID</label>
+                                <input type="text" class="form-control" name="class_id" value="{{ next_section_id }}">
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Class Name</label>
                                 <input type="text" class="form-control" name="class_name" placeholder="Enter Class Name" required>
                             </div>
@@ -341,6 +345,10 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Class ID</label>
+                                <input type="text" class="form-control" name="class_id" id="edit_class_id" value="">
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Class Name</label>
                                 <input type="text" class="form-control" name="class_name" id="edit_class_name" placeholder="Enter Class Name">
@@ -649,6 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             var pk = this.dataset.pk;
             document.getElementById('edit-class-form').action = '{% url "academics:class-edit" 0 %}'.replace('/0/', '/' + pk + '/');
+            document.getElementById('edit_class_id').value = this.dataset.displayId || '';
             document.getElementById('edit_class_name').value = this.dataset.className;
             document.getElementById('edit_section_name').value = this.dataset.section;
             document.getElementById('edit_no_students').value = this.dataset.noStudents;

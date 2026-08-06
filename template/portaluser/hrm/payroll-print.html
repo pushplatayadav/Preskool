@@ -1,0 +1,255 @@
+{% load static %}
+{% load hrm_extras %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Payroll Report - {{ title|default:"Payroll List" }}</title>
+	<style>
+		@page {
+			size: A4 landscape;
+			margin: 12mm;
+		}
+		* {
+			box-sizing: border-box;
+		}
+		body {
+			font-family: 'Segoe UI', Arial, sans-serif;
+			color: #1e293b;
+			margin: 0;
+			padding: 0;
+			font-size: 13px;
+		}
+		.watermark {
+			position: fixed;
+			top: 40%;
+			left: 0;
+			right: 0;
+			text-align: center;
+			font-size: 80px;
+			font-weight: 800;
+			color: rgba(79, 70, 229, 0.06);
+			transform: rotate(-30deg);
+			pointer-events: none;
+			z-index: 0;
+			letter-spacing: 6px;
+		}
+		.print-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			border-bottom: 3px solid #4f46e5;
+			padding-bottom: 14px;
+			margin-bottom: 14px;
+		}
+		.print-header .brand {
+			display: inline-flex;
+			align-items: center;
+			gap: 12px;
+		}
+		.print-header .brand img {
+			width: 44px;
+			height: 44px;
+		}
+		.print-header .brand h2 {
+			font-size: 22px;
+			font-weight: 800;
+			margin: 0;
+			color: #1e3a8a;
+		}
+		.print-header .brand p {
+			margin: 0;
+			color: #64748b;
+			font-size: 12px;
+		}
+		.print-header .meta {
+			text-align: right;
+			font-size: 12px;
+			color: #475569;
+			line-height: 1.6;
+		}
+		.print-header .meta strong {
+			display: block;
+			font-size: 16px;
+			color: #1e293b;
+		}
+		.filters-info {
+			background: #f8fafc;
+			border: 1px solid #e2e8f0;
+			border-radius: 8px;
+			padding: 8px 14px;
+			margin-bottom: 14px;
+			font-size: 12px;
+			color: #475569;
+		}
+		table.payroll-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 12px;
+			position: relative;
+			z-index: 1;
+		}
+		table.payroll-table th {
+			background: #4f46e5;
+			color: #fff;
+			text-align: left;
+			padding: 9px 10px;
+			font-size: 12px;
+			font-weight: 600;
+			-webkit-print-color-adjust: exact;
+			print-color-adjust: exact;
+		}
+		table.payroll-table td {
+			padding: 8px 10px;
+			border-bottom: 1px solid #e2e8f0;
+		}
+		table.payroll-table tr:nth-child(even) td {
+			background: #f8fafc;
+		}
+		.status-badge {
+			display: inline-block;
+			padding: 3px 10px;
+			border-radius: 30px;
+			font-size: 11px;
+			font-weight: 600;
+		}
+		.status-paid { background: #dcfce7; color: #15803d; }
+		.status-generated { background: #fef3c7; color: #b45309; }
+		.status-pending { background: #f1f5f9; color: #64748b; }
+		.total-row td {
+			font-weight: 700;
+			background: #eef2ff !important;
+			color: #1e3a8a;
+			border-top: 2px solid #4f46e5;
+		}
+		.print-footer {
+			margin-top: 16px;
+			padding-top: 12px;
+			border-top: 1px solid #e2e8f0;
+			display: flex;
+			justify-content: space-between;
+			font-size: 11px;
+			color: #94a3b8;
+		}
+		.print-footer .sign-line {
+			display: flex;
+			justify-content: space-between;
+			gap: 80px;
+			margin-top: 40px;
+		}
+		.print-footer .sign-line span {
+			border-top: 1px solid #94a3b8;
+			padding-top: 6px;
+			width: 160px;
+			text-align: center;
+		}
+		.print-btn {
+			position: fixed;
+			top: 16px;
+			right: 16px;
+			z-index: 5;
+			background: #4f46e5;
+			color: #fff;
+			border: none;
+			border-radius: 8px;
+			padding: 10px 20px;
+			font-size: 14px;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		@media print {
+			.print-btn { display: none; }
+			.watermark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="watermark">PreSkool</div>
+
+	<button type="button" class="print-btn" onclick="window.print();">Print / Save as PDF</button>
+
+	<div class="print-header">
+		<div class="brand">
+			<img src="{% static 'assets/img/logo-small.svg' %}" alt="Logo">
+			<div>
+				<h2>{{ school_name|default:"PreSkool" }}</h2>
+				<p>HR Management - Payroll Report</p>
+			</div>
+		</div>
+		<div class="meta">
+			<strong>{{ title|default:"Payroll List" }}</strong>
+			Generated on: {% now "d M Y H:i" %}
+		</div>
+	</div>
+
+	<div class="filters-info">
+		<strong>Filters:</strong>
+		{% if filter_staff %} Staff: {{ filter_staff }} |{% else %} Staff: All |{% endif %}
+		{% if filter_month %} Month: {{ filter_month }} |{% else %} Month: All |{% endif %}
+		{% if filter_year %} Year: {{ filter_year }}{% else %} Year: All{% endif %}
+		| Total Records: {{ payrolls|length }}
+	</div>
+
+	<table class="payroll-table">
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>ID</th>
+				<th>Name</th>
+				<th>Department</th>
+				<th>Designation</th>
+				<th>Phone</th>
+				<th>Month</th>
+				<th>Amount</th>
+				<th>Status</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for pay in payrolls %}
+			<tr>
+				<td>{{ forloop.counter }}</td>
+				<td>{{ pay.code|default:"-" }}</td>
+				<td>{{ pay.name }}</td>
+				<td>{{ pay.department|default:"-" }}</td>
+				<td>{{ pay.designation|default:"-" }}</td>
+				<td>{{ pay.phone|default:"-" }}</td>
+				<td>{{ pay.month|default:"-" }} {{ pay.year|default:"" }}</td>
+				<td>{{ pay.net_salary|currency }}</td>
+				<td>
+					<span class="status-badge
+						{% if pay.status == 'paid' %}status-paid{% elif pay.status == 'generated' %}status-generated{% else %}status-pending{% endif %}">
+						{{ pay.get_status_display }}
+					</span>
+				</td>
+			</tr>
+			{% empty %}
+			<tr>
+				<td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">No payroll records found.</td>
+			</tr>
+			{% endfor %}
+			<tr class="total-row">
+				<td colspan="7">Total</td>
+				<td>{{ total_net|currency }}</td>
+				<td></td>
+			</tr>
+		</tbody>
+	</table>
+
+	<div class="print-footer">
+		<div>
+			&copy; {% now "Y" %} {{ school_name|default:"PreSkool" }}. All rights reserved.
+		</div>
+		<div class="sign-line">
+			<span>Prepared By</span>
+			<span>Authorized Signature</span>
+		</div>
+	</div>
+
+</body>
+
+</html>

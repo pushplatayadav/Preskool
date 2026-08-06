@@ -42,7 +42,7 @@
 					</ul>
 				</div>
 				<div class="mb-2">
-					<a href="add-student.html" class="btn btn-primary d-flex align-items-center me-3"><i class="ti ti-square-rounded-plus me-2"></i>Add New Student</a>
+					<a href="{% url 'people:add-student-page' %}" class="btn btn-primary d-flex align-items-center me-3"><i class="ti ti-square-rounded-plus me-2"></i>Add New Student</a>
 				</div>
 				<div class="mb-2">
 					<a href="collect-fees.html" class="btn btn-light d-flex align-items-center">Fees Details</a>
@@ -656,7 +656,7 @@
 
 			<!-- Links -->
 			<div class="col-xl-3 col-md-6 d-flex">
-				<a href="events.html" class="card bg-success-transparent border border-5 border-white animate-card flex-fill">
+				<a href="{% url 'communication:events' %}" class="card bg-success-transparent border border-5 border-white animate-card flex-fill">
 					<div class="card-body">
 						<div class="d-flex align-items-center justify-content-between">
 							<div class="d-flex align-items-center">
@@ -745,7 +745,7 @@
 				<div class="card flex-fill">
 					<div class="card-header d-flex align-items-center justify-content-between">
 						<h4 class="card-title">Notice Board</h4>
-						<a href="notice-board.html" class="fw-medium">View All</a>
+						<a href="{% url 'communication:notice-board' %}" class="fw-medium">View All</a>
 					</div>
 					<div class="card-body">
 						<div class="notice-widget">

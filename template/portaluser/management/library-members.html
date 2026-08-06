@@ -1,0 +1,660 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Library Members</h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="javascript:void(0);">Management</a>
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Library Members</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'management:library-members' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printOrExportPDF()"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" onclick="printOrExportPDF()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-pdf me-1"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" onclick="exportToExcel()" class="dropdown-item rounded-1"><i
+									class="ti ti-file-type-xls me-1"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+						data-bs-target="#add_library_members"><i class="ti ti-square-rounded-plus me-2"></i>Add Member</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="card">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+				<h4 class="mb-3">Library Members List</h4>
+				<div class="d-flex align-items-center flex-wrap">
+					<div class="dropdown mb-3 me-2">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+								class="ti ti-filter me-2"></i>Filter</a>
+						<div class="dropdown-menu drop-width p-0">
+							<form method="get" action="{% url 'management:library-members' %}">
+								<div class="d-flex align-items-center border-bottom p-3">
+									<h4 class="mb-0">Filter</h4>
+								</div>
+								<div class="p-3 border-bottom">
+									<div class="row">
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Member</label>
+												<select class="select" name="filter_member">
+													<option value="">Select Member</option>
+													{% for m in all_members %}
+													<option value="{{ m.name }}" {% if filter_member == m.name %}selected{% endif %}>{{ m.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-md-6">
+											<div class="mb-3">
+												<label class="form-label">Card No</label>
+												<select class="select" name="filter_card">
+													<option value="">Select Card No</option>
+													{% for m in all_members %}
+													<option value="{{ m.card_no }}" {% if filter_card == m.card_no %}selected{% endif %}>{{ m.card_no }}</option>
+													{% endfor %}
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="p-3 d-flex align-items-center justify-content-end">
+									<a href="{% url 'management:library-members' %}" class="btn btn-light me-3">Reset</a>
+									<button type="submit" class="btn btn-primary">Apply</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="dropdown mb-3">
+						<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+							data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>
+							{% if sort_by == 'name_desc' %}Sort by Z-A{% elif sort_by == 'date_asc' %}Sort by Date (Oldest){% elif sort_by == 'date_desc' %}Sort by Date (Newest){% else %}Sort by A-Z{% endif %}
+						</a>
+						<ul class="dropdown-menu p-3">
+							<li>
+								<a href="?sort_by=name_asc" class="dropdown-item rounded-1 {% if not sort_by or sort_by == 'name_asc' %}active{% endif %}">
+									Sort by A-Z
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=name_desc" class="dropdown-item rounded-1 {% if sort_by == 'name_desc' %}active{% endif %}">
+									Sort by Z-A
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=date_desc" class="dropdown-item rounded-1 {% if sort_by == 'date_desc' %}active{% endif %}">
+									Date Joined (Newest)
+								</a>
+							</li>
+							<li>
+								<a href="?sort_by=date_asc" class="dropdown-item rounded-1 {% if sort_by == 'date_asc' %}active{% endif %}">
+									Date Joined (Oldest)
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-0">
+				<div class="custom-datatable-filter table-responsive">
+					<table class="table datatable">
+						<thead class="thead-light">
+							<tr>
+								<th class="no-sort">
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox" id="select-all">
+									</div>
+								</th>
+								<th>ID</th>
+								<th>Member</th>
+								<th>Card No</th>
+								<th>Email</th>
+								<th>Date of Join</th>
+								<th>Mobile</th>
+								<th class="no-sort text-center">Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for m in members %}
+							<tr>
+								<td>
+									<div class="form-check form-check-md">
+										<input class="form-check-input" type="checkbox">
+									</div>
+								</td>
+								<td><a href="javascript:void(0);" class="link-primary fw-medium">{{ m.member_id|default:m.card_no }}</a></td>
+								<td>
+									<div class="d-flex align-items-center">
+										<a href="javascript:void(0);" class="avatar avatar-md me-2">
+											{% if m.avatar %}
+											<img src="{{ m.avatar.url }}" class="rounded-circle" alt="{{ m.name }}">
+											{% else %}
+											<span class="avatar-title rounded-circle bg-primary-transparent text-primary fw-semibold">{{ m.name|slice:":1"|upper }}</span>
+											{% endif %}
+										</a>
+										<div class="name font-w500">
+											<h6 class="mb-0"><a href="javascript:void(0);" class="text-dark">{{ m.name }}</a></h6>
+										</div>
+									</div>
+								</td>
+								<td>{{ m.card_no }}</td>
+								<td>{{ m.email|default:"-" }}</td>
+								<td>{{ m.date_of_join|date:"d M Y" }}</td>
+								<td>{{ m.mobile|default:"-" }}</td>
+								<td class="action-table-data text-center">
+									<div class="dropdown">
+										<a href="javascript:void(0);" class="btn btn-icon btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false">
+											<i class="ti ti-dots-vertical"></i>
+										</a>
+										<div class="dropdown-menu dropdown-menu-end">
+											<a class="dropdown-item edit-member-btn" href="javascript:void(0);"
+												data-pk="{{ m.pk }}"
+												data-id="{{ m.member_id }}"
+												data-card="{{ m.card_no }}"
+												data-name="{{ m.name }}"
+												data-email="{{ m.email }}"
+												data-mobile="{{ m.mobile }}"
+												data-date="{{ m.date_of_join|date:'Y-m-d' }}"
+												data-status="{{ m.status }}">
+												<i class="ti ti-edit-circle me-2"></i>Edit
+											</a>
+											<a class="dropdown-item delete-member-btn" href="javascript:void(0);"
+												data-pk="{{ m.pk }}" data-name="{{ m.name }}">
+												<i class="ti ti-trash-x me-2"></i>Delete
+											</a>
+										</div>
+									</div>
+								</td>
+							</tr>
+							{% empty %}
+							<tr>
+								<td colspan="8" class="text-center py-5 text-muted">
+									<i class="ti ti-users-minus fs-30 mb-2 d-block"></i>
+									No library members found.
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</div>
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Library Member -->
+<div class="modal fade" id="add_library_members">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add Member</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:library-members' %}" enctype="multipart/form-data" id="add_member_form">
+				{% csrf_token %}
+				<input type="hidden" name="add_member" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Member ID</label>
+								<input type="text" class="form-control" name="member_id" id="add_member_id" value="{{ next_member_id }}" placeholder="Enter Member ID">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Card No</label>
+								<input type="text" class="form-control" name="card_no" id="add_card_no" value="{{ next_card_no }}" placeholder="Enter Card No" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Member Name</label>
+								<input type="text" class="form-control" name="name" id="add_name" placeholder="Enter Name" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Email Address</label>
+								<input type="email" class="form-control" name="email" id="add_email" placeholder="Enter Email">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Mobile Number</label>
+								<input type="text" class="form-control" name="mobile" id="add_mobile" placeholder="Enter Phone Number">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Date of Join</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="date_of_join" id="add_date_of_join" value="{{ today_date }}" placeholder="Select Date" autocomplete="off">
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Status</label>
+								<select class="select" name="status" id="add_status">
+									<option value="Active" selected>Active</option>
+									<option value="Inactive">Inactive</option>
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add Member</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Library Member -->
+
+<!-- Edit Library Member -->
+<div class="modal fade" id="edit_library_members">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Edit Member</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form method="post" action="{% url 'management:library-members' %}" enctype="multipart/form-data">
+				{% csrf_token %}
+				<input type="hidden" name="edit_member" value="1">
+				<input type="hidden" name="member_db_id" id="edit_member_db_id">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Member ID</label>
+								<input type="text" class="form-control" name="member_id_val" id="edit_member_id_val" readonly>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Card No</label>
+								<input type="text" class="form-control" name="card_no" id="edit_card_no" placeholder="Enter Card No" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Member Name</label>
+								<input type="text" class="form-control" name="name" id="edit_name" placeholder="Enter Name" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Email Address</label>
+								<input type="email" class="form-control" name="email" id="edit_email" placeholder="Enter Email">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Mobile Number</label>
+								<input type="text" class="form-control" name="mobile" id="edit_mobile" placeholder="Enter Phone Number">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Date of Join</label>
+								<div class="date-pic">
+									<input type="text" class="form-control datetimepicker" name="date_of_join" id="edit_date_of_join" placeholder="Select Date" autocomplete="off" required>
+									<span class="cal-icon"><i class="ti ti-calendar"></i></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Status</label>
+								<select class="select" name="status" id="edit_status">
+									<option value="Active">Active</option>
+									<option value="Inactive">Inactive</option>
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit Library Member -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete_library_member_modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form method="post" action="{% url 'management:library-members' %}">
+				{% csrf_token %}
+				<input type="hidden" name="delete_member" value="1">
+				<input type="hidden" name="member_db_id" id="delete_member_db_id">
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete "<span id="delete_member_name"></span>", this action cannot be undone.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script>
+function getMembersData() {
+    var headers = ["ID", "Member Name", "Card No", "Email", "Date of Join", "Mobile"];
+    var data = [];
+    var rows = document.querySelectorAll("table.datatable tbody tr");
+    rows.forEach(function(tr) {
+        var cols = tr.querySelectorAll("td");
+        if (cols.length > 1) {
+            var memberId = cols[1].innerText.trim();
+            var name = cols[2].innerText.trim();
+            var cardNo = cols[3].innerText.trim();
+            var email = cols[4].innerText.trim();
+            var dateJoin = cols[5].innerText.trim();
+            var mobile = cols[6].innerText.trim();
+            if (memberId && name) {
+                data.push([memberId, name, cardNo, email, dateJoin, mobile]);
+            }
+        }
+    });
+    return {
+        headers: headers,
+        rows: data,
+        reportTitle: "Library Members Report",
+        schoolName: "{{ school_name|default:'Global International' }}"
+    };
+}
+
+function exportToExcel() {
+    var data = getMembersData();
+    if (data.rows.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+    var csvContent = [];
+    csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+    data.rows.forEach(function(row) {
+        csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+    });
+    var csvBlob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var downloadLink = document.createElement("a");
+    downloadLink.download = "library_members_" + new Date().toISOString().slice(0,10) + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvBlob);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printOrExportPDF() {
+    var data = getMembersData();
+    if (data.rows.length === 0) {
+        alert("No data available to print.");
+        return;
+    }
+    var printWindow = window.open("", "_blank");
+    var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+    
+    var html = `
+    <html>
+    <head>
+        <title>` + data.reportTitle + `</title>
+        <style>
+            @page {
+                size: A4 portrait;
+                margin: 20mm;
+            }
+            body {
+                font-family: 'Inter', -apple-system, sans-serif;
+                margin: 0;
+                padding: 40px;
+                color: #333;
+                background-color: #fff;
+                position: relative;
+                min-height: 100%;
+            }
+            body::before {
+                content: "PRESKOOL";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-30deg);
+                font-size: 100px;
+                font-weight: 900;
+                color: rgba(79, 70, 229, 0.04);
+                z-index: -1;
+                pointer-events: none;
+                white-space: nowrap;
+                letter-spacing: 15px;
+            }
+            .header-container {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            .logo-section {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .logo-text {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1e3a8a;
+                letter-spacing: -0.5px;
+            }
+            .report-title {
+                font-size: 26px;
+                font-weight: 800;
+                color: #4f46e5;
+                margin: 5px 0;
+            }
+            .report-meta {
+                font-size: 13px;
+                color: #64748b;
+                margin-top: 8px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                font-size: 13px;
+                background: transparent;
+            }
+            th, td {
+                border: 1px solid #e2e8f0;
+                padding: 12px 16px;
+                text-align: left;
+            }
+            th {
+                background-color: #f0f3ff;
+                color: #4f46e5;
+                font-weight: 600;
+            }
+            tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 20mm;
+                }
+                body {
+                    padding: 0;
+                    margin: 0;
+                    width: 210mm;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="` + logoUrl + `" alt="Logo" style="width: 44px; height: 44px; vertical-align: middle;">
+                <span class="logo-text">PreSkool</span>
+            </div>
+            <div class="report-title">` + data.reportTitle + `</div>
+            <div class="report-meta">` + data.schoolName + ` | Generated on: ` + new Date().toLocaleDateString() + `</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    ` + data.headers.map(function(h) { return '<th>' + h + '</th>'; }).join("") + `
+                </tr>
+            </thead>
+            <tbody>
+                ` + data.rows.map(function(row) {
+                    return '<tr>' + row.map(function(val) { return '<td>' + val + '</td>'; }).join("") + '</tr>';
+                }).join("") + `
+            </tbody>
+        </table>
+        <div class="footer">
+            &copy; ` + new Date().getFullYear() + ` PreSkool. All rights reserved.
+        </div>
+        <script>
+            window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            };
+        <` + `/script>
+    </body>
+    </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	var addModalEl = document.getElementById('add_library_members');
+	if (addModalEl) {
+		addModalEl.addEventListener('show.bs.modal', function() {
+			var nameInput = document.getElementById('add_name');
+			if (nameInput) nameInput.value = '';
+			var emailInput = document.getElementById('add_email');
+			if (emailInput) emailInput.value = '';
+			var mobileInput = document.getElementById('add_mobile');
+			if (mobileInput) mobileInput.value = '';
+		});
+	}
+
+	document.querySelectorAll('.edit-member-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			document.getElementById('edit_member_db_id').value = this.getAttribute('data-pk');
+			document.getElementById('edit_member_id_val').value = this.getAttribute('data-id');
+			document.getElementById('edit_card_no').value = this.getAttribute('data-card');
+			document.getElementById('edit_name').value = this.getAttribute('data-name');
+			document.getElementById('edit_email').value = this.getAttribute('data-email');
+			document.getElementById('edit_mobile').value = this.getAttribute('data-mobile');
+			document.getElementById('edit_date_of_join').value = this.getAttribute('data-date');
+			var status = this.getAttribute('data-status');
+			var editStatus = document.getElementById('edit_status');
+			if (editStatus) {
+				editStatus.value = status;
+				if ($(editStatus).data('select2')) {
+					$(editStatus).trigger('change');
+				}
+			}
+			var modal = new bootstrap.Modal(document.getElementById('edit_library_members'));
+			modal.show();
+		});
+	});
+
+	document.querySelectorAll('.delete-member-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			document.getElementById('delete_member_db_id').value = this.getAttribute('data-pk');
+			document.getElementById('delete_member_name').textContent = this.getAttribute('data-name');
+			var modal = new bootstrap.Modal(document.getElementById('delete_library_member_modal'));
+			modal.show();
+		});
+	});
+});
+</script>
+{% endblock extra_js %}

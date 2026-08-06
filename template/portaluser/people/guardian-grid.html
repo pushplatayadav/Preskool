@@ -1,0 +1,753 @@
+{% extends 'portaluser/includes/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+	<div class="content content-two">
+
+		{% if messages %}
+		<div class="messages-container mb-3">
+			{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				{{ message }}
+				<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+			</div>
+			{% endfor %}
+		</div>
+		{% endif %}
+
+		<!-- Page Header -->
+		<div class="d-md-flex d-block align-items-center justify-content-between mb-3">
+			<div class="my-auto mb-2">
+				<h3 class="page-title mb-1">Guardian </h3>
+				<nav>
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item">
+							<a href="{% url 'home' %}">Dashboard</a>
+						</li>
+						<li class="breadcrumb-item">
+							Peoples
+						</li>
+						<li class="breadcrumb-item active" aria-current="page">Guardian </li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
+				<div class="pe-1 mb-2">
+					<a href="{% url 'people:guardian-grid' %}" class="btn btn-outline-light bg-white btn-icon me-1" data-bs-toggle="tooltip"
+						data-bs-placement="top" aria-label="Refresh" data-bs-original-title="Refresh">
+						<i class="ti ti-refresh"></i>
+					</a>
+				</div>
+				<div class="pe-1 mb-2">
+					<button type="button" class="btn btn-outline-light bg-white btn-icon me-1" onclick="printGuardians();"
+						data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Print" data-bs-original-title="Print">
+						<i class="ti ti-printer"></i>
+					</button>
+				</div>
+				<div class="dropdown me-2 mb-2">
+					<a href="javascript:void(0);"
+						class="dropdown-toggle btn btn-light fw-medium d-inline-flex align-items-center"
+						data-bs-toggle="dropdown">
+						<i class="ti ti-file-export me-2"></i>Export
+					</a>
+					<ul class="dropdown-menu  dropdown-menu-end p-3">
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportGuardiansPDF();"><i
+									class="ti ti-file-type-pdf me-2"></i>Export as PDF</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1" onclick="exportGuardiansExcel();"><i
+									class="ti ti-file-type-xls me-2"></i>Export as Excel </a>
+						</li>
+					</ul>
+				</div>
+				<div class="mb-2">
+					<a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+						data-bs-target="#add_guardian"><i class="ti ti-square-rounded-plus me-2"></i>Add
+						Gaurdian</a>
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div
+			class="bg-white p-3 border rounded-1 d-flex align-items-center justify-content-between flex-wrap mb-4 pb-0">
+			<h4 class="mb-3">Guardian Grid</h4>
+			<div class="d-flex align-items-center flex-wrap">
+				<div class="input-icon-start mb-3 me-2 position-relative">
+						<span class="icon-addon">
+							<i class="ti ti-calendar"></i>
+						</span>
+						<input type="text" class="form-control date-range bookingrange" placeholder="Select"
+						value="Academic Year : {% if current_academic_year %}{{ current_academic_year.name }}{% else %}2024 / 2025{% endif %}">
+					</div>
+				<div class="dropdown mb-3 me-2">
+					<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+						data-bs-toggle="dropdown" data-bs-auto-close="outside"><i
+							class="ti ti-filter me-2"></i>Filter</a>
+					<div class="dropdown-menu drop-width">
+						<form method="get" action="{% url 'people:guardian-grid' %}">
+							<div class="d-flex align-items-center border-bottom p-3">
+								<h4>Filter</h4>
+							</div>
+							<div class="p-3 pb-0 border-bottom">
+								<div class="row">
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Guardian Name</label>
+											<select class="select" name="filter_guardian">
+												<option value="">Select</option>
+												{% for g in guardian_list %}
+												<option value="{{ g.guardian_name }}" {% if filter_guardian == g.guardian_name %}selected{% endif %}>{{ g.guardian_name }}</option>
+												{% endfor %}
+											</select>
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Child</label>
+											<select class="select" name="filter_child">
+												<option value="">Select</option>
+												{% for cname in child_names %}
+												<option value="{{ cname }}" {% if filter_child == cname %}selected{% endif %}>{{ cname }}</option>
+												{% endfor %}
+											</select>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="p-3 d-flex align-items-center justify-content-end">
+								<a href="{% url 'people:guardian-grid' %}" class="btn btn-light me-3">Reset</a>
+								<button type="submit" class="btn btn-primary">Apply</button>
+							</div>
+						</form>
+					</div>
+				</div>
+				<div class="d-flex align-items-center bg-white border rounded-2 p-1 mb-3 me-2">
+					<a href="{% url 'people:guardian-list' %}" class=" btn btn-icon btn-sm me-1 bg-light primary-hover"><i
+							class="ti ti-list-tree"></i></a>
+					<a href="{% url 'people:guardian-grid' %}" class=" active btn btn-icon btn-sm  primary-hover"><i
+							class="ti ti-grid-dots"></i></a>
+				</div>
+				<div class="dropdown mb-3">
+					<a href="javascript:void(0);" class="btn btn-outline-light bg-white dropdown-toggle"
+						data-bs-toggle="dropdown"><i class="ti ti-sort-ascending-2 me-2"></i>
+						{% if sort == "desc" %}Z-A{% else %}A-Z{% endif %}
+					</a>
+					<ul class="dropdown-menu p-3">
+						<li>
+							<a href="{% url 'people:guardian-grid' %}?sort=asc{% if filter_guardian %}&filter_guardian={{ filter_guardian }}{% endif %}{% if filter_child %}&filter_child={{ filter_child }}{% endif %}{% if filter_class %}&filter_class={{ filter_class }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'asc' %}active{% endif %}">
+								Ascending
+							</a>
+						</li>
+						<li>
+							<a href="{% url 'people:guardian-grid' %}?sort=desc{% if filter_guardian %}&filter_guardian={{ filter_guardian }}{% endif %}{% if filter_child %}&filter_child={{ filter_child }}{% endif %}{% if filter_class %}&filter_class={{ filter_class }}{% endif %}{% if filter_status %}&filter_status={{ filter_status }}{% endif %}" class="dropdown-item rounded-1 {% if sort == 'desc' %}active{% endif %}">
+								Descending
+							</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1">
+								Recently Viewed
+							</a>
+						</li>
+						<li>
+							<a href="javascript:void(0);" class="dropdown-item rounded-1">
+								Recently Added
+							</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+
+			{% for guardian in guardian_list %}
+			{% with child=guardian.first_child %}
+			<div class="col-xl-4 col-md-6 d-flex guardian-card-item"
+				data-guardian-id="{{ guardian.guardian_id }}"
+				data-guardian-name="{{ guardian.guardian_name }}"
+				data-guardian-email="{{ guardian.guardian_email }}"
+				data-guardian-phone="{{ guardian.guardian_phone }}"
+				data-child-name="{% if child %}{{ child.name }}{% endif %}">
+				<div class="card flex-fill">
+					<div class="card-header d-flex align-items-center justify-content-between">
+						<a href="javascript:void(0);" class="link-primary view-guardian-btn"
+							data-guardian-name="{{ guardian.guardian_name }}"
+							data-guardian-email="{{ guardian.guardian_email }}"
+							data-guardian-phone="{{ guardian.guardian_phone }}"
+							data-bs-toggle="modal" data-bs-target="#view_details">{{ guardian.guardian_id }}</a>
+						<div class="d-flex align-items-center">
+							<div class="dropdown">
+								<a href="#"
+									class="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
+									data-bs-toggle="dropdown" aria-expanded="false">
+									<i class="ti ti-dots-vertical fs-14"></i>
+								</a>
+								<ul class="dropdown-menu dropdown-menu-right p-3">
+									<li>
+										<a class="dropdown-item rounded-1 edit-guardian-btn" href="javascript:void(0);"
+											data-guardian-name="{{ guardian.guardian_name }}"
+											data-guardian-email="{{ guardian.guardian_email }}"
+											data-guardian-phone="{{ guardian.guardian_phone }}"
+											{% for c in guardian.children %}data-child-{{ forloop.counter }}="{{ c.pk }}"{% endfor %}
+											data-child-count="{{ guardian.children|length }}"
+											data-bs-toggle="modal" data-bs-target="#edit_guardian"><i
+												class="ti ti-edit-circle me-2"></i>Edit</a>
+									</li>
+									<li>
+										<a class="dropdown-item rounded-1 delete-guardian-btn" href="javascript:void(0);"
+											data-guardian-name="{{ guardian.guardian_name }}"
+											data-bs-toggle="modal" data-bs-target="#delete-modal"><i
+												class="ti ti-trash-x me-2"></i>Delete</a>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="card-body">
+						<div class="bg-light-300 rounded-2 p-3 mb-3">
+							<div class="d-flex align-items-center">
+								<a href="javascript:void(0);" class="avatar avatar-lg flex-shrink-0 view-guardian-btn"
+									data-guardian-name="{{ guardian.guardian_name }}"
+									data-guardian-email="{{ guardian.guardian_email }}"
+									data-guardian-phone="{{ guardian.guardian_phone }}"
+									data-bs-toggle="modal" data-bs-target="#view_details">
+									{% if guardian.guardian_image %}
+									<img src="{{ guardian.guardian_image.url }}" class="img-fluid rounded-circle"
+										alt="img">
+									{% else %}
+									<img src="{% static 'assets/img/parents/' %}{% cycle 'parent-01.jpg' 'parent-02.jpg' 'parent-05.jpg' 'parent-06.jpg' 'parent-07.jpg' 'parent-11.jpg' 'parent-13.jpg' as guardian_img %}"
+										class="img-fluid rounded-circle" alt="img">
+									{% endif %}
+								</a>
+								<div class="ms-2">
+									<h6  class="text-dark text-truncate mb-0"><a
+											href="javascript:void(0);" class="view-guardian-btn"
+											data-guardian-name="{{ guardian.guardian_name }}"
+											data-guardian-email="{{ guardian.guardian_email }}"
+											data-guardian-phone="{{ guardian.guardian_phone }}"
+											data-bs-toggle="modal" data-bs-target="#view_details">{{ guardian.guardian_name }}</a></h6>
+									<p>Added on {% if child.created_at %}{{ child.created_at|date:"d M Y" }}{% else %}-{% endif %}</p>
+								</div>
+							</div>
+						</div>
+						<div class="d-flex align-items-center justify-content-between gx-2">
+							<div>
+								<p class="mb-0">Email</p>
+								<p class="text-dark">{{ guardian.guardian_email }}</p>
+							</div>
+							<div>
+								<p class="mb-0">Phone</p>
+								<p class="text-dark">{{ guardian.guardian_phone }}</p>
+							</div>
+						</div>
+					</div>
+					<div class="card-footer d-flex align-items-center justify-content-between">
+						<div class="d-flex align-items-center">
+							{% if child %}
+							<div class="d-flex align-items-center">
+								<a href="{% url 'people:student-details' child.pk %}" class="avatar avatar-md flex-shrink-0 p-0 me-2">
+									{% if child.profile_image %}
+									<img src="{{ child.profile_image.url }}" alt="img"
+										class="img-fluid rounded-circle">
+									{% else %}
+									<img src="{% static 'assets/img/students/' %}{% cycle 'student-01.jpg' 'student-02.jpg' 'student-03.jpg' 'student-04.jpg' 'student-05.jpg' 'student-06.jpg' 'student-08.jpg' 'student-09.jpg' 'student-10.jpg' 'student-11.jpg' 'student-12.jpg' 'student-13.jpg' as child_img %}"
+										alt="img" class="img-fluid rounded-circle">
+									{% endif %}
+								</a>
+								<p class="text-dark">{{ child.name }}</p>
+							</div>
+							{% else %}
+							<span>-</span>
+							{% endif %}
+						</div>
+						<a href="javascript:void(0);" class="btn btn-light btn-sm view-guardian-btn"
+							data-guardian-name="{{ guardian.guardian_name }}"
+							data-guardian-email="{{ guardian.guardian_email }}"
+							data-guardian-phone="{{ guardian.guardian_phone }}"
+							data-bs-toggle="modal" data-bs-target="#view_details">View Details</a>
+					</div>
+				</div>
+			</div>
+			{% endwith %}
+			{% empty %}
+			<div class="col-12 text-center py-5">
+				<h5>No guardians found</h5>
+			</div>
+			{% endfor %}
+
+			{% if guardian_list %}
+			<div class="col-md-12 load-more-col">
+				<div class="load-more text-center">
+					<a href="javascript:void(0);" class="btn btn-primary" id="load-more-btn"><i
+							class="ti ti-loader-3"></i>Load More</a>
+				</div>
+			</div>
+			{% endif %}
+
+		</div>
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{% endblock content %}
+
+{% block modals %}
+<!-- Add Guardian -->
+<div class="modal fade" id="add_guardian">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add Guardian</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form action="{% url 'people:guardian-grid' %}" method="post" enctype="multipart/form-data">
+				{% csrf_token %}
+				<input type="hidden" name="add_guardian" value="1">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="d-flex align-items-center upload-pic flex-wrap row-gap-3 mb-3">
+								<div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+									<i class="ti ti-photo-plus fs-16"></i>
+								</div>
+								<div class="profile-upload">
+									<div class="profile-uploader d-flex align-items-center">
+												<div class="drag-upload-btn mb-3">
+													Upload
+													<input type="file" class="form-control image-sign" name="guardian_image" accept="image/*">
+												</div>
+												<a href="javascript:void(0);" class="btn btn-primary mb-3">Remove</a>
+											</div>
+											<p>Upload image size 4MB, Format JPG, PNG, SVG</p>
+										</div>
+									</div>
+									<div class="mb-3">
+										<label class="form-label">Name</label>
+										<input type="text" class="form-control" name="guardian_name" required>
+									</div>
+							<div class="mb-3">
+								<label class="form-label">Phone Number</label>
+								<input type="text" class="form-control" name="guardian_phone">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Email Address</label>
+								<input type="email" class="form-control" name="guardian_email">
+							</div>
+							<div class="mb-0">
+								<label class="form-label">Child</label>
+								<select class="select" name="child_ids" multiple required>
+									{% for student in students %}
+									<option value="{{ student.pk }}">{{ student.name }} ({{ student.school_class.name }}, {{ student.section.name }})</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Add Guardian</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Add Guardian -->
+
+<!-- Edit Guardian -->
+<div class="modal fade" id="edit_guardian">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Edit Guardian</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<form action="{% url 'people:guardian-grid' %}" method="post" enctype="multipart/form-data">
+				{% csrf_token %}
+				<input type="hidden" name="edit_guardian" value="1">
+				<input type="hidden" name="old_guardian_name" id="edit_old_guardian_name" value="">
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="d-flex align-items-center upload-pic flex-wrap row-gap-3 mb-3">
+								<div class="d-flex align-items-center justify-content-center avatar avatar-xxl border border-dashed me-2 flex-shrink-0 text-dark frames">
+									<i class="ti ti-photo-plus fs-16"></i>
+								</div>
+								<div class="profile-upload">
+									<div class="profile-uploader d-flex align-items-center">
+												<div class="drag-upload-btn mb-3">
+													Upload
+													<input type="file" class="form-control image-sign" name="guardian_image" accept="image/*">
+												</div>
+												<a href="javascript:void(0);" class="btn btn-primary mb-3">Remove</a>
+											</div>
+											<p>Upload image size 4MB, Format JPG, PNG, SVG</p>
+										</div>
+									</div>
+									<div class="mb-3">
+										<label class="form-label">Name</label>
+										<input type="text" class="form-control" name="guardian_name" id="edit_guardian_name" placeholder="Enter Name">
+									</div>
+							<div class="mb-3">
+								<label class="form-label">Phone Number</label>
+								<input type="text" class="form-control" name="guardian_phone" id="edit_guardian_phone" placeholder="Enter Phone Number">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Email Address</label>
+								<input type="email" class="form-control" name="guardian_email" id="edit_guardian_email" placeholder="Enter Email Address">
+							</div>
+							<div class="mb-0">
+								<label class="form-label">Child</label>
+								<select class="select" name="child_ids" id="edit_child_ids" multiple>
+									{% for student in students %}
+									<option value="{{ student.pk }}">{{ student.name }} ({{ student.school_class.name }}, {{ student.section.name }})</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a href="#" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</a>
+					<button type="submit" class="btn btn-primary">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Edit Guardian -->
+
+<!-- View Details -->
+<div class="modal fade" id="view_details">
+	<div class="modal-dialog modal-dialog-centered  modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">View Details</h4>
+				<button type="button" class="btn-close custom-btn-close" data-bs-dismiss="modal"
+					aria-label="Close">
+					<i class="ti ti-x"></i>
+				</button>
+			</div>
+			<div class="modal-body mb-0" id="view_details_body">
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /View Details -->
+
+<!-- Delete Modal -->
+<div class="modal fade" id="delete-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<form action="{% url 'people:guardian-grid' %}" method="post">
+				{% csrf_token %}
+				<input type="hidden" name="delete_guardian" value="1">
+				<input type="hidden" name="guardian_name" id="delete_guardian_name" value="">
+				<div class="modal-body text-center">
+					<span class="delete-icon">
+						<i class="ti ti-trash-x"></i>
+					</span>
+					<h4>Confirm Deletion</h4>
+					<p>You want to delete <strong id="delete_guardian_name_display"></strong>, this can't be undone once you delete.</p>
+					<div class="d-flex justify-content-center">
+						<a href="javascript:void(0);" class="btn btn-light me-3"
+							data-bs-dismiss="modal">Cancel</a>
+						<button type="submit" class="btn btn-danger">Yes, Delete</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- /Delete Modal -->
+{% endblock modals %}
+
+{% block extra_js %}
+<script>
+var guardianData = {{ guardian_list_json|safe }};
+
+function getGuardiansData() {
+	var headers = ["ID", "Guardian Name", "Child", "Phone", "Email"];
+	var rows = [];
+	document.querySelectorAll('.guardian-card-item').forEach(function(card) {
+		var id = card.dataset.guardianId || '';
+		var name = card.dataset.guardianName || '';
+		var child = card.dataset.childName || '';
+		var phone = card.dataset.guardianPhone || '-';
+		var email = card.dataset.guardianEmail || '-';
+		rows.push([id, name, child, phone, email]);
+	});
+	return {
+		headers: headers,
+		rows: rows,
+		reportTitle: "Guardians Grid Report",
+		schoolName: "{{ school_name|default:'Global International' }}"
+	};
+}
+
+function exportGuardiansExcel() {
+	var data = getGuardiansData();
+	if (data.rows.length === 0) {
+		alert("No data available to export.");
+		return;
+	}
+	var csvContent = [];
+	csvContent.push(data.headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(","));
+	data.rows.forEach(function(row) {
+		csvContent.push(row.map(function(val) { return '"' + val.replace(/"/g, '""') + '"'; }).join(","));
+	});
+	var csvBlob = new Blob(["\uFEFF" + csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+	var downloadLink = document.createElement("a");
+	downloadLink.download = "guardians_grid_" + new Date().toISOString().slice(0,10) + ".csv";
+	downloadLink.href = window.URL.createObjectURL(csvBlob);
+	downloadLink.style.display = "none";
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}
+
+function printGuardians() {
+	var data = getGuardiansData();
+	if (data.rows.length === 0) {
+		alert("No data available to print.");
+		return;
+	}
+	var logoUrl = "{% static 'assets/img/logo-small.svg' %}";
+	var html = '<html><head><title>' + data.reportTitle + '</title>' +
+	'<style>' +
+	'@page{size:A4 landscape;margin:15mm;}' +
+	'body{font-family:"Inter",-apple-system,sans-serif;margin:0;padding:40px;color:#333;background-color:#fff;position:relative;min-height:100%;}' +
+	'body::before{content:"PRESKOOL";position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:100px;font-weight:900;color:rgba(79,70,229,0.04);z-index:-1;pointer-events:none;white-space:nowrap;letter-spacing:15px;}' +
+	'.header-container{text-align:center;margin-bottom:40px;}' +
+	'.logo-section{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}' +
+	'.logo-text{font-size:32px;font-weight:700;color:#1e3a8a;letter-spacing:-0.5px;}' +
+	'.report-title{font-size:26px;font-weight:800;color:#4f46e5;margin:5px 0;}' +
+	'.report-meta{font-size:13px;color:#64748b;margin-top:8px;}' +
+	'table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;background:transparent;}' +
+	'th,td{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}' +
+	'th{background-color:#f0f3ff;color:#4f46e5;font-weight:600;}' +
+	'tr:nth-child(even){background-color:#f8fafc;}' +
+	'.footer{margin-top:60px;text-align:center;font-size:12px;color:#94a3b8;}' +
+	'@media print{@page{size:A4 landscape;margin:15mm;}body{padding:0;margin:0;width:297mm;}}' +
+	'</style></head><body>' +
+	'<div class="header-container">' +
+	'<div class="logo-section">' +
+	'<img src="' + logoUrl + '" alt="Logo" style="width:44px;height:44px;vertical-align:middle;">' +
+	'<span class="logo-text">PreSkool</span>' +
+	'</div>' +
+	'<div class="report-title">' + data.reportTitle + '</div>' +
+	'<div class="report-meta">' + data.schoolName + ' | Generated on: ' + new Date().toLocaleDateString() + '</div>' +
+	'</div>' +
+	'<table><thead><tr>';
+	data.headers.forEach(function(h) { html += '<th>' + h + '</th>'; });
+	html += '</tr></thead><tbody>';
+	data.rows.forEach(function(row) {
+		html += '<tr>';
+		row.forEach(function(val) { html += '<td>' + val + '</td>'; });
+		html += '</tr>';
+	});
+	html += '</tbody></table>' +
+	'<div class="footer">&copy; ' + new Date().getFullYear() + ' PreSkool. All rights reserved.</div>' +
+	'<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script>' +
+	'</body></html>';
+	var printWindow = window.open("", "_blank");
+	if (printWindow) {
+		printWindow.document.write(html);
+		printWindow.document.close();
+	} else {
+		var iframe = document.createElement('iframe');
+		iframe.style.position = 'fixed';
+		iframe.style.right = '0';
+		iframe.style.bottom = '0';
+		iframe.style.width = '0';
+		iframe.style.height = '0';
+		iframe.style.border = '0';
+		iframe.style.zIndex = '-1';
+		document.body.appendChild(iframe);
+		var doc = iframe.contentWindow.document;
+		doc.open();
+		doc.write(html);
+		doc.close();
+		setTimeout(function() {
+			iframe.contentWindow.focus();
+			iframe.contentWindow.print();
+			setTimeout(function() {
+				document.body.removeChild(iframe);
+			}, 1000);
+		}, 400);
+	}
+}
+
+function exportGuardiansPDF() {
+	printGuardians();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+	var items = document.querySelectorAll('.guardian-card-item');
+	var loadMoreBtn = document.getElementById('load-more-btn');
+	var visibleCount = 9;
+	if (loadMoreBtn) {
+		if (items.length <= visibleCount) {
+			var loadMoreCol = loadMoreBtn.closest('.load-more-col');
+			if (loadMoreCol) loadMoreCol.style.display = 'none';
+		} else {
+			for (var i = visibleCount; i < items.length; i++) {
+				items[i].style.display = 'none';
+			}
+			loadMoreBtn.addEventListener('click', function() {
+				for (var j = visibleCount; j < items.length; j++) {
+					items[j].style.display = '';
+				}
+				var loadMoreCol = loadMoreBtn.closest('.load-more-col');
+				if (loadMoreCol) loadMoreCol.style.display = 'none';
+			});
+		}
+	}
+
+	document.addEventListener('click', function(e) {
+		var viewBtn = e.target.closest('.view-guardian-btn');
+		if (viewBtn) {
+			e.preventDefault();
+			var name = viewBtn.dataset.guardianName;
+			var email = viewBtn.dataset.guardianEmail;
+			var phone = viewBtn.dataset.guardianPhone;
+			var guardianInfo = null;
+			if (typeof guardianData !== 'undefined') {
+				guardianData.forEach(function(g) {
+					if (g.guardian_name === name) {
+						guardianInfo = g;
+					}
+				});
+			}
+			var body = document.getElementById('view_details_body');
+			if (!body) return;
+			if (guardianInfo && guardianInfo.children && guardianInfo.children.length > 0) {
+				var guardianImg = guardianInfo.guardian_image || "{% static 'assets/img/parents/parent-01.jpg' %}";
+				var html = '<div class="parent-wrap">';
+				html += '<div class="row align-items-center">';
+				html += '<div class="col-lg-6">';
+				html += '<div class="d-flex align-items-center mb-3">';
+				html += '<span class="avatar avatar-xl me-2"><img src="' + guardianImg + '" alt="img"></span>';
+				html += '<div class="parent-name">';
+				html += '<h5 class="mb-1">' + escapeHtml(name) + '</h5>';
+				html += '<p>Added on ' + (guardianInfo.children[0].created_at || 'N/A') + '</p>';
+				html += '</div></div></div>';
+				html += '<div class="col-lg-6">';
+				html += '<ul class="d-flex align-items-center">';
+				html += '<li class="mb-3 me-5"><p class="mb-1">Email</p><h6 class="fw-normal">' + escapeHtml(email) + '</h6></li>';
+				html += '<li class="mb-3"><p class="mb-1">Phone</p><h6 class="fw-normal">' + escapeHtml(phone) + '</h6></li>';
+				html += '</ul></div></div></div>';
+				html += '<h5 class="mb-3">Children Details</h5>';
+				guardianInfo.children.forEach(function(child) {
+					var childImg = child.image_url || "{% static 'assets/img/students/student-01.jpg' %}";
+					html += '<div class="border rounded p-4 pb-1 mb-3">';
+					html += '<div class="d-flex align-items-center justify-content-between flex-wrap pb-1 mb-3 border-bottom">';
+					html += '<span class="link-primary mb-2">' + escapeHtml(child.admission_no) + '</span>';
+					html += '<span class="badge badge-soft-success badge-md mb-2"><i class="ti ti-circle-filled me-2"></i>Active</span>';
+					html += '</div>';
+					html += '<div class="d-flex align-items-center justify-content-between flex-wrap">';
+					html += '<div class="d-flex align-items-center mb-3">';
+					html += '<a href="{% url 'people:student-details' 0 %}'.replace('0', child.pk) + '" class="avatar"><img src="' + childImg + '" class="img-fluid rounded-circle" alt="img"></a>';
+					html += '<div class="ms-2">';
+					html += '<p class="mb-0"><a href="{% url 'people:student-details' 0 %}'.replace('0', child.pk) + '">' + escapeHtml(child.name) + '</a></p>';
+					html += '<span>' + escapeHtml(child.class_name) + ', ' + escapeHtml(child.section_name) + '</span>';
+					html += '</div></div>';
+					html += '<ul class="d-flex align-items-center flex-wrap">';
+					html += '<li class="mb-3 me-4"><p class="mb-1">Roll No</p><h6 class="fw-normal">' + escapeHtml(child.roll_no) + '</h6></li>';
+					html += '<li class="mb-3 me-4"><p class="mb-1">Gender</p><h6 class="fw-normal">' + escapeHtml(child.gender) + '</h6></li>';
+					html += '<li class="mb-3"><p class="mb-1">Date of Joined</p><h6 class="fw-normal">' + escapeHtml(child.admission_date) + '</h6></li>';
+					html += '</ul>';
+					html += '<div class="d-flex align-items-center">';
+					html += '<a href="#" class="btn btn-light mb-3 me-3">Add Fees</a>';
+					html += '<a href="{% url 'people:student-details' 0 %}'.replace('0', child.pk) + '" class="btn btn-primary mb-3">View Details</a>';
+					html += '</div></div></div>';
+				});
+				body.innerHTML = html;
+			} else {
+				body.innerHTML = '<div class="text-center py-5"><p>No details available for this guardian.</p></div>';
+			}
+			var modalEl = document.getElementById('view_details');
+			if (modalEl) {
+				var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+				modal.show();
+			}
+		}
+	});
+
+	document.addEventListener('click', function(e) {
+		var btn = e.target.closest('.edit-guardian-btn');
+		if (btn) {
+			e.preventDefault();
+			document.getElementById('edit_old_guardian_name').value = btn.dataset.guardianName;
+			document.getElementById('edit_guardian_name').value = btn.dataset.guardianName;
+			document.getElementById('edit_guardian_phone').value = btn.dataset.guardianPhone;
+			document.getElementById('edit_guardian_email').value = btn.dataset.guardianEmail;
+			var select = document.getElementById('edit_child_ids');
+			if (select) {
+				var selectedPks = [];
+				var count = parseInt(btn.dataset.childCount) || 0;
+				for (var j = 1; j <= count; j++) {
+					var childPk = btn.dataset['child' + j];
+					if (childPk) selectedPks.push(childPk);
+				}
+				if (window.jQuery && jQuery.fn.select2) {
+					jQuery(select).val(selectedPks).trigger('change');
+				} else {
+					var options = select.options;
+					for (var i = 0; i < options.length; i++) {
+						options[i].selected = false;
+					}
+					for (var s = 0; s < selectedPks.length; s++) {
+						for (var k = 0; k < options.length; k++) {
+							if (options[k].value === selectedPks[s]) {
+								options[k].selected = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			var modalEl = document.getElementById('edit_guardian');
+			if (modalEl) {
+				var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+				modal.show();
+			}
+		}
+	});
+
+	document.addEventListener('click', function(e) {
+		var btn = e.target.closest('.delete-guardian-btn');
+		if (btn) {
+			e.preventDefault();
+			var name = btn.dataset.guardianName;
+			document.getElementById('delete_guardian_name').value = name;
+			var displayEl = document.getElementById('delete_guardian_name_display');
+			if (displayEl) displayEl.textContent = name;
+			var modalEl = document.getElementById('delete-modal');
+			if (modalEl) {
+				var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+				modal.show();
+			}
+		}
+	});
+
+});
+
+function escapeHtml(text) {
+	if (!text) return '-';
+	var div = document.createElement('div');
+	div.appendChild(document.createTextNode(text));
+	return div.innerHTML;
+}
+</script>
+{% endblock extra_js %}
